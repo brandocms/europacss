@@ -1,6 +1,6 @@
 {
   "name": "@brandocms/europacss",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Europa CSS system",
   "main": "lib/index.js",
   "keywords": [
@@ -30,31 +30,25 @@
   "dependencies": {
     "lodash": "^4.17.21",
     "normalize.css": "^8.0.1",
-    "postcss": "^7.0.30",
-    "postcss-extend-rule": "^3.0.0",
-    "postcss-functions": "twined/postcss-functions",
-    "postcss-nested": "^4.2.1",
-    "postcss-reporter": "^6.0.1",
+    "postcss-extend-rule": "^4.0.0",
+    "postcss-functions": "^4.0.0",
+    "postcss-nested": "7.0.2",
+    "postcss-reporter": "^7.1.0",
     "reduce-css-calc": "^2.1.8"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.10",
-    "@babel/core": "^7.13.10",
-    "@babel/node": "^7.13.10",
-    "@babel/preset-env": "^7.13.10",
-    "babel-jest": "^26.6.3",
-    "eslint": "^7.22.0",
-    "eslint-config-standard": "^16.0.2",
-    "eslint-plugin-es5": "^1.5.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jest": "^24.3.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prefer-let": "^1.1.0",
-    "eslint-plugin-promise": "^4.3.1",
-    "eslint-plugin-security": "^1.4.0",
-    "eslint-plugin-standard": "^5.0.0",
-    "jest": "^26.6.3",
-    "rimraf": "^3.0.2"
+    "@babel/cli": "^7.26.4",
+    "@babel/core": "^7.26.9",
+    "@babel/node": "^7.26.0",
+    "@babel/preset-env": "^7.26.9",
+    "babel-jest": "^29.7.0",
+    "globals": "^16.0.0",
+    "jest": "^29.7.0",
+    "postcss": "^8.5.3",
+    "rimraf": "^6.0.1"
+  },
+  "peerDependencies": {
+    "postcss": "^8.0.5"
   },
   "jest": {
     "testEnvironment": "node",
