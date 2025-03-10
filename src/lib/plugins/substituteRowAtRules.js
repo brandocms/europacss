@@ -8,7 +8,9 @@ import buildDecl from '../../util/buildDecl'
 
 export default postcss.plugin('europacss-row', getConfig => {
   const config = getConfig()
-  const { theme: { breakpoints, breakpointCollections }} = config
+  const {
+    theme: { breakpoints, breakpointCollections }
+  } = config
 
   return function (css) {
     const finalRules = []
@@ -41,7 +43,7 @@ export default postcss.plugin('europacss-row', getConfig => {
         childSpec = `${parseInt(rowCount)}n+1`
 
         if (rowCount && rowCount.indexOf('/') > -1) {
-          [rowCount, wrapRow, gap] = rowCount.split('/')
+          ;[rowCount, wrapRow, gap] = rowCount.split('/')
         }
       }
 
@@ -52,7 +54,10 @@ export default postcss.plugin('europacss-row', getConfig => {
       // accept a query param for @space
       if (parent.type === 'atrule' && parent.name === 'responsive') {
         if (bpQuery) {
-          throw clonedRule.error(`ROW: When nesting @row under @responsive, we do not accept a breakpoints query.`, { name: bpQuery })
+          throw clonedRule.error(
+            `ROW: When nesting @row under @responsive, we do not accept a breakpoints query.`,
+            { name: bpQuery }
+          )
         }
 
         bpQuery = parent.params
@@ -63,7 +68,10 @@ export default postcss.plugin('europacss-row', getConfig => {
       } else if (grandParent.name === 'responsive') {
         // check if grandparent is @responsive
         if (bpQuery) {
-          throw clonedRule.error(`ROW: When nesting @row under @responsive, we do not accept a breakpoints query.`, { name: bpQuery })
+          throw clonedRule.error(
+            `ROW: When nesting @row under @responsive, we do not accept a breakpoints query.`,
+            { name: bpQuery }
+          )
         }
 
         bpQuery = grandParent.params
@@ -79,16 +87,13 @@ export default postcss.plugin('europacss-row', getConfig => {
         selector = parent.selector
       }
 
-      const decls = [
-        buildDecl('display', 'flex'),
-        buildDecl('flex-wrap', wrapRow)
-      ]
+      const decls = [buildDecl('display', 'flex'), buildDecl('flex-wrap', wrapRow)]
 
-      const decendentChildren = postcss.rule({ selector: '> *' })
+      const decendentChildren = postcss.rule({ selector: '& > *' })
 
       // all decendents should have margin-left 1
       const spaceMarginParams = 'margin-left 1'
-      const spaceMarginRule = postcss.atRule({ name: 'space', params: spaceMarginParams})
+      const spaceMarginRule = postcss.atRule({ name: 'space', params: spaceMarginParams })
 
       // first child in every row should have no margin-left
       const nthChild = postcss.rule({ selector: `&:nth-child(${childSpec})` })

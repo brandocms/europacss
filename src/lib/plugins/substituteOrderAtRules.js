@@ -8,7 +8,9 @@ import buildDecl from '../../util/buildDecl'
 
 export default postcss.plugin('europacss-order', getConfig => {
   const config = getConfig()
-  const { theme: { breakpoints, breakpointCollections }} = config
+  const {
+    theme: { breakpoints, breakpointCollections }
+  } = config
 
   return function (css) {
     const finalRules = []
@@ -43,10 +45,16 @@ export default postcss.plugin('europacss-order', getConfig => {
       // accept a query param for @space
       if (parent.type === 'atrule' && parent.name === 'responsive') {
         if (bpQuery) {
-          throw clonedRule.error(`ORDER: When nesting @order under @responsive, we do not accept a breakpoints query.`, { name: bpQuery })
+          throw clonedRule.error(
+            `ORDER: When nesting @order under @responsive, we do not accept a breakpoints query.`,
+            { name: bpQuery }
+          )
         }
 
         bpQuery = parent.params
+
+        console.log('grandParent.selector ——', grandParent.selector)
+        console.log('parent.selector ——', parent.selector)
 
         if (grandParent.selector) {
           selector = grandParent.selector
@@ -54,10 +62,15 @@ export default postcss.plugin('europacss-order', getConfig => {
       } else if (grandParent.name === 'responsive') {
         // check if grandparent is @responsive
         if (bpQuery) {
-          throw clonedRule.error(`ORDER: When nesting @order under @responsive, we do not accept a breakpoints query.`, { name: bpQuery })
+          throw clonedRule.error(
+            `ORDER: When nesting @order under @responsive, we do not accept a breakpoints query.`,
+            { name: bpQuery }
+          )
         }
 
         bpQuery = grandParent.params
+
+        console.log('parent.selector —— is it &?', parent.selector)
 
         if (parent.selector[0] === '&') {
           selector = parent.selector.replace('&', grandParent.parent.selector)
@@ -70,10 +83,7 @@ export default postcss.plugin('europacss-order', getConfig => {
         selector = parent.selector
       }
 
-
-      const decls = [
-        buildDecl('order', order)
-      ]
+      const decls = [buildDecl('order', order)]
 
       if (wrapInResponsive) {
         const responsiveRule = postcss.atRule({ name: 'responsive', params: bpQuery })
