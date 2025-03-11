@@ -1,5 +1,15 @@
 # Changelog
 
+
+### 0.14.0
+
+- Finally on PostCSS 8...
+- NOTE: Nested at-rules that generate media queries inside of @responsive will
+  now nest the media-queries!
+- Remove deprecated `@container`
+- Deprecate and remove `@row`
+
+
 ### 0.13.1
 
 - Add `@color!`
@@ -81,7 +91,7 @@
 ### 0.9.0
 
 - Allow passing `var(--whatever)` to `@space`.
-- Soft deprecate `@container`. Since `@container` will be part of the CSS spec, we better 
+- Soft deprecate `@container`. Since `@container` will be part of the CSS spec, we better
 get out of the way. You can use `@space container` instead. Also `@space container desktop_md` to
 lock to breakpoint.
 

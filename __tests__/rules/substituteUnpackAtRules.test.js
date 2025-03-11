@@ -195,49 +195,43 @@ it('parses advanced @unpack', () => {
   `
 
   const output = `
-    article h1 {
-      color: blue;
-    }
-
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width >= 0) and (width <= 739px) {
       article {
+        letter-spacing: 0.12rem;
         font-size: 17px;
         line-height: 17px;
-        letter-spacing: 0.12rem;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px) {
+    @media (width >= 740px) and (width <= 1023px) {
       article {
+        letter-spacing: 0.12rem;
         font-size: 17px;
         line-height: 17px;
-        letter-spacing: 0.12rem;
       }
     }
-
-    @media (min-width: 1024px) {
+    @media (width >= 1024px) {
       article {
+        letter-spacing: 0.12rem;
         font-size: 12px;
         line-height: 12px;
-        letter-spacing: 0.12rem;
       }
     }
-
-    @media (min-width: 0) and (max-width: 739px) {
+    article h1 {
+      color: #00f;
+    }
+    @media (width >= 0) and (width <= 739px) {
       article h1 {
         color: red;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px) {
+    @media (width >= 740px) and (width <= 1023px) {
       article h1 {
         color: green;
       }
     }
-
-    @media (min-width: 1024px) {
+    @media (width >= 1024px) {
       article h1 {
-        color: blue;
+        color: #00f;
       }
     }
   `

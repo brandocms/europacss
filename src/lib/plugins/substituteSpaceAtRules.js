@@ -1,11 +1,13 @@
 import _ from 'lodash'
 import buildFullMediaQuery from '../../util/buildFullMediaQuery'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
+import findResponsiveParent from '../../util/findResponsiveParent'
 import postcss from 'postcss'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'
 import buildDecl from '../../util/buildDecl'
 import parseSize from '../../util/parseSize'
 import sizeNeedsBreakpoints from '../../util/sizeNeedsBreakpoints'
+import advancedBreakpointQuery from '../../util/advancedBreakpointQuery'
 
 /**
  * SPACE
@@ -20,23 +22,28 @@ import sizeNeedsBreakpoints from '../../util/sizeNeedsBreakpoints'
  *    @space margin-top sm xs;
  *
  */
-export default postcss.plugin('europacss-space', getConfig => {
-  return function (css, result) {
-    const config = getConfig()
-    const finalRules = []
 
-    css.walkAtRules('space', atRule => processRule(atRule, config, finalRules, false))
-    css.walkAtRules('space!', atRule => processRule(atRule, config, finalRules, true))
+module.exports = getConfig => {
+  const config = getConfig()
 
-    if (finalRules.length) {
-      css.append(finalRules)
+  return {
+    postcssPlugin: 'europacss-space',
+    prepare() {
+      return {
+        AtRule: {
+          space: atRule => {
+            processRule(atRule, config, false)
+          },
+          'space!': atRule => {
+            processRule(atRule, config, true)
+          }
+        }
+      }
     }
   }
-})
+}
 
-function processRule(atRule, config, finalRules, flagAsImportant) {
-  let selector
-
+function processRule(atRule, config, flagAsImportant) {
   if (atRule.parent.type === 'root') {
     throw atRule.error(`SPACING: Should only be used inside a rule, not on root.`)
   }
@@ -49,71 +56,63 @@ function processRule(atRule, config, finalRules, flagAsImportant) {
     theme: { breakpoints, breakpointCollections, spacing }
   } = config
 
+  const parent = atRule.parent
+
   // Clone rule to act upon. We remove the atRule from DOM later, but
   // we still need some data from the original.
   let clonedRule = atRule.clone()
+  let parsedBreakpoints
   let [prop, size, bpQuery] = postcss.list.space(clonedRule.params)
   if (prop === 'container') {
     bpQuery = size
     size = null
   }
 
-  let parent = atRule.parent
-  let grandParent = atRule.parent.parent
-
   // Check if we're nested under a @responsive rule.
   // If so, we don't create a media query, and we also won't
   // accept a query param for @space
-  if (parent.type === 'atrule' && parent.name === 'responsive') {
+  const responsiveParent = findResponsiveParent(atRule)
+
+  if (responsiveParent) {
     if (bpQuery) {
       throw clonedRule.error(
-        `SPACING: When nesting @space under @responsive, we do not accept a breakpoints query.`,
-        { name: bpQuery }
+        `SPACING: @space cannot be nested under @responsive and have a breakpoint query.`,
+        {
+          name: bpQuery
+        }
       )
     }
 
-    bpQuery = parent.params
+    bpQuery = responsiveParent.__mediaQuery
 
-    if (grandParent.selector) {
-      selector = grandParent.selector
-    }
-  } else if (grandParent.name === 'responsive') {
-    // check if grandparent is @responsive
-    if (bpQuery) {
-      throw clonedRule.error(
-        `SPACING: When nesting @space under @responsive, we do not accept a breakpoints query.`,
-        { name: bpQuery }
+    // try to grab the breakpoint
+    if (advancedBreakpointQuery(responsiveParent.__mediaQuery)) {
+      // parse the breakpoints
+      parsedBreakpoints = extractBreakpointKeys(
+        { breakpoints, breakpointCollections },
+        responsiveParent.__mediaQuery
       )
     }
-
-    bpQuery = grandParent.params
-
-    if (parent.selector[0] === '&') {
-      selector = parent.selector.replace('&', grandParent.parent.selector)
-    } else if (parent.selector === '> *') {
-      selector = grandParent.parent.selector + ' ' + parent.selector
-    } else {
-      selector = parent.selector
-    }
-  }
-
-  if (!selector && parent.selector) {
-    selector = parent.selector
   }
 
   const src = atRule.source
 
-  atRule.remove()
+  if (!parsedBreakpoints && bpQuery && advancedBreakpointQuery(bpQuery)) {
+    parsedBreakpoints = extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
+  }
 
   if (bpQuery) {
     // We have a breakpoint query, like '>=sm'. Extract all breakpoints
     // we need media queries for. Since there is a breakpoint query, we
     // HAVE to generate breakpoints even if the sizeQuery doesn't
     // call for it.
-    const affectedBreakpoints = extractBreakpointKeys(
-      { breakpoints, breakpointCollections },
-      bpQuery
-    )
+    let affectedBreakpoints
+
+    if (!parsedBreakpoints) {
+      affectedBreakpoints = extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
+    } else {
+      affectedBreakpoints = parsedBreakpoints
+    }
 
     _.each(affectedBreakpoints, bp => {
       let parsedSize = null
@@ -127,16 +126,9 @@ function processRule(atRule, config, finalRules, flagAsImportant) {
         params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
       })
 
-      if (selector) {
-        const originalRule = postcss.rule({ selector }).append(sizeDecls)
-        originalRule.source = src
-        mediaRule.append(originalRule)
-      } else {
-        mediaRule.append(sizeDecls)
-        mediaRule.source = src
-      }
-
-      finalRules.push(mediaRule)
+      mediaRule.append(sizeDecls)
+      mediaRule.source = src
+      atRule.before(mediaRule)
     })
   } else {
     if (sizeNeedsBreakpoints(spacing, size)) {
@@ -150,10 +142,8 @@ function processRule(atRule, config, finalRules, flagAsImportant) {
           params: buildFullMediaQuery(breakpoints, bp)
         })
         const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant, config, bp)
-        const originalRule = postcss.rule({ selector: parent.selector }).append(sizeDecls)
-        originalRule.source = src
-        mediaRule.append(originalRule)
-        finalRules.push(mediaRule)
+        mediaRule.append(sizeDecls)
+        atRule.before(mediaRule)
       })
     } else {
       const parsedSize = parseSize(clonedRule, config, size)
@@ -162,13 +152,10 @@ function processRule(atRule, config, finalRules, flagAsImportant) {
     }
   }
 
+  atRule.remove()
+
   // check if parent has anything
   if (parent && !parent.nodes.length) {
     parent.remove()
-  }
-
-  // check if grandparent has anything
-  if (grandParent && !grandParent.nodes.length) {
-    grandParent.remove()
   }
 }

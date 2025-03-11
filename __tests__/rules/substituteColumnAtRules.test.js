@@ -294,7 +294,7 @@ it('parses regular @column + gutter + total gutter', () => {
       .inner {
         @column 2/10:1;
       }
-      
+
       .inner2 {
         @column 2:1/10:1;
       }
@@ -546,13 +546,11 @@ it('runs correctly inside @responsive', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width >= 0) and (width <= 739px) {
       article {
+        flex: 0 0 calc(50% - 10px);
+        max-width: calc(50% - 10px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(50% - 10px);
-        max-width: calc(50% - 10px)
       }
     }
   `
@@ -603,31 +601,27 @@ it('runs nested under advanced breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 1024px) and (max-width: 1249px) {
-      article {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(50% + 25px);
-        max-width: calc(50% + 25px)
+    @media (width >= 1024px) {
+      @media (width >= 1024px) and (width <= 1249px) {
+        article {
+          flex: 0 0 calc(50% + 25px);
+          max-width: calc(50% + 25px);
+          position: relative;
+        }
       }
-    }
-    @media (min-width: 1250px) and (max-width: 1919px) {
-      article {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(50% + 35px);
-        max-width: calc(50% + 35px)
+      @media (width >= 1250px) and (width <= 1919px) {
+        article {
+          flex: 0 0 calc(50% + 35px);
+          max-width: calc(50% + 35px);
+          position: relative;
+        }
       }
-    }
-    @media (min-width: 1920px) {
-      article {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(50% + 45px);
-        max-width: calc(50% + 45px)
+      @media (width >= 1920px) {
+        article {
+          flex: 0 0 calc(50% + 45px);
+          max-width: calc(50% + 45px);
+          position: relative;
+        }
       }
     }
   `

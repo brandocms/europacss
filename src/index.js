@@ -27,9 +27,13 @@ module.exports = config => {
   const resolvedConfigPath = resolveConfigPath(config)
   const cfgFunction = getConfigFunction(resolvedConfigPath || config)
 
-  const preludium = [substituteRowAtRules(cfgFunction), postcssNested(), postcssExtend()]
+  const preludium = [
+    substituteRowAtRules(cfgFunction),
+    postcssNested({ bubble: ['responsive'] }),
+    postcssExtend()
+  ]
 
-  const postludium = [postcssNested(), formatCSS]
+  const postludium = [formatCSS]
 
   const configuredEuropaPlugins = plugins.map(plug => {
     return plug(cfgFunction)

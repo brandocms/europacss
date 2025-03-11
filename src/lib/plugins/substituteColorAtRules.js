@@ -1,18 +1,29 @@
 import _ from 'lodash'
-import postcss from 'postcss'
 import buildDecl from '../../util/buildDecl'
 
-export default postcss.plugin('europacss-color', getConfig => {
-  return function (css) {
-    const config = getConfig()
-    const finalRules = []
+module.exports = getConfig => {
+  const config = getConfig()
 
-    css.walkAtRules('color!', atRule => processRule(atRule, config, finalRules, true))
-    css.walkAtRules('color', atRule => processRule(atRule, config, finalRules, false))
+  return {
+    postcssPlugin: 'europacss-color',
+    prepare() {
+      return {
+        AtRule: {
+          color: atRule => {
+            processRule(atRule, config, false)
+          },
+          'color!': atRule => {
+            processRule(atRule, config, true)
+          }
+        }
+      }
+    }
   }
-})
+}
 
-function processRule(atRule, config, finalRules, flagAsImportant) {
+module.exports.postcss = true
+
+function processRule(atRule, config, flagAsImportant) {
   const parent = atRule.parent
 
   if (parent.type === 'root') {

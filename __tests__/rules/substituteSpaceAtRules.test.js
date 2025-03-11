@@ -420,23 +420,23 @@ it('parses @space translateX', () => {
   `
 
   const output = `
+    @media (width >= 0) and (width <= 739px) {
+      body article .test {
+        transform: translateX(calc(100vw + 5px));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      body article .test {
+        transform: translateX(calc(100vw - 5px));
+      }
+    }
+    @media (width >= 1024px) {
+      body article .test {
+        transform: translateX(100vw);
+      }
+    }
     body article .test {
       font-size: 18px;
-    }
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test {
-        transform: translateX(calc(100vw - 15px + 20px));
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px){
-      body article .test {
-        transform: translateX(calc(100vw - 35px + 30px));
-      }
-    }
-    @media (min-width: 1024px){
-      body article .test {
-        transform: translateX(calc(100vw - 50px + 50px));
-      }
     }
   `
 
@@ -455,23 +455,23 @@ it('parses @space calced', () => {
   `
 
   const output = `
+    @media (width >= 0) and (width <= 739px) {
+      body article .test {
+        width: calc(100vw + 5px);
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      body article .test {
+        width: calc(100vw - 5px);
+      }
+    }
+    @media (width >= 1024px) {
+      body article .test {
+        width: 100vw;
+      }
+    }
     body article .test {
       font-size: 18px;
-    }
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test {
-        width: calc(100vw - 15px + 20px);
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px){
-      body article .test {
-        width: calc(100vw - 35px + 30px);
-      }
-    }
-    @media (min-width: 1024px){
-      body article .test {
-        width: calc(100vw - 50px + 50px);
-      }
     }
   `
 
@@ -490,26 +490,23 @@ it('parses @space per mq size', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 15px;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       body article .test {
         margin-top: 25px;
       }
     }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 50px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -528,14 +525,13 @@ it('parses @space only for requested variable bp', () => {
   `
 
   const output = `
+    @media (width >= 740px) and (width <= 1023px) {
+      body article .test {
+        margin-top: calc(17.6678vw - 80.7421px);
+      }
+    }
     body article .test {
       font-size: 18px;
-    }
-
-    @media (min-width: 740px) and (max-width: 1023px){
-      body article .test {
-        margin-top: calc(50px + 50 * ((100vw - 740px) / 283));
-      }
     }
   `
 
@@ -554,14 +550,13 @@ it('parses @space only for requested bp', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 75px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -580,14 +575,13 @@ it('parses @space! only for requested bp', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 15px !important;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -606,13 +600,13 @@ it('parses @space between()', () => {
   `
 
   const output = `
+    @media (width >= 1024px) {
+      body article .test {
+        margin-top: calc(20vw - 164.8px);
+      }
+    }
     body article .test {
       font-size: 18px;
-    }
-    @media (min-width: 1024px){
-      body article .test {
-        margin-top: calc(40px + 40 * ((100vw - 1024px) / 200));
-      }
     }
   `
 
@@ -631,14 +625,13 @@ it('parses @space with px', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 40px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -657,14 +650,13 @@ it('parses @space! with px', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 40px !important;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -797,7 +789,7 @@ it('parses @space for between() breakpoint', () => {
 
 //   const output = `
 //     @media (min-width: 0) and (max-width: 739px){
-//       body article .test{
+//       body article .test {
 //         margin-top: calc(200px + 200 * ((100vw - 320px) / 739))
 //       }
 //     }
@@ -818,13 +810,13 @@ it('parses @space for fraction', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: calc(50% - 10px);
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -843,23 +835,23 @@ it('parses @space for fraction with gutter multiplier', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: calc(50% - 30px);
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         margin-top: calc(50% - 45px);
       }
     }
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       article {
         margin-top: calc(50% - 75px);
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -913,29 +905,31 @@ it('parses advanced @responsive @space for fraction with gutter multiplier', () 
   `
 
   const output = `
-   @media (min-width: 768px) and (max-width: 1023px){
-      article{
-        margin-top: calc(16.666667% + 5.833333px)
+    @media (width >= 768px) {
+      @media (width >= 768px) and (width <= 1023px) {
+        article {
+          margin-top: calc(16.6667% + 5.83333px);
+        }
       }
-    }
-    @media (min-width: 1024px) and (max-width: 1199px){
-      article{
-        margin-top: calc(16.666667% + 11.666667px)
+      @media (width >= 1024px) and (width <= 1199px) {
+        article {
+          margin-top: calc(16.6667% + 11.6667px);
+        }
       }
-    }
-    @media (min-width: 1200px) and (max-width: 1559px){
-      article{
-        margin-top: calc(16.666667% + 13.333333px)
+      @media (width >= 1200px) and (width <= 1559px) {
+        article {
+          margin-top: calc(16.6667% + 13.3333px);
+        }
       }
-    }
-    @media (min-width: 1560px) and (max-width: 1919px){
-      article{
-        margin-top: calc(16.666667% + 16.666667px)
+      @media (width >= 1560px) and (width <= 1919px) {
+        article {
+          margin-top: calc(16.6667% + 16.6667px);
+        }
       }
-    }
-    @media (min-width: 1920px){
-      article{
-        margin-top: calc(16.666667% + 20px)
+      @media (width >= 1920px) {
+        article {
+          margin-top: calc(16.6667% + 20px);
+        }
       }
     }
   `
@@ -955,14 +949,13 @@ it('parses @space for fraction of breakpoint key', () => {
   `
 
   const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-top: 5px;
+      }
+    }
     article {
       font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
-      article {
-        margin-top: calc(10px/2);
-      }
     }
   `
 
@@ -981,14 +974,13 @@ it('parses @space for 0.5 of gutter', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 10px;
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1007,14 +999,13 @@ it('parses @space for 1.5 of gutter', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 30px;
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1033,26 +1024,23 @@ it('parses @space for fraction of breakpoint key for all breakpoints', () => {
   `
 
   const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-top: 5px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        margin-top: 10px;
+      }
+    }
+    @media (width >= 1024px) {
+      article {
+        margin-top: 15px;
+      }
+    }
     article {
       font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
-      article {
-        margin-top: calc(10px/2);
-      }
-    }
-
-    @media (min-width: 740px) and (max-width: 1023px){
-      article {
-        margin-top: calc(20px/2);
-      }
-    }
-
-    @media (min-width: 1024px){
-      article {
-        margin-top: calc(30px/2);
-      }
     }
   `
 
@@ -1071,23 +1059,23 @@ it('@space with fraction and no breakpointQuery', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         margin-left: calc(50% - 10px);
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         margin-left: calc(50% - 15px);
       }
     }
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       article {
         margin-left: calc(50% - 25px);
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1106,14 +1094,13 @@ it('parses @space as gutter multiplier for regular number', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: 20px;
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1132,14 +1119,13 @@ it('parses @space as negative gutter multiplier for regular number', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: -20px;
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1158,26 +1144,23 @@ it('parses @space as gutter multiplier for regular number across bps', () => {
   `
 
   const output = `
-    article {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: 20px;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         padding-left: 30px;
       }
     }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       article {
         padding-left: 50px;
       }
+    }
+    article {
+      font-size: 18px;
     }
   `
 
@@ -1196,14 +1179,13 @@ it('parses @space with no max for last bp', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 50px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -1322,20 +1304,18 @@ it('parses @space with q', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 25px;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       body article .test {
         margin-top: 50px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -1363,30 +1343,26 @@ it('parses @space with > *', () => {
 
   const output = `
     article {
-      display: flex;
       flex-wrap: nowrap;
+      display: flex;
     }
-
-    article > *:first-of-type {
-      margin-left: 0;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article > * {
         margin-left: 40px;
       }
     }
-
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       article > * {
         margin-left: 60px;
       }
     }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       article > * {
         margin-left: 100px;
       }
+    }
+    article > :first-of-type {
+      margin-left: 0;
     }
   `
 
@@ -1405,20 +1381,18 @@ it('parses @space with multiple split bps', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 25px;
       }
     }
-
-    @media (min-width: 1024px){
+    @media (width >= 1024px) {
       body article .test {
         margin-top: 75px;
       }
+    }
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -1473,9 +1447,11 @@ it('works inside @responsive', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        margin-top: 25px
+    @media (width >= 0) and (width <= 739px) {
+      @media (width >= 0) and (width <= 739px) {
+        article {
+          margin-top: 25px;
+        }
       }
     }
   `
@@ -1537,15 +1513,16 @@ it('works inside @responsive with q string', () => {
   `
 
   const output = `
-    @media (min-width: 740px) and (max-width: 1023px){
-      article{
-        margin-top: 50px
+    @media (width >= 740px) {
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: 50px;
+        }
       }
-    }
-
-    @media (min-width: 1024px){
-      article{
-        margin-top: 75px
+      @media (width >= 1024px) {
+        article {
+          margin-top: 75px;
+        }
       }
     }
   `
@@ -1565,9 +1542,11 @@ it('works inside @responsive as dbl parent', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        margin-top: 25px
+    @media (width >= 0) and (width <= 739px) {
+      @media (width >= 0) and (width <= 739px) {
+        article {
+          margin-top: 25px;
+        }
       }
     }
   `
@@ -1603,9 +1582,11 @@ it('can run from @responsive root', () => {
   `
 
   const output = `
-    @media (min-width: 1024px){
-      .alert-yellow{
-        margin-top: 30px
+    @media (width >= 1024px) {
+      @media (width >= 1024px) {
+        .alert-yellow {
+          margin-top: 30px;
+        }
       }
     }
   `
@@ -1625,10 +1606,6 @@ it('parses @space with breakpointCollection', () => {
   `
 
   const output = `
-    body article .test {
-      font-size: 18px;
-    }
-
     @media (min-width: 0) and (max-width: 739px){
       body article .test {
         margin-top: 25px;
@@ -1639,6 +1616,10 @@ it('parses @space with breakpointCollection', () => {
       body article .test {
         margin-top: 50px;
       }
+    }
+
+    body article .test {
+      font-size: 18px;
     }
   `
 
@@ -1667,20 +1648,20 @@ it('parses @space with > * under responsive!', () => {
   `
 
   const output = `
-   @media (min-width: 740px) and (max-width: 1023px){
-     article > *{
-       margin-left: 60px;
-     }
-   }
-   @media (min-width: 740px) and (max-width: 1023px){
-     article{
-       display: flex;
-       flex-wrap: nowrap;
-     }
-     article > *:first-of-type {
-       margin-left: 0;
-     }
-   }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        flex-wrap: nowrap;
+        display: flex;
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article > * {
+          margin-left: 60px;
+        }
+      }
+      article > :first-of-type {
+        margin-left: 0;
+      }
+    }
   `
 
   return run(input, DEFAULT_CFG).then(result => {

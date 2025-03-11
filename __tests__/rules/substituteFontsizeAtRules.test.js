@@ -858,19 +858,19 @@ it('parses @fontsize correctly inside @responsive', () => {
   `
 
   const output = `
-    @media (min-width: 740px) and (max-width: 1023px){
-      h1{
-        font-size: 17px;
-        line-height: 1.3;
+    @media (width >= 740px) {
+      @media (width >= 740px) and (width <= 1023px) {
+        h1 {
+          font-size: 17px;
+          line-height: 1.3;
+        }
       }
-    }
-    @media (min-width: 1024px){
-      h1{
-        font-size: 19px;
-        line-height: 1.3;
+      @media (width >= 1024px) {
+        h1 {
+          font-size: 19px;
+          line-height: 1.3;
+        }
       }
-    }
-    @media (min-width: 740px){
       h1 {
         font-family: SerifFont, serif;
       }
@@ -1063,9 +1063,11 @@ it('runs correctly inside @responsive', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        font-size: 19px
+    @media (width >= 0) and (width <= 739px) {
+      @media (width >= 0) and (width <= 739px) {
+        article {
+          font-size: 19px;
+        }
       }
     }
   `

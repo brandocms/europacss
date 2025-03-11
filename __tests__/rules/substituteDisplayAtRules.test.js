@@ -1,7 +1,7 @@
 const postcss = require('postcss')
 const plugin = require('../../src')
 
-function run (input, opts) {
+function run(input, opts) {
   return postcss([plugin(opts)]).process(input, { from: undefined })
 }
 
@@ -61,6 +61,33 @@ it('parses @display as child under @responsive', () => {
   const output = `
   @media (min-width: 0) and (max-width: 739px) {
     .inner article {
+      display: flex
+    }
+  }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @display as nested child under @responsive', () => {
+  const input = `
+    .inner {
+      article {
+        @responsive xs {
+          figure {
+            @display flex;
+          }
+        }
+      }
+    }
+  `
+
+  const output = `
+  @media (min-width: 0) and (max-width: 739px) {
+    .inner article figure {
       display: flex
     }
   }

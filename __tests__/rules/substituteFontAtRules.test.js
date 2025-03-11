@@ -55,33 +55,33 @@ it('parses @font with size', () => {
   `
 
   const output = `
-    article {
-      font-family: Georgia,Cambria,"Times New Roman",Times,serif;
-    }
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width >= 0) and (width <= 739px) {
       article {
         font-size: 12px;
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px) {
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         font-size: 12px;
       }
     }
-    @media (min-width: 1024px) and (max-width: 1398px) {
+    @media (width >= 1024px) and (width <= 1398px) {
       article {
         font-size: 12px;
       }
     }
-    @media (min-width: 1399px) and (max-width: 1899px) {
+    @media (width >= 1399px) and (width <= 1899px) {
       article {
         font-size: 12px;
       }
     }
-    @media (min-width: 1900px) {
+    @media (width >= 1900px) {
       article {
         font-size: 14px;
       }
+    }
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
   `
 
@@ -100,33 +100,32 @@ it('parses @font with size and breakpoints', () => {
   `
 
   const output = `
-    article {
-      font-family: Georgia,Cambria,"Times New Roman",Times,serif;
-      font-family: Georgia,Cambria,"Times New Roman",Times,serif;
-    }
-    @media (min-width: 1399px) and (max-width: 1899px) {
+    @media (width >= 1399px) and (width <= 1899px) {
       article {
         font-size: 12px;
         line-height: 1.53;
       }
     }
-    @media (min-width: 1900px) {
+    @media (width >= 1900px) {
       article {
         font-size: 14px;
         line-height: 1.53;
       }
     }
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width >= 0) and (width <= 739px) {
       article {
         font-size: 16.8px;
         line-height: 1.53;
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px) {
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         font-size: 16.8px;
         line-height: 1.53;
       }
+    }
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
   `
 
@@ -144,21 +143,21 @@ it('parses @font with size in pixels and breakpoints', () => {
   `
 
   const output = `
-  article {
-    font-family: Georgia,Cambria,\"Times New Roman\",Times,serif;
-  }
-  @media (min-width: 1399px) and (max-width: 1899px) {
-    article {
-      font-size: 18px;
-      line-height: 1.25;
+    @media (width >= 1399px) and (width <= 1899px) {
+      article {
+        font-size: 18px;
+        line-height: 1.25;
+      }
     }
-  }
-  @media (min-width: 1900px) {
-    article {
-      font-size: 18px;
-      line-height: 1.25;
+    @media (width >= 1900px) {
+      article {
+        font-size: 18px;
+        line-height: 1.25;
+      }
     }
-  }
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
+    }
   `
 
   return run(input).then(result => {

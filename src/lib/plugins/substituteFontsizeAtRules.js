@@ -1,10 +1,12 @@
-import _ from 'lodash'
+import _, { after } from 'lodash'
 import buildFullMediaQuery from '../../util/buildFullMediaQuery'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
 import postcss from 'postcss'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'
 import buildDecl from '../../util/buildDecl'
 import parseFontSizeQuery from '../../util/parseFontSizeQuery'
+import findResponsiveParent from '../../util/findResponsiveParent'
+import sizeNeedsBreakpoints from '../../util/sizeNeedsBreakpoints'
 
 /**
  * FONTSIZE
@@ -19,133 +21,103 @@ import parseFontSizeQuery from '../../util/parseFontSizeQuery'
  *    @fontsize xl >md;
  *
  */
-export default postcss.plugin('europacss-fontsize', getConfig => {
-  return function (css) {
-    const config = getConfig()
-    const { theme } = config
-    const { breakpoints, breakpointCollections } = theme
 
-    const responsiveRules = postcss.root()
-    const finalRules = []
+module.exports = getConfig => {
+  const config = getConfig()
 
-    css.walkAtRules('fontsize', atRule => {
-      let selector
-      const src = atRule.source
-
-      if (atRule.parent.type === 'root') {
-        throw atRule.error(`FONTSIZE: Can only be used inside a rule, not on root.`)
-      }
-
-      if (atRule.nodes) {
-        throw atRule.error(`FONTSIZE: @fontsize should not include children.`)
-      }
-
-      // clone parent, but without atRule
-      let clonedRule = atRule.clone()
-      let [fontSizeQuery, bpQuery] = postcss.list.space(clonedRule.params)
-      let parent = atRule.parent
-      let grandParent = atRule.parent.parent
-
-      // Check if we're nested under a @responsive rule.
-      // If so, we don't create a media query, and we also won't
-      // accept a query param for @fontsize
-      if (parent.type === 'atrule' && parent.name === 'responsive') {
-        if (bpQuery) {
-          throw clonedRule.error(
-            `FONTSIZE: When nesting @fontsize under @responsive, we do not accept a breakpoints query.`,
-            { name: bpQuery }
-          )
-        }
-
-        bpQuery = parent.params
-
-        if (grandParent.selector) {
-          selector = grandParent.selector
-        }
-      } else if (grandParent.name === 'responsive') {
-        // check if grandparent is @responsive
-        if (bpQuery) {
-          throw clonedRule.error(
-            `FONTSIZE: When nesting @fontsize under @responsive, we do not accept a breakpoints query.`,
-            { name: bpQuery }
-          )
-        }
-
-        bpQuery = grandParent.params
-
-        if (parent.selector[0] === '&') {
-          selector = parent.selector.replace('&', grandParent.parent.selector)
-        } else {
-          selector = parent.selector
+  return {
+    postcssPlugin: 'europacss-fontsize',
+    prepare({ root }) {
+      return {
+        AtRule: {
+          fontsize: atRule => processRule(atRule, config)
         }
       }
-
-      if (!selector && parent.selector) {
-        selector = parent.selector
-      }
-
-      atRule.remove()
-
-      if (bpQuery) {
-        // We have a q, like '>=sm'. Extract all breakpoints we need media queries for
-        const affectedBreakpoints = extractBreakpointKeys(
-          { breakpoints, breakpointCollections },
-          bpQuery
-        )
-
-        _.each(affectedBreakpoints, bp => {
-          let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
-          const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
-            buildDecl(prop, parsedFontSizeQuery[prop])
-          )
-
-          const mediaRule = clonedRule.clone({
-            name: 'media',
-            params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
-          })
-
-          if (selector) {
-            const originalRule = postcss.rule({ selector }).append(...fontDecls)
-            originalRule.source = src
-            mediaRule.append(originalRule)
-          } else {
-            mediaRule.append(fontDecls)
-          }
-
-          finalRules.push(mediaRule)
-        })
-      } else {
-        _.keys(breakpoints).forEach(bp => {
-          let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
-          const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
-            buildDecl(prop, parsedFontSizeQuery[prop])
-          )
-          const mediaRule = clonedRule.clone({
-            name: 'media',
-            params: buildFullMediaQuery(breakpoints, bp)
-          })
-          const originalRule = postcss.rule({ selector: parent.selector })
-          originalRule.source = src
-
-          originalRule.append(...fontDecls)
-          mediaRule.append(originalRule)
-          finalRules.push(mediaRule)
-        })
-      }
-
-      // check if parent has anything
-      if (parent && !parent.nodes.length) {
-        parent.remove()
-      }
-
-      // check if grandparent has anything
-      if (grandParent && !grandParent.nodes.length) {
-        grandParent.remove()
-      }
-    })
-
-    if (finalRules.length) {
-      css.append(finalRules)
     }
   }
-})
+}
+
+module.exports.postcss = true
+
+function processRule(atRule, config) {
+  const { theme } = config
+  const { breakpoints, breakpointCollections, spacing } = theme
+
+  const src = atRule.source
+
+  if (atRule.parent.type === 'root') {
+    throw atRule.error(`FONTSIZE: Can only be used inside a rule, not on root.`)
+  }
+
+  if (atRule.nodes) {
+    throw atRule.error(`FONTSIZE: @fontsize should not include children.`)
+  }
+
+  // clone parent, but without atRule
+  let clonedRule = atRule.clone()
+  let [fontSizeQuery, bpQuery] = postcss.list.space(clonedRule.params)
+  let parent = atRule.parent
+  let responsiveParent = findResponsiveParent(atRule)
+
+  // Check if we're nested under a @responsive rule.
+  // If so, we don't create a media query, and we also won't
+  // accept a query param for @fontsize
+  if (responsiveParent) {
+    if (bpQuery) {
+      throw clonedRule.error(
+        `FONTSIZE: When nesting @fontsize under @responsive, we do not accept a breakpoints query.`,
+        { name: bpQuery }
+      )
+    }
+
+    bpQuery = responsiveParent.__mediaQuery
+  }
+
+  if (bpQuery) {
+    // We have a q, like '>=sm'. Extract all breakpoints we need media queries for
+    const affectedBreakpoints = extractBreakpointKeys(
+      { breakpoints, breakpointCollections },
+      bpQuery
+    )
+
+    _.each(affectedBreakpoints, bp => {
+      let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
+      const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
+        buildDecl(prop, parsedFontSizeQuery[prop])
+      )
+
+      const mediaRule = clonedRule.clone({
+        name: 'media',
+        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
+      })
+
+      mediaRule.append(...fontDecls)
+      mediaRule.source = src
+      atRule.before(mediaRule)
+    })
+  } else {
+    if (sizeNeedsBreakpoints(spacing, fontSizeQuery)) {
+      _.keys(breakpoints).forEach(bp => {
+        let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
+        const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
+          buildDecl(prop, parsedFontSizeQuery[prop])
+        )
+        const mediaRule = clonedRule.clone({
+          name: 'media',
+          params: buildFullMediaQuery(breakpoints, bp)
+        })
+
+        mediaRule.append(...fontDecls)
+        mediaRule.source = src
+        atRule.before(mediaRule)
+      })
+    }
+  }
+
+  atRule.remove()
+
+  // check if parent has anything
+  if (parent && !parent.nodes.length) {
+    parent.remove()
+  }
+}

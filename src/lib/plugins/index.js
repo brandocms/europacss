@@ -6,7 +6,6 @@ import substituteOrderAtRules from './substituteOrderAtRules'
 import substituteEuropaAtRules from './substituteEuropaAtRules'
 import substituteIterateAtRules from './substituteIterateAtRules'
 import substituteUnpackAtRules from './substituteUnpackAtRules'
-import substituteContainerAtRules from './substituteContainerAtRules'
 import substituteAtruleAliases from './substituteAtruleAliases'
 import substituteSpaceAtRules from './substituteSpaceAtRules'
 import substituteFontAtRules from './substituteFontAtRules'
@@ -26,7 +25,6 @@ export default [
   substituteOrderAtRules,
   substituteIterateAtRules,
   substituteUnpackAtRules,
-  substituteContainerAtRules,
   substituteAtruleAliases,
   substituteSpaceAtRules,
   substituteFontAtRules,

@@ -9,32 +9,50 @@ import reduceCSSCalc from 'reduce-css-calc'
  * Embed responsive
  */
 
-export default postcss.plugin('europacss-embed-responsive', getConfig => {
-  return function (css) {
-    css.walkAtRules('embed-responsive', atRule => {
-      const src = atRule.source
+module.exports = getConfig => {
+  const config = getConfig()
 
-      if (atRule.parent.type === 'root') {
-        throw atRule.error(`EMBED-RESPONSIVE: Can only be used inside a rule, not on root.`)
+  return {
+    postcssPlugin: 'europacss-embed-responsive',
+    prepare() {
+      return {
+        AtRule: {
+          'embed-responsive': atRule => {
+            processRule(atRule, config, false)
+          }
+        }
       }
-
-      if (!atRule.params) {
-        throw atRule.error(`EMBED-RESPONSIVE: Needs aspect ratio. I.e: @embed-responsive 16/9;`)
-      }
-
-      const ratio = atRule.params.split('/')
-
-      const decls = [
-        buildDecl('padding-top', reduceCSSCalc(`calc(${parseFloat(ratio[1])}/${parseFloat(ratio[0])}*100`) + '%')
-      ]
-      // create a :before rule
-      const pseudoBefore = postcss.rule({ selector: '&::before' })
-      pseudoBefore.source = src
-      atRule.parent.insertAfter(atRule, pseudoBefore.append(...decls))
-
-      const styles = postcss.parse(fs.readFileSync(`${__dirname}/css/embed-responsive.css`, 'utf8'))
-      atRule.parent.insertAfter(atRule, updateSource([...styles.nodes], src))
-      atRule.remove()
-    })
+    }
   }
-})
+}
+
+module.exports.postcss = true
+
+function processRule(atRule, _config, _flagAsImportant) {
+  const src = atRule.source
+
+  if (atRule.parent.type === 'root') {
+    throw atRule.error(`EMBED-RESPONSIVE: Can only be used inside a rule, not on root.`)
+  }
+
+  if (!atRule.params) {
+    throw atRule.error(`EMBED-RESPONSIVE: Needs aspect ratio. I.e: @embed-responsive 16/9;`)
+  }
+
+  const ratio = atRule.params.split('/')
+
+  const decls = [
+    buildDecl(
+      'padding-top',
+      reduceCSSCalc(`calc(${parseFloat(ratio[1])}/${parseFloat(ratio[0])}*100`) + '%'
+    )
+  ]
+  // create a :before rule
+  const pseudoBefore = postcss.rule({ selector: '&::before' })
+  pseudoBefore.source = src
+  atRule.parent.insertAfter(atRule, pseudoBefore.append(...decls))
+
+  const styles = postcss.parse(fs.readFileSync(`${__dirname}/css/embed-responsive.css`, 'utf8'))
+  atRule.parent.insertAfter(atRule, updateSource([...styles.nodes], src))
+  atRule.remove()
+}

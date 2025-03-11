@@ -15,34 +15,36 @@ it('sets column gap and display grid', () => {
 
   const output = `
     article {
-      display: grid;
       grid-template-columns: repeat(12, 1fr);
-      color: blue;
+      display: grid;
     }
-    @media(min-width: 0) and (max-width: 739px){
+    @media (width >= 0) and (width <= 739px) {
       article {
         grid-column-gap: 25px;
       }
     }
-    @media(min-width: 740px) and (max-width: 1023px){
+    @media (width >= 740px) and (width <= 1023px) {
       article {
         grid-column-gap: 35px;
       }
     }
-    @media(min-width: 1024px) and (max-width: 1398px){
+    @media (width >= 1024px) and (width <= 1398px) {
       article {
         grid-column-gap: 50px;
       }
     }
-    @media(min-width: 1399px) and (max-width: 1899px){
+    @media (width >= 1399px) and (width <= 1899px) {
       article {
         grid-column-gap: 50px;
       }
     }
-    @media(min-width: 1900px){
+    @media (width >= 1900px) {
       article {
         grid-column-gap: 60px;
       }
+    }
+    article {
+      color: #00f;
     }
   `
 

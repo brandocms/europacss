@@ -5,47 +5,57 @@ import buildDecl from '../../util/buildDecl'
 /**
  * Aliases and shortcuts to other at-rules
  */
+module.exports = getConfig => {
+  const config = getConfig()
 
-export default postcss.plugin('europacss-font', getConfig => {
-  return function (css) {
-    const { theme } = getConfig()
-
-    css.walkAtRules('font', atRule => {
-      const parent = atRule.parent
-      if (parent.type === 'root') {
-        throw atRule.error(`FONT: Can only be used inside a rule, not on root.`)
+  return {
+    postcssPlugin: 'europacss-font',
+    prepare() {
+      return {
+        AtRule: {
+          font: atRule => {
+            processRule(atRule, config)
+          }
+        }
       }
-
-      if (atRule.nodes) {
-        throw atRule.error(`FONT: @font should not include children.`)
-      }
-
-      let [family, fsQuery, bpQuery] = postcss.list.space(atRule.params)
-
-      const fsParams = fsQuery ? fsQuery + (bpQuery ? ' ' + bpQuery : '') : null
-      let ff = theme.typography.families[family]
-
-      if (!ff) {
-        throw atRule.error(`FONT: Could not find \`${family}\` in typography.families config`)
-      }
-
-      if (ff.length) {
-        ff = ff.join(',')
-      }
-
-      const decls = [
-        buildDecl('font-family', ff),
-      ]
-
-      if (fsParams) {
-        // insert a @fontsize at rule after this
-        const fsRule = postcss.atRule({ name: 'fontsize', params: fsParams })
-        fsRule.source = atRule.source
-        parent.insertBefore(atRule, fsRule)
-      }
-
-      parent.insertBefore(atRule, ...decls)
-      atRule.remove()
-    })
+    }
   }
-})
+}
+
+module.exports.postcss = true
+
+function processRule(atRule, config) {
+  const parent = atRule.parent
+  if (parent.type === 'root') {
+    throw atRule.error(`FONT: Can only be used inside a rule, not on root.`)
+  }
+
+  if (atRule.nodes) {
+    throw atRule.error(`FONT: @font should not include children.`)
+  }
+
+  let [family, fsQuery, bpQuery] = postcss.list.space(atRule.params)
+
+  const fsParams = fsQuery ? fsQuery + (bpQuery ? ' ' + bpQuery : '') : null
+  let ff = config.theme.typography.families[family]
+
+  if (!ff) {
+    throw atRule.error(`FONT: Could not find \`${family}\` in typography.families config`)
+  }
+
+  if (ff.length) {
+    ff = ff.join(',')
+  }
+
+  const decls = [buildDecl('font-family', ff)]
+
+  if (fsParams) {
+    // insert a @fontsize at rule after this
+    const fsRule = postcss.atRule({ name: 'fontsize', params: fsParams })
+    fsRule.source = atRule.source
+    parent.insertBefore(atRule, fsRule)
+  }
+
+  parent.append(...decls)
+  atRule.remove()
+}
