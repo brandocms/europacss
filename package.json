@@ -10,7 +10,7 @@
     "helpers"
   ],
   "scripts": {
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest __tests__",
+    "test": "jest __tests__",
     "coverage": "jest __tests__ --coverage",
     "prebuild": "rimraf lib",
     "build": "swc src --out-dir lib --copy-files"
