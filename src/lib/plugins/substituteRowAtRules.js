@@ -9,9 +9,6 @@ module.exports = getConfig => {
           row: atRule => {
             processRule(atRule)
           }
-        },
-        OnceExit() {
-          console.log('=> OnceExit — @row')
         }
       }
     }

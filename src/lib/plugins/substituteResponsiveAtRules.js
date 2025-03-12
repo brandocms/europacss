@@ -13,9 +13,6 @@ module.exports = getConfig => {
           responsive: atRule => {
             processRule(atRule, config, finalRules)
           }
-        },
-        OnceExit() {
-          console.log('=> OnceExit — @responsive')
         }
       }
     }

@@ -10,7 +10,6 @@
     "helpers"
   ],
   "scripts": {
-    "dev": "babel src --out-dir lib --copy-files && yalc push",
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest __tests__",
     "coverage": "jest __tests__ --coverage",
     "prebuild": "rimraf lib",
@@ -24,15 +23,20 @@
   },
   "homepage": "https://github.com/brandocms/europacss",
   "files": [
+    "src",
     "lib",
     "stubs"
   ],
   "dependencies": {
+    "@outstand/postcss-extend-rule": "^4.1.2",
+    "css-mqgroup": "^7.1.0",
     "lodash": "^4.17.21",
     "normalize.css": "^8.0.1",
-    "@outstand/postcss-extend-rule": "^4.0.0",
+    "postcss-combine-duplicated-selectors": "^10.0.3",
+    "postcss-extend-rule": "^4.0.0",
     "postcss-functions": "^4.0.0",
     "postcss-nested": "7.0.2",
+    "postcss-nesting": "^13.0.1",
     "postcss-reporter": "^7.1.0",
     "reduce-css-calc": "^2.1.8"
   },
@@ -63,7 +67,7 @@
     ]
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=14.0.0"
   },
   "browserslist": [
     "> 1%"
@@ -74,7 +78,7 @@
         "@babel/preset-env",
         {
           "targets": {
-            "node": "8.9.0"
+            "node": "14.0.0"
           }
         }
       ]

@@ -6,17 +6,10 @@ import updateSource from '../../util/updateSource'
 module.exports = getConfig => {
   const config = getConfig()
 
-  /* TODO: Can we wrap all the generated css here with some special comment syntax, that
-     will signal to the mq packer and rule packer to leave this alone at the TOP of the file?
-  */
-
   return {
     postcssPlugin: 'europacss-europa',
     prepare({ root }) {
       return {
-        OnceExit() {
-          console.log('=> OnceExit — @europa')
-        },
         AtRule: {
           europa: atRule => {
             if (atRule.params === 'base') {
