@@ -310,139 +310,85 @@ it('parses regular @column + gutter + total gutter', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width >= 0) and (width <= 739px) {
       article {
+        flex: 0 0 calc(83.3333% + 16.6667px);
+        max-width: calc(83.3333% + 16.6667px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(83.333333% + 16.666667px);
-        max-width: calc(83.333333% + 16.666667px)
+      }
+      article .inner {
+        flex: 0 0 calc(20% - 20px);
+        max-width: calc(20% - 20px);
+        position: relative;
+      }
+      article .inner2 {
+        flex: 0 0 20%;
+        max-width: 20%;
+        position: relative;
+      }
+      article .inner3 {
+        flex: 0 0 calc(100% - 20px);
+        max-width: calc(100% - 20px);
+        position: relative;
+      }
+      article .inner4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        position: relative;
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px) {
+    @media (width >= 740px) and (width <= 1023px) {
       article {
+        flex: 0 0 calc(83.3333% + 25px);
+        max-width: calc(83.3333% + 25px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(83.333333% + 25px);
-        max-width: calc(83.333333% + 25px)
+      }
+      article .inner {
+        flex: 0 0 calc(20% - 30px);
+        max-width: calc(20% - 30px);
+        position: relative;
+      }
+      article .inner2 {
+        flex: 0 0 20%;
+        max-width: 20%;
+        position: relative;
+      }
+      article .inner3 {
+        flex: 0 0 calc(100% - 30px);
+        max-width: calc(100% - 30px);
+        position: relative;
+      }
+      article .inner4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        position: relative;
       }
     }
-    @media (min-width: 1024px) {
+    @media (width >= 1024px) {
       article {
+        flex: 0 0 calc(83.3333% + 41.6667px);
+        max-width: calc(83.3333% + 41.6667px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(83.333333% + 41.666667px);
-        max-width: calc(83.333333% + 41.666667px)
       }
-    }
-    @media (min-width: 0) and (max-width: 739px) {
       article .inner {
+        flex: 0 0 calc(20% - 50px);
+        max-width: calc(20% - 50px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(20% - 20px);
-        max-width: calc(20% - 20px)
       }
-    }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      article .inner {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(20% - 30px);
-        max-width: calc(20% - 30px)
-      }
-    }
-    @media (min-width: 1024px) {
-      article .inner {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(20% - 50px);
-        max-width: calc(20% - 50px)
-      }
-    }
-    @media (min-width: 0) and (max-width: 739px) {
       article .inner2 {
+        flex: 0 0 20%;
+        max-width: 20%;
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 20%;
-        max-width: 20%
       }
-    }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      article .inner2 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 20%;
-        max-width: 20%
-      }
-    }
-    @media (min-width: 1024px) {
-      article .inner2 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 20%;
-        max-width: 20%
-      }
-    }
-    @media (min-width: 0) and (max-width: 739px) {
       article .inner3 {
+        flex: 0 0 calc(100% - 50px);
+        max-width: calc(100% - 50px);
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(100% - 20px);
-        max-width: calc(100% - 20px)
       }
-    }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      article .inner3 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(100% - 30px);
-        max-width: calc(100% - 30px)
-      }
-    }
-    @media (min-width: 1024px) {
-      article .inner3 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: calc(100% - 50px);
-        max-width: calc(100% - 50px)
-      }
-    }
-    @media (min-width: 0) and (max-width: 739px) {
       article .inner4 {
+        flex: 0 0 100%;
+        max-width: 100%;
         position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 100%;
-        max-width: 100%
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      article .inner4 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 100%;
-        max-width: 100%
-      }
-    }
-    @media (min-width: 1024px) {
-      article .inner4 {
-        position: relative;
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: 100%;
-        max-width: 100%
       }
     }
   `

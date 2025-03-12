@@ -1,33 +1,26 @@
 ul {
   color: pink;
 }
-
-@media (min-width: 1024px) {
+@media (width >= 0) and (width <= 1023px) {
   ul {
-    width: 100%;
-    flex-direction: row;
-  }
-}
-
-@media (min-width: 0) and (max-width: 1023px) {
-  ul {
-    align-items: center;
     justify-content: center;
+    align-items: center;
   }
 }
-
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
+  ul {
+    flex-direction: row;
+    width: 100%;
+  }
   ul > li {
-    color: transparent;
+    color: #0000;
+    white-space: nowrap;
     line-height: 1;
     display: inline-block;
-    white-space: nowrap;
   }
-
   ul > li.test {
-    color: blue;
+    color: #00f;
   }
-
   ul > li:not(:last-of-type) {
     margin-right: 2vw;
   }

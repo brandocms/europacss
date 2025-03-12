@@ -195,11 +195,17 @@ it('parses advanced @unpack', () => {
   `
 
   const output = `
+    article h1 {
+      color: #00f;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         letter-spacing: 0.12rem;
         font-size: 17px;
         line-height: 17px;
+      }
+      article h1 {
+        color: red;
       }
     }
     @media (width >= 740px) and (width <= 1023px) {
@@ -207,6 +213,9 @@ it('parses advanced @unpack', () => {
         letter-spacing: 0.12rem;
         font-size: 17px;
         line-height: 17px;
+      }
+      article h1 {
+        color: green;
       }
     }
     @media (width >= 1024px) {
@@ -215,21 +224,6 @@ it('parses advanced @unpack', () => {
         font-size: 12px;
         line-height: 12px;
       }
-    }
-    article h1 {
-      color: #00f;
-    }
-    @media (width >= 0) and (width <= 739px) {
-      article h1 {
-        color: red;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      article h1 {
-        color: green;
-      }
-    }
-    @media (width >= 1024px) {
       article h1 {
         color: #00f;
       }

@@ -262,39 +262,33 @@ it('parses @fontsize dpx', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px){
-    article h1{
-      font-size: calc(6.76590vw * var(--ec-zoom));
-      line-height: 1.2
+    @media (width >= 0) and (width <= 739px) {
+      article h1 {
+        font-size: calc(6.7659vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: calc(3.38295vw * var(--ec-zoom));
+      }
     }
-  }
-  @media (min-width: 740px) and (max-width: 1023px){
-    article h1{
-      font-size: calc(12.83784vw * var(--ec-zoom));
-      line-height: 1.2
+    @media (width >= 740px) and (width <= 1023px) {
+      article h1 {
+        font-size: calc(12.8378vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: calc(4.72973vw * var(--ec-zoom));
+      }
     }
-  }
-  @media (min-width: 1024px){
-    article h1{
-      font-size: calc(9.27734vw * var(--ec-zoom));
-      line-height: 1.2
+    @media (width >= 1024px) {
+      article h1 {
+        font-size: calc(9.27734vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: calc(4.39453vw * var(--ec-zoom));
+      }
     }
-  }
-  @media (min-width: 0) and (max-width: 739px){
-    article h2{
-      font-size: calc(3.38295vw * var(--ec-zoom))
-    }
-  }
-  @media (min-width: 740px) and (max-width: 1023px){
-    article h2{
-      font-size: calc(4.72973vw * var(--ec-zoom))
-    }
-  }
-  @media (min-width: 1024px){
-    article h2{
-      font-size: calc(4.39453vw * var(--ec-zoom))
-    }
-  }
   `
 
   return run(input, DPX_CFG).then(result => {
@@ -859,6 +853,9 @@ it('parses @fontsize correctly inside @responsive', () => {
 
   const output = `
     @media (width >= 740px) {
+      h1 {
+        font-family: SerifFont, serif;
+      }
       @media (width >= 740px) and (width <= 1023px) {
         h1 {
           font-size: 17px;
@@ -870,9 +867,6 @@ it('parses @fontsize correctly inside @responsive', () => {
           font-size: 19px;
           line-height: 1.3;
         }
-      }
-      h1 {
-        font-family: SerifFont, serif;
       }
     }
   `
@@ -1208,7 +1202,8 @@ it('can mix @fontsize with and without breakpoint', () => {
   const output = `
     @media (min-width: 0) and (max-width: 739px){
       article{
-        font-size: 20px
+        font-size: 20px;
+        font-size: calc(8vw * var(--ec-zoom))
       }
     }
     @media (min-width: 740px) and (max-width: 1023px){
@@ -1229,11 +1224,6 @@ it('can mix @fontsize with and without breakpoint', () => {
     @media (min-width: 1900px){
       article{
         font-size: 38px
-      }
-    }
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        font-size: calc(8vw * var(--ec-zoom))
       }
     }
   `
@@ -1314,6 +1304,33 @@ it('can mix @fontsize with and without breakpoint', () => {
   `
 
   const output = `
+    [b-tpl=\"case text | list\"] .inner {
+      align-items: flex-start;
+    }
+    [b-tpl=\"case text | list\"] .inner > .text[data-large-text],
+    [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial,
+        sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    }
+    [b-tpl=\"case text | list\"] .inner .list {
+      background-color: #f7f5ed;
+      border-radius: 8px;
+      padding: 20px 28px 24px 20px;
+    }
+    [b-tpl=\"case text | list\"] .inner .list .paragraph {
+      flex-direction: column;
+      row-gap: 10px;
+      display: flex;
+    }
+    [b-tpl=\"case text | list\"] .inner .list ul {
+      flex-direction: column;
+      row-gap: 15px;
+      padding-top: 10px;
+      display: flex;
+    }
+    [b-tpl=\"case text | list\"] .inner .list ul:first-child {
+      padding-top: 0;
+    }
     @media (width >= 0) and (width <= 739px) {
       [b-tpl=\"case text | list\"] {
         width: 100%;
@@ -1322,6 +1339,21 @@ it('can mix @fontsize with and without breakpoint', () => {
         margin-right: auto;
         padding-left: 15px;
         padding-right: 15px;
+      }
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 25px;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
       }
     }
     @media (width >= 740px) and (width <= 1023px) {
@@ -1333,6 +1365,33 @@ it('can mix @fontsize with and without breakpoint', () => {
         padding-left: 35px;
         padding-right: 35px;
       }
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 35px;
+        display: flex;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text {
+        max-width: calc(58.3333% + 20.4167px);
+        font-size: body;
+        flex: 0 0 calc(58.3333% + 20.4167px);
+        position: relative;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+        font-size: 20px;
+      }
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+        font-size: 20px;
+      }
+      [b-tpl=\"case text | list\"] .inner .list {
+        flex: 0 0 calc(25% - 26.25px);
+        max-width: calc(25% - 26.25px);
+        margin-top: 20px;
+        position: relative;
+      }
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
     }
     @media (width >= 1024px) and (width <= 1398px) {
       [b-tpl=\"case text | list\"] {
@@ -1343,249 +1402,83 @@ it('can mix @fontsize with and without breakpoint', () => {
         padding-left: 50px;
         padding-right: 50px;
       }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 100px;
-        padding-right: 100px;
-      }
-    }
-    @media (width >= 1900px) {
-      [b-tpl=\"case text | list\"] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 100px;
-        padding-right: 100px;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner {
-        display: flex;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner {
-        display: flex;
-      }
-    }
-    @media (width >= 0) and (width <= 739px) {
-      [b-tpl=\"case text | list\"] .inner {
-        gap: 25px;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner {
-        gap: 35px;
-      }
-    }
-    @media (width >= 1024px) and (width <= 1398px) {
       [b-tpl=\"case text | list\"] .inner {
         gap: 50px;
       }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner {
-        gap: 50px;
-      }
-    }
-    @media (width >= 1900px) {
-      [b-tpl=\"case text | list\"] .inner {
-        gap: 60px;
-      }
-    }
-    [b-tpl=\"case text | list\"] .inner {
-      align-items: flex-start;
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
       [b-tpl=\"case text | list\"] .inner > .text {
-        flex: 0 0 calc(66.6667% - 16.6667px);
+        font-size: body;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 100px;
+        padding-right: 100px;
+      }
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 50px;
+        display: flex;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text {
         max-width: calc(66.6667% - 16.6667px);
-        position: relative;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        flex: 0 0 calc(58.3333% + 20.4167px);
-        max-width: calc(58.3333% + 20.4167px);
-        position: relative;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+        flex: 0 0 calc(66.6667% - 16.6667px);
         margin-left: calc(8.33333% + 4.16667px);
         padding-right: calc(25% + 12.5px);
+        position: relative;
       }
-    }
-    @media (width >= 0) and (width <= 739px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        font-size: body;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        font-size: body;
-      }
-    }
-    @media (width >= 1024px) and (width <= 1398px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        font-size: body;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        font-size: body;
-      }
-    }
-    @media (width >= 1900px) {
-      [b-tpl=\"case text | list\"] .inner > .text {
-        font-size: body;
-      }
-    }
-    @media (width >= 0) and (width <= 739px) {
       [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
         font-size: h3;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: h3;
-      }
-    }
-    @media (width >= 1024px) and (width <= 1398px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: h3;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: h3;
-      }
-    }
-    @media (width >= 1900px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: h3;
-      }
-    }
-    [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial,
-        sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: 20px;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
         padding-right: calc(8.33333% + 104.167px);
       }
-    }
-    @media (width >= 0) and (width <= 739px) {
       [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
         font-size: artikkel_ingress;
       }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: artikkel_ingress;
-      }
-    }
-    @media (width >= 1024px) and (width <= 1398px) {
-      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: artikkel_ingress;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
-      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: artikkel_ingress;
-      }
-    }
-    @media (width >= 1900px) {
-      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: artikkel_ingress;
-      }
-    }
-    [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial,
-        sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
-        font-size: 20px;
-      }
-    }
-    [b-tpl=\"case text | list\"] .inner .list {
-      padding: 20px 28px 24px 20px;
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
       [b-tpl=\"case text | list\"] .inner .list {
         flex: 0 0 calc(22.9167% - 38.5417px);
         max-width: calc(22.9167% - 38.5417px);
         position: relative;
       }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner .list {
-        flex: 0 0 calc(25% - 26.25px);
-        max-width: calc(25% - 26.25px);
-        position: relative;
-      }
-    }
-    [b-tpl=\"case text | list\"] .inner .list {
-      background-color: #f7f5ed;
-      border-radius: 8px;
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner .list {
-        margin-top: 20px;
-      }
-    }
-    [b-tpl=\"case text | list\"] .inner .list .paragraph {
-      flex-direction: column;
-      row-gap: 10px;
-      display: flex;
-    }
-    [b-tpl=\"case text | list\"] .inner .list ul {
-      flex-direction: column;
-      row-gap: 15px;
-      display: flex;
-    }
-    @media (width >= 0) and (width <= 739px) {
-      [b-tpl=\"case text | list\"] .inner .list ul {
-        font-size: 16px;
-      }
-    }
-    @media (width >= 740px) and (width <= 1023px) {
-      [b-tpl=\"case text | list\"] .inner .list ul {
-        font-size: 16px;
-      }
-    }
-    @media (width >= 1024px) and (width <= 1398px) {
-      [b-tpl=\"case text | list\"] .inner .list ul {
-        font-size: 16px;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
       [b-tpl=\"case text | list\"] .inner .list ul {
         font-size: 16px;
       }
     }
     @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 100px;
+        padding-right: 100px;
+      }
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 60px;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
       [b-tpl=\"case text | list\"] .inner .list ul {
         font-size: 16px;
       }
-    }
-    [b-tpl=\"case text | list\"] .inner .list ul {
-      padding-top: 10px;
-    }
-    [b-tpl=\"case text | list\"] .inner .list ul:first-child {
-      padding-top: 0;
     }
   `
 

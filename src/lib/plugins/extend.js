@@ -15,7 +15,6 @@ const postcssExtendRule = rawopts => {
     postcssPlugin: 'postcss-extend-rule',
 
     OnceExit(root, { postcss, result }) {
-      console.log('---- postcss EXTEND!!!!!! NEW EDITION 2021 ')
       const extendedAtRules = new WeakMap()
       const parentsToProcess = new Set() // for each extend at-rule
 

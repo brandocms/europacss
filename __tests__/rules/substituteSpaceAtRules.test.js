@@ -420,6 +420,9 @@ it('parses @space translateX', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         transform: translateX(calc(100vw + 5px));
@@ -434,9 +437,6 @@ it('parses @space translateX', () => {
       body article .test {
         transform: translateX(100vw);
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -455,6 +455,9 @@ it('parses @space calced', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         width: calc(100vw + 5px);
@@ -469,9 +472,6 @@ it('parses @space calced', () => {
       body article .test {
         width: 100vw;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -490,6 +490,9 @@ it('parses @space per mq size', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 15px;
@@ -504,9 +507,6 @@ it('parses @space per mq size', () => {
       body article .test {
         margin-top: 50px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -525,13 +525,13 @@ it('parses @space only for requested variable bp', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 740px) and (width <= 1023px) {
       body article .test {
         margin-top: calc(17.6678vw - 80.7421px);
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -550,13 +550,13 @@ it('parses @space only for requested bp', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 1024px) {
       body article .test {
         margin-top: 75px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -575,13 +575,13 @@ it('parses @space! only for requested bp', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 15px !important;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -600,13 +600,13 @@ it('parses @space between()', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 1024px) {
       body article .test {
         margin-top: calc(20vw - 164.8px);
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -625,13 +625,13 @@ it('parses @space with px', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 1024px) {
       body article .test {
         margin-top: 40px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -650,13 +650,13 @@ it('parses @space! with px', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 1024px) {
       body article .test {
         margin-top: 40px !important;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -682,10 +682,6 @@ it('parses @space! with 0', () => {
     @media (min-width: 1024px){
       body article .test {
         padding-top: 35px;
-      }
-    }
-    @media (min-width: 1024px){
-      body article .test {
         padding-bottom: 0 !important;
       }
     }
@@ -711,12 +707,7 @@ it('parses @space for theme(..)', () => {
   const output = `
     @media (min-width: 0) and (max-width: 739px){
       body article .test{
-        margin-top: calc(18px * 1.6)
-      }
-    }
-
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test{
+        margin-top: calc(18px * 1.6);
         margin-top: calc(18px * 1.2)
       }
     }
@@ -767,7 +758,7 @@ it('parses @space for between() breakpoint', () => {
 
   const output = `
     @media (min-width: 0) and (max-width: 739px){
-      body article .test{
+      body article .test {
         margin-top: calc(100px + 100 * ((100vw - 320px) / 739))
       }
     }
@@ -810,13 +801,13 @@ it('parses @space for fraction', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: calc(50% - 10px);
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -835,6 +826,9 @@ it('parses @space for fraction with gutter multiplier', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: calc(50% - 30px);
@@ -849,9 +843,6 @@ it('parses @space for fraction with gutter multiplier', () => {
       article {
         margin-top: calc(50% - 75px);
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -949,13 +940,13 @@ it('parses @space for fraction of breakpoint key', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 5px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -974,13 +965,13 @@ it('parses @space for 0.5 of gutter', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 10px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -999,13 +990,13 @@ it('parses @space for 1.5 of gutter', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 30px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1024,6 +1015,9 @@ it('parses @space for fraction of breakpoint key for all breakpoints', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-top: 5px;
@@ -1038,9 +1032,6 @@ it('parses @space for fraction of breakpoint key for all breakpoints', () => {
       article {
         margin-top: 15px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1059,6 +1050,9 @@ it('@space with fraction and no breakpointQuery', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         margin-left: calc(50% - 10px);
@@ -1073,9 +1067,6 @@ it('@space with fraction and no breakpointQuery', () => {
       article {
         margin-left: calc(50% - 25px);
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1094,13 +1085,13 @@ it('parses @space as gutter multiplier for regular number', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: 20px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1119,13 +1110,13 @@ it('parses @space as negative gutter multiplier for regular number', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: -20px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1144,6 +1135,9 @@ it('parses @space as gutter multiplier for regular number across bps', () => {
   `
 
   const output = `
+    article {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         padding-left: 20px;
@@ -1158,9 +1152,6 @@ it('parses @space as gutter multiplier for regular number across bps', () => {
       article {
         padding-left: 50px;
       }
-    }
-    article {
-      font-size: 18px;
     }
   `
 
@@ -1179,13 +1170,13 @@ it('parses @space with no max for last bp', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 1024px) {
       body article .test {
         margin-top: 50px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -1304,6 +1295,9 @@ it('parses @space with q', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 25px;
@@ -1313,9 +1307,6 @@ it('parses @space with q', () => {
       body article .test {
         margin-top: 50px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -1346,6 +1337,9 @@ it('parses @space with > *', () => {
       flex-wrap: nowrap;
       display: flex;
     }
+    article > :first-of-type {
+      margin-left: 0;
+    }
     @media (width >= 0) and (width <= 739px) {
       article > * {
         margin-left: 40px;
@@ -1360,9 +1354,6 @@ it('parses @space with > *', () => {
       article > * {
         margin-left: 100px;
       }
-    }
-    article > :first-of-type {
-      margin-left: 0;
     }
   `
 
@@ -1381,6 +1372,9 @@ it('parses @space with multiple split bps', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
     @media (width >= 0) and (width <= 739px) {
       body article .test {
         margin-top: 25px;
@@ -1390,9 +1384,6 @@ it('parses @space with multiple split bps', () => {
       body article .test {
         margin-top: 75px;
       }
-    }
-    body article .test {
-      font-size: 18px;
     }
   `
 
@@ -1606,6 +1597,10 @@ it('parses @space with breakpointCollection', () => {
   `
 
   const output = `
+    body article .test {
+      font-size: 18px;
+    }
+
     @media (min-width: 0) and (max-width: 739px){
       body article .test {
         margin-top: 25px;
@@ -1616,10 +1611,6 @@ it('parses @space with breakpointCollection', () => {
       body article .test {
         margin-top: 50px;
       }
-    }
-
-    body article .test {
-      font-size: 18px;
     }
   `
 

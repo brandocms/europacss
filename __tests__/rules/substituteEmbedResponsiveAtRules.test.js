@@ -1,7 +1,7 @@
 const postcss = require('postcss')
 const plugin = require('../../src')
 
-function run (input, opts) {
+function run(input, opts) {
   return postcss([plugin(opts)]).process(input, { from: undefined })
 }
 
@@ -20,8 +20,9 @@ it('parses @embed-responsive', () => {
       width: 100%;
     }
     article::before {
-      display: block;
       content: "";
+      padding-top: 56.25%;
+      display: block;
     }
     article iframe,
       article embed,
@@ -33,9 +34,6 @@ it('parses @embed-responsive', () => {
       width: 100%;
       height: 100%;
       border: 0;
-    }
-    article::before {
-      padding-top: 56.25%;
     }
   `
 

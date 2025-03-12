@@ -3,8 +3,6 @@ import _ from 'lodash'
 import postcss from 'postcss'
 import postcssNested from 'postcss-nested'
 import postcssNesting from 'postcss-nesting'
-// import postcssExtendRule from 'postcss-extend-rule'
-// import postcssExtendRule from '@outstand/postcss-extend-rule'
 import postcssExtendRule from './lib/plugins/extend'
 import postcssCombineDuplicatedSelectors from 'postcss-combine-duplicated-selectors'
 import postcssMQGroup from 'css-mqgroup'
@@ -28,7 +26,6 @@ const getConfigFunction = config => () => {
 }
 
 module.exports = config => {
-  console.log('SOURCE, NOT BUILT! :)')
   const resolvedConfigPath = resolveConfigPath(config)
   const cfgFunction = getConfigFunction(resolvedConfigPath || config)
 
@@ -85,14 +82,18 @@ module.exports = config => {
         )
 
         // then @extend all classes
-        console.log('extend!')
         result = await postcss([postcssExtendRule()]).process(root, result.opts)
 
         // then we blast through the europaPipeline
         result = await postcss(europaPipeline).process(root, result.opts)
 
         // try to lose all @nest garbage
-        result = await postcss([postcssNesting()]).process(root, result.opts)
+        result = await postcss([
+          postcssNesting({
+            edition: '2021',
+            noIsPseudoSelector: true
+          })
+        ]).process(root, result.opts)
 
         // then we run nesting again
         result = await postcss([postcssNested()]).process(root, result.opts)

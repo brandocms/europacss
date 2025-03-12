@@ -55,6 +55,9 @@ it('parses @font with size', () => {
   `
 
   const output = `
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
+    }
     @media (width >= 0) and (width <= 739px) {
       article {
         font-size: 12px;
@@ -80,9 +83,6 @@ it('parses @font with size', () => {
         font-size: 14px;
       }
     }
-    article {
-      font-family: Georgia, Cambria, Times New Roman, Times, serif;
-    }
   `
 
   return run(input).then(result => {
@@ -100,17 +100,8 @@ it('parses @font with size and breakpoints', () => {
   `
 
   const output = `
-    @media (width >= 1399px) and (width <= 1899px) {
-      article {
-        font-size: 12px;
-        line-height: 1.53;
-      }
-    }
-    @media (width >= 1900px) {
-      article {
-        font-size: 14px;
-        line-height: 1.53;
-      }
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
     @media (width >= 0) and (width <= 739px) {
       article {
@@ -124,8 +115,17 @@ it('parses @font with size and breakpoints', () => {
         line-height: 1.53;
       }
     }
-    article {
-      font-family: Georgia, Cambria, Times New Roman, Times, serif;
+    @media (width >= 1399px) and (width <= 1899px) {
+      article {
+        font-size: 12px;
+        line-height: 1.53;
+      }
+    }
+    @media (width >= 1900px) {
+      article {
+        font-size: 14px;
+        line-height: 1.53;
+      }
     }
   `
 
@@ -143,6 +143,9 @@ it('parses @font with size in pixels and breakpoints', () => {
   `
 
   const output = `
+    article {
+      font-family: Georgia, Cambria, Times New Roman, Times, serif;
+    }
     @media (width >= 1399px) and (width <= 1899px) {
       article {
         font-size: 18px;
@@ -154,9 +157,6 @@ it('parses @font with size in pixels and breakpoints', () => {
         font-size: 18px;
         line-height: 1.25;
       }
-    }
-    article {
-      font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
   `
 

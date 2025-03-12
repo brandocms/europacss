@@ -15,6 +15,7 @@ it('sets column gap and display grid', () => {
 
   const output = `
     article {
+      color: #00f;
       grid-template-columns: repeat(12, 1fr);
       display: grid;
     }
@@ -42,9 +43,6 @@ it('sets column gap and display grid', () => {
       article {
         grid-column-gap: 60px;
       }
-    }
-    article {
-      color: #00f;
     }
   `
 

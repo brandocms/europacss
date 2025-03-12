@@ -129,7 +129,10 @@ it('parses container with other decls', () => {
   `
 
   const output = `
-
+    article {
+      background-color: red;
+      padding-bottom: 50px;
+    }
     @media (min-width: 0) and (max-width: 739px){
       article {
         padding-left: 15px;
@@ -179,11 +182,6 @@ it('parses container with other decls', () => {
         margin-right: auto;
         width: 100%;
       }
-    }
-
-    article {
-      background-color: red;
-      padding-bottom: 50px;
     }
   `
 
@@ -295,6 +293,10 @@ it('parses @space container for specific breakpoints', () => {
   `
 
   const output = `
+    article {
+      background-color: red;
+      padding-bottom: 50px;
+    }
     @media (min-width: 0) and (max-width: 739px){
       article {
         padding-left: 15px;
@@ -325,10 +327,6 @@ it('parses @space container for specific breakpoints', () => {
         width: 100%;
       }
     }
-    article {
-      background-color: red;
-      padding-bottom: 50px;
-    }
   `
 
   return run(input).then(result => {
@@ -350,6 +348,10 @@ it('runs correctly inside @responsive', () => {
   `
 
   const output = `
+    article {
+      background-color: red;
+      padding-bottom: 50px;
+    }
     @media (width >= 0) and (width <= 739px) {
       @media (width >= 0) and (width <= 739px) {
         article {
@@ -361,11 +363,6 @@ it('runs correctly inside @responsive', () => {
           padding-right: 15px;
         }
       }
-    }
-
-    article {
-      background-color: red;
-      padding-bottom: 50px;
     }
   `
 

@@ -1,81 +1,12 @@
 .button-one {
   font-family: Arial;
 }
-@media (width >= 0) and (width <= 739px) {
-  .button-one {
-    color: pink;
-  }
-}
-@media (width >= 740px) {
-  .button-one {
-    color: #00f;
-  }
-}
-@media (width >= 0) and (width <= 739px) {
-  .button-one {
-    padding: 35px;
-  }
-}
-@media (width >= 740px) and (width <= 1023px) {
-  .button-one {
-    padding: 40px;
-  }
-}
-@media (width >= 1024px) and (width <= 1398px) {
-  .button-one {
-    padding: 50px;
-  }
-}
-@media (width >= 1399px) and (width <= 1899px) {
-  .button-one {
-    padding: 50px;
-  }
-}
-@media (width >= 1900px) {
-  .button-one {
-    padding: 70px;
-  }
-}
 .button-two {
   font-family: Helvetica;
 }
-@media (width >= 0) and (width <= 739px) {
-  .button-two {
-    color: pink;
-  }
-}
-@media (width >= 740px) {
-  .button-two {
-    color: #00f;
-  }
-}
-@media (width >= 0) and (width <= 739px) {
-  .button-two {
-    padding: 35px;
-  }
-}
-@media (width >= 740px) and (width <= 1023px) {
-  .button-two {
-    padding: 40px;
-  }
-}
-@media (width >= 1024px) and (width <= 1398px) {
-  .button-two {
-    padding: 50px;
-  }
-}
-@media (width >= 1399px) and (width <= 1899px) {
-  .button-two {
-    padding: 50px;
-  }
-}
-@media (width >= 1900px) {
-  .button-two {
-    padding: 70px;
-  }
-}
 .pill-button {
   color: currentColor;
+  text-transform: uppercase;
   border: 1px solid;
   border-radius: 40px;
   justify-content: center;
@@ -83,55 +14,67 @@
   gap: 8px;
   width: fit-content;
   padding: 0.6em 1em;
-  display: flex;
-  box-shadow: 0 4px 20px #45453d0a;
-}
-@media (width >= 0) and (width <= 739px) {
-  .pill-button {
-    font-size: 14px;
-  }
-}
-@media (width >= 740px) and (width <= 1023px) {
-  .pill-button {
-    font-size: 14px;
-  }
-}
-@media (width >= 1024px) and (width <= 1398px) {
-  .pill-button {
-    font-size: 14px;
-  }
-}
-@media (width >= 1399px) and (width <= 1899px) {
-  .pill-button {
-    font-size: 14px;
-  }
-}
-@media (width >= 1900px) {
-  .pill-button {
-    font-size: 17px;
-  }
-}
-@media (width >= 1024px) and (width <= 1398px) {
-  .pill-button {
-    letter-spacing: 0.3px;
-  }
-}
-@media (width >= 1399px) and (width <= 1899px) {
-  .pill-button {
-    letter-spacing: 0.3px;
-  }
-}
-@media (width >= 1900px) {
-  .pill-button {
-    letter-spacing: 0.3px;
-  }
-}
-.pill-button {
-  text-transform: uppercase;
   font-family: Georgia, Cambria, Times New Roman, Times, serif;
   transition: color 0.25s, background-color 0.25s;
+  display: flex;
+  box-shadow: 0 4px 20px #45453d0a;
 }
 .pill-button:hover {
   color: #fff;
   background-color: #000;
+}
+@media (width >= 0) and (width <= 739px) {
+  .button-one,
+  .button-two {
+    color: pink;
+    padding: 35px;
+  }
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 740px) {
+  .button-one,
+  .button-two {
+    color: #00f;
+  }
+}
+@media (width >= 740px) and (width <= 1023px) {
+  .button-one,
+  .button-two {
+    padding: 40px;
+  }
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 1024px) and (width <= 1398px) {
+  .button-one,
+  .button-two {
+    padding: 50px;
+  }
+  .pill-button {
+    letter-spacing: 0.3px;
+    font-size: 14px;
+  }
+}
+@media (width >= 1399px) and (width <= 1899px) {
+  .button-one,
+  .button-two {
+    padding: 50px;
+  }
+  .pill-button {
+    letter-spacing: 0.3px;
+    font-size: 14px;
+  }
+}
+@media (width >= 1900px) {
+  .button-one,
+  .button-two {
+    padding: 70px;
+  }
+  .pill-button {
+    letter-spacing: 0.3px;
+    font-size: 17px;
+  }
 }
