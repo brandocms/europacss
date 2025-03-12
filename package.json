@@ -30,7 +30,7 @@
   "dependencies": {
     "lodash": "^4.17.21",
     "normalize.css": "^8.0.1",
-    "postcss-extend-rule": "^4.0.0",
+    "@outstand/postcss-extend-rule": "^4.0.0",
     "postcss-functions": "^4.0.0",
     "postcss-nested": "7.0.2",
     "postcss-reporter": "^7.1.0",

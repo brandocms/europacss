@@ -74,3 +74,64 @@
     padding: 70px;
   }
 }
+.pill-button {
+  color: currentColor;
+  border: 1px solid;
+  border-radius: 40px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 0.6em 1em;
+  display: flex;
+  box-shadow: 0 4px 20px #45453d0a;
+}
+@media (width >= 0) and (width <= 739px) {
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 740px) and (width <= 1023px) {
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 1024px) and (width <= 1398px) {
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 1399px) and (width <= 1899px) {
+  .pill-button {
+    font-size: 14px;
+  }
+}
+@media (width >= 1900px) {
+  .pill-button {
+    font-size: 17px;
+  }
+}
+@media (width >= 1024px) and (width <= 1398px) {
+  .pill-button {
+    letter-spacing: 0.3px;
+  }
+}
+@media (width >= 1399px) and (width <= 1899px) {
+  .pill-button {
+    letter-spacing: 0.3px;
+  }
+}
+@media (width >= 1900px) {
+  .pill-button {
+    letter-spacing: 0.3px;
+  }
+}
+.pill-button {
+  text-transform: uppercase;
+  font-family: Georgia, Cambria, Times New Roman, Times, serif;
+  transition: color 0.25s, background-color 0.25s;
+}
+.pill-button:hover {
+  color: #fff;
+  background-color: #000;
+}

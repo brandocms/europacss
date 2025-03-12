@@ -6,22 +6,13 @@ import findResponsiveParent from '../../util/findResponsiveParent'
 /**
  * A shortcut for responsive order rules
  */
-module.exports = getConfig => {
-  const config = getConfig()
-  const finalRules = []
-
+module.exports = () => {
   return {
     postcssPlugin: 'europacss-order',
     prepare({ root }) {
       return {
         AtRule: {
-          order: atRule => processRule(atRule, config, finalRules)
-        },
-
-        OnceExit() {
-          if (finalRules.length) {
-            root.append(finalRules)
-          }
+          order: atRule => processRule(atRule)
         }
       }
     }
@@ -30,29 +21,10 @@ module.exports = getConfig => {
 
 module.exports.postcss = true
 
-function processRule(atRule, config, finalRules) {
-  const {
-    theme: { breakpoints, breakpointCollections, spacing, columns }
-  } = config
-
+function processRule(atRule) {
   const src = atRule.source
-  let selector
   let wrapInResponsive = false
   const parent = atRule.parent
-  const grandParent = parent.parent
-
-  const buildGrandParent = atRule => {
-    let start = atRule.parent
-    // build a path from start.selector (if it exists), then start.parent.selector (if it exists) then go deeper and deeper until we hit undefined)
-    let path = []
-    while (start && start.selector) {
-      path.push(start.selector)
-      start = start.parent
-    }
-    return path.reverse().join(' ')
-  }
-
-  const grandParentPath = buildGrandParent(atRule)
 
   if (parent.type === 'root') {
     throw atRule.error(`ORDER: Can only be used inside a rule, not on root.`)

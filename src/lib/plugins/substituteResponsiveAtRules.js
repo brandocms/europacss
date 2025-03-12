@@ -13,11 +13,16 @@ module.exports = getConfig => {
           responsive: atRule => {
             processRule(atRule, config, finalRules)
           }
+        },
+        OnceExit() {
+          console.log('=> OnceExit — @responsive')
         }
       }
     }
   }
 }
+
+module.exports.postcss = true
 
 function processRule(atRule, config, _finalRules, _flagAsImportant) {
   const {

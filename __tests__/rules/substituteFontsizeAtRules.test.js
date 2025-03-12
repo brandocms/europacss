@@ -1243,3 +1243,354 @@ it('can mix @fontsize with and without breakpoint', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('can mix @fontsize with and without breakpoint', () => {
+  const input = `
+    [b-tpl="case text | list"] {
+      @space container;
+
+      .inner {
+        @display flex lg;
+        @display flex sm;
+        @space gap 1;
+        align-items: flex-start;
+
+        > .text {
+          @column 8/12 lg;
+          @column 7:1/12 sm;
+          @space padding-right 3:1/12 lg;
+          @column-offset 1:1/12 lg;
+          @fontsize body;
+
+          &[data-large-text] {
+            @font main h3;
+            @responsive sm {
+              font-size: 20px;
+            }
+            @space padding-right 1:3/12 lg;
+
+            [data-script="article"] & {
+              @font main artikkel_ingress;
+              @responsive sm {
+                font-size: 20px;
+              }
+            }
+          }
+        }
+
+        .list {
+          @column 2.75/12 lg;
+          @column 3/12 sm;
+          /* background: var(--White, #FFF);
+          box-shadow: 1px 2px 5px 0px rgba(69, 69, 61, 0.10); */
+          /* background: var(--Off-White, #fffefb);
+          box-shadow: 0px 4px 10px 0px rgba(69, 69, 61, 0.05); */
+          background-color: #f7f5ed;
+          @space padding-top 20px;
+          @space padding-bottom 24px;
+          @space padding-left 20px;
+          @space padding-right 28px;
+          border-radius: 8px;
+          @space margin-top 20px sm;
+
+          .paragraph {
+            @display flex/column;
+            @space row-gap 10px;
+          }
+
+          ul {
+            @display flex/column;
+            @space row-gap 15px;
+            @fontsize 16px;
+            padding-top: 10px;
+
+            &:first-child {
+              padding-top: 0;
+            }
+          }
+        }
+      }
+    }
+  `
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 740px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 1024px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 35px;
+        padding-right: 35px;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 50px;
+        padding-right: 50px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 100px;
+        padding-right: 100px;
+      }
+    }
+    @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 100px;
+        padding-right: 100px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner {
+        display: flex;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner {
+        display: flex;
+      }
+    }
+    @media (width >= 0) and (width <= 739px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 25px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 35px;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 50px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 50px;
+      }
+    }
+    @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 60px;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner {
+      align-items: flex-start;
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        flex: 0 0 calc(66.6667% - 16.6667px);
+        max-width: calc(66.6667% - 16.6667px);
+        position: relative;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        flex: 0 0 calc(58.3333% + 20.4167px);
+        max-width: calc(58.3333% + 20.4167px);
+        position: relative;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        margin-left: calc(8.33333% + 4.16667px);
+        padding-right: calc(25% + 12.5px);
+      }
+    }
+    @media (width >= 0) and (width <= 739px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+    }
+    @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] .inner > .text {
+        font-size: body;
+      }
+    }
+    @media (width >= 0) and (width <= 739px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+    }
+    @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: h3;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial,
+        sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: 20px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        padding-right: calc(8.33333% + 104.167px);
+      }
+    }
+    @media (width >= 0) and (width <= 739px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+    }
+    @media (width >= 1900px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: artikkel_ingress;
+      }
+    }
+    [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial,
+        sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [data-script=\"article\"] [b-tpl=\"case text | list\"] .inner > .text[data-large-text] {
+        font-size: 20px;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner .list {
+      padding: 20px 28px 24px 20px;
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner .list {
+        flex: 0 0 calc(22.9167% - 38.5417px);
+        max-width: calc(22.9167% - 38.5417px);
+        position: relative;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner .list {
+        flex: 0 0 calc(25% - 26.25px);
+        max-width: calc(25% - 26.25px);
+        position: relative;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner .list {
+      background-color: #f7f5ed;
+      border-radius: 8px;
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner .list {
+        margin-top: 20px;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner .list .paragraph {
+      flex-direction: column;
+      row-gap: 10px;
+      display: flex;
+    }
+    [b-tpl=\"case text | list\"] .inner .list ul {
+      flex-direction: column;
+      row-gap: 15px;
+      display: flex;
+    }
+    @media (width >= 0) and (width <= 739px) {
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1900px) {
+      [b-tpl=\"case text | list\"] .inner .list ul {
+        font-size: 16px;
+      }
+    }
+    [b-tpl=\"case text | list\"] .inner .list ul {
+      padding-top: 10px;
+    }
+    [b-tpl=\"case text | list\"] .inner .list ul:first-child {
+      padding-top: 0;
+    }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

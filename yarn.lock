@@ -1312,6 +1312,13 @@
   resolved "https://registry.yarnpkg.com/@nicolo-ribaudo/chokidar-2/-/chokidar-2-2.1.8-no-fsevents.3.tgz#323d72dd25103d0c4fbdce89dadf574a787b1f9b"
   integrity sha512-s88O1aVtXftvp5bCPB7WnmXc5IwOZZ7YPuwNPt+GtOOXpPvad1LfbmjYv+qII7zP6RU2QGnqve27dnLycEnyEQ==
 
+"@outstand/postcss-extend-rule@^4.0.0":
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/@outstand/postcss-extend-rule/-/postcss-extend-rule-4.1.2.tgz#6be020837f7733d89a1aaca7f38531cd67d4f376"
+  integrity sha512-CV8dLxhVn2e+dg4CXZ6DuTjAackVrXWxJ3XJaLtth5P4ITP+auAx6ruxVXgjjbSSlSSGxCKg8z0USMetHnpAvA==
+  dependencies:
+    postcss-nesting "^10.1.2"
+
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.8.tgz#6667fac16c436b5434a387a34dedb013198f6e6e"
@@ -3303,13 +3310,6 @@ pkg-dir@^4.2.0:
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
   dependencies:
     find-up "^4.0.0"
-
-postcss-extend-rule@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/postcss-extend-rule/-/postcss-extend-rule-4.0.0.tgz#4a6a4c7d099c3acc9d896df05367866d13f3984b"
-  integrity sha512-3gjPWUDNYjkRjtcpoN8ppZRXG8vyAk4mYdkYOETacCkCLVguW5IpCXCO31cDk8SW2/rx0RogWcXm1Zu/EayDVg==
-  dependencies:
-    postcss-nesting "^10.1.2"
 
 postcss-functions@^4.0.0:
   version "4.0.2"

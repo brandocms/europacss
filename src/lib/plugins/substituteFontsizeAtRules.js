@@ -96,22 +96,20 @@ function processRule(atRule, config) {
       atRule.before(mediaRule)
     })
   } else {
-    if (sizeNeedsBreakpoints(spacing, fontSizeQuery)) {
-      _.keys(breakpoints).forEach(bp => {
-        let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
-        const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
-          buildDecl(prop, parsedFontSizeQuery[prop])
-        )
-        const mediaRule = clonedRule.clone({
-          name: 'media',
-          params: buildFullMediaQuery(breakpoints, bp)
-        })
-
-        mediaRule.append(...fontDecls)
-        mediaRule.source = src
-        atRule.before(mediaRule)
+    _.keys(breakpoints).forEach(bp => {
+      let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, bp)
+      const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
+        buildDecl(prop, parsedFontSizeQuery[prop])
+      )
+      const mediaRule = clonedRule.clone({
+        name: 'media',
+        params: buildFullMediaQuery(breakpoints, bp)
       })
-    }
+
+      mediaRule.append(...fontDecls)
+      mediaRule.source = src
+      atRule.before(mediaRule)
+    })
   }
 
   atRule.remove()

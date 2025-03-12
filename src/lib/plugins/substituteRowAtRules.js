@@ -9,6 +9,9 @@ module.exports = getConfig => {
           row: atRule => {
             processRule(atRule)
           }
+        },
+        OnceExit() {
+          console.log('=> OnceExit — @row')
         }
       }
     }
@@ -18,5 +21,18 @@ module.exports = getConfig => {
 module.exports.postcss = true
 
 function processRule(atRule) {
-  throw atRule.error(`ROW: Deprecated. Use @space column-gap 1 and @space row-gap 1 instead.`)
+  throw atRule.error(`
+    ROW: Deprecated.
+
+    Use
+
+        @display flex/row/wrap;
+        @space gap 1;
+
+    or even
+
+        @display flex/row/wrap;
+        @space column-gap 1;
+        @space row-gap 1;
+  `)
 }

@@ -43,6 +43,8 @@ module.exports = getConfig => {
   }
 }
 
+module.exports.postcss = true
+
 function processRule(atRule, config, flagAsImportant) {
   if (atRule.parent.type === 'root') {
     throw atRule.error(`SPACING: Should only be used inside a rule, not on root.`)
