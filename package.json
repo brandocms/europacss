@@ -74,7 +74,8 @@
     "transform": {
       "\\.js$": "@swc/jest",
       "\\.ts$": "@swc/jest"
-    }
+    },
+    "testEnvironment": "node"
   },
   "engines": {
     "node": ">=14.0.0"

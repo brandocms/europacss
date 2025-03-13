@@ -13,22 +13,22 @@ import replaceWildcards from './replaceWildcards'
 const SPECIAL_VALUES = {
   ZERO: '0',
   AUTO: 'auto'
-};
+}
 
-const CALC_EXPRESSION = 'calc';
-const BETWEEN_EXPRESSION = 'between(';
-const VERTICAL_RHYTHM_EXPRESSION = 'vertical-rhythm(';
-const CONTAINER_FULL = 'container';
-const CONTAINER_HALF = 'container/2';
-const CONTAINER_NEGATIVE = '-container';
-const CONTAINER_NEGATIVE_HALF = '-container/2';
-const CSS_VAR_PREFIX = 'var(--';
-const DPX_UNIT = 'dpx';
+const CALC_EXPRESSION = 'calc'
+const BETWEEN_EXPRESSION = 'between('
+const VERTICAL_RHYTHM_EXPRESSION = 'vertical-rhythm('
+const CONTAINER_FULL = 'container'
+const CONTAINER_HALF = 'container/2'
+const CONTAINER_NEGATIVE = '-container'
+const CONTAINER_NEGATIVE_HALF = '-container/2'
+const CSS_VAR_PREFIX = 'var(--'
+const DPX_UNIT = 'dpx'
 
 /**
  * Process a 'between' expression which creates a responsive value
  * that scales between a min and max value across a breakpoint
- * 
+ *
  * @param {string} size The size string containing between() expression
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -91,7 +91,7 @@ const processBetween = (size, config, bp, node) => {
 
 /**
  * Process a vertical rhythm expression
- * 
+ *
  * @param {string} size The size string
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -128,7 +128,7 @@ function processVerticalRhythm(size, config, bp, node) {
 
 /**
  * Process a container-related size value
- * 
+ *
  * @param {string} size The size string (container, container/2, etc)
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -137,13 +137,15 @@ function processVerticalRhythm(size, config, bp, node) {
  */
 function processContainerSize(size, config, bp, node) {
   // First check if this is a container-related size
-  if (size !== CONTAINER_FULL && 
-      size !== CONTAINER_HALF && 
-      size !== CONTAINER_NEGATIVE && 
-      size !== CONTAINER_NEGATIVE_HALF) {
-    return null;
+  if (
+    size !== CONTAINER_FULL &&
+    size !== CONTAINER_HALF &&
+    size !== CONTAINER_NEGATIVE &&
+    size !== CONTAINER_NEGATIVE_HALF
+  ) {
+    return null
   }
-  
+
   // Now that we know it's a container size, check if the breakpoint exists
   if (!bp || !_.has(config.theme.container.padding, bp)) {
     throw node.error(`SPACING: No \`${bp}\` breakpoint found in \`theme.container.padding\`.`, {
@@ -154,20 +156,20 @@ function processContainerSize(size, config, bp, node) {
   switch (size) {
     case CONTAINER_FULL:
       return config.theme.container.padding[bp]
-    
+
     case CONTAINER_HALF: {
       const [val, unit] = splitUnit(config.theme.container.padding[bp])
       return `${val / 2}${unit}`
     }
-    
+
     case CONTAINER_NEGATIVE:
       return '-' + config.theme.container.padding[bp]
-    
+
     case CONTAINER_NEGATIVE_HALF: {
       const [val, unit] = splitUnit(config.theme.container.padding[bp])
       return `-${val / 2}${unit}`
     }
-    
+
     default:
       return null
   }
@@ -175,7 +177,7 @@ function processContainerSize(size, config, bp, node) {
 
 /**
  * Process a calc expression with var replacements
- * 
+ *
  * @param {string} size The size string with calc expression
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -208,7 +210,7 @@ function processCalcExpression(size, config, bp, node) {
 
 /**
  * Process a fraction expression
- * 
+ *
  * @param {string} size The size string with fraction
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -218,7 +220,7 @@ function processCalcExpression(size, config, bp, node) {
 function processFractionExpression(size, config, bp, node) {
   // Check if first part is a spacing key
   const [head, tail] = size.split('/')
-  
+
   if (_.has(config.theme.spacing, head)) {
     if (!_.has(config.theme.spacing[head], bp)) {
       throw node.error(`SPACING: No \`${bp}\` breakpoint found in spacing map for \`${head}\`.`)
@@ -238,7 +240,7 @@ function processFractionExpression(size, config, bp, node) {
 
 /**
  * Process a complex fraction expression with gutters
- * 
+ *
  * @param {string} size The size string
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -271,9 +273,7 @@ function processComplexFraction(size, config, bp, node) {
 
     const [valMax, unitMax] = splitUnit(maxSize)
     if (unitMax === '%') {
-      throw node.error(
-        `SPACING: When setMaxForVw is true, the container max cannot be % based.`
-      )
+      throw node.error(`SPACING: When setMaxForVw is true, the container max cannot be % based.`)
     }
 
     gutterValue = (valMax / 100) * gutterValue
@@ -321,7 +321,7 @@ function processComplexFraction(size, config, bp, node) {
 
 /**
  * Process a multiplication expression
- * 
+ *
  * @param {string} size The size string with multiplication
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -335,14 +335,14 @@ function processMultiplicationExpression(size, config, bp, node) {
   if (head.indexOf(BETWEEN_EXPRESSION) !== -1) {
     // Process the between expression first
     const processedBetween = processBetween(head, config, bp, node)
-    
+
     // If it returned a calc expression, multiply inside the calc
     if (processedBetween.startsWith('calc(')) {
       // Extract the calculation inside calc()
       const calcExpression = processedBetween.match(/calc\((.*)\)/)[1]
       return `calc((${calcExpression}) * ${tail})`
     }
-    
+
     // For non-calc expressions, multiply directly
     return renderCalcWithRounder(`${processedBetween}*${tail}`)
   }
@@ -362,7 +362,7 @@ function processMultiplicationExpression(size, config, bp, node) {
 
 /**
  * Process a viewport width (vw) value
- * 
+ *
  * @param {string} size The size string with vw
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -388,19 +388,51 @@ function processVwValue(size, config, bp, node, applyZoom = false) {
       return `${maxVal}${unitMax}`
     }
   }
-  
+
   // Apply zoom variable to vw units if requested
   if (applyZoom) {
     return `calc(${size} * var(--ec-zoom))`
   }
-  
+
   return size
 }
 
 /**
+ * Get reference viewport width for a breakpoint or breakpoint collection
+ *
+ * @param {object} config Configuration object
+ * @param {string} bp Current breakpoint
+ * @param {object} node PostCSS node for warning
+ * @returns {number} Reference viewport width
+ */
+function getReferenceViewportWidth(config, bp, node) {
+  // Check if we have dpxViewportSizes config
+  if (config.dpxViewportSizes && typeof config.dpxViewportSizes === 'object') {
+    // First check if we have a direct breakpoint match
+    if (config.dpxViewportSizes[bp]) {
+      return config.dpxViewportSizes[bp]
+    }
+
+    // Check if bp is part of a collection with a reference width
+    if (config.theme && config.theme.breakpointCollections) {
+      for (const [collection, breakpoints] of Object.entries(
+        config.theme.breakpointCollections
+      )) {
+        if (breakpoints.split('/').includes(bp) && config.dpxViewportSizes[collection]) {
+          return config.dpxViewportSizes[collection]
+        }
+      }
+    }
+  }
+
+  // Fall back to global setting or default
+  return config.dpxViewportSize || 1440
+}
+
+/**
  * Process design-pixel (dpx) units
- * Converts dpx values to vw units based on a reference viewport width (defaulting to 1440px)
- * 
+ * Converts dpx values to vw units based on a reference viewport width
+ *
  * @param {string} size The size string with dpx unit
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
@@ -409,33 +441,33 @@ function processVwValue(size, config, bp, node, applyZoom = false) {
  */
 function processDpxValue(size, config, bp, node) {
   // Extract the numeric value from the size
-  const [value, _unit] = splitUnit(size);
-  
-  // Get the reference viewport width (default to 1440px if not specified)
-  const referenceViewportWidth = config.dpxViewportSize || 1440;
-  
+  const [value, _unit] = splitUnit(size)
+
+  // Get the reference viewport width for this breakpoint or collection
+  const referenceViewportWidth = getReferenceViewportWidth(config, bp, node)
+
   // Calculate the equivalent vw value: (value / referenceWidth) * 100
-  const vwValue = ((value / referenceViewportWidth) * 100).toFixed(5);
-  
+  const vwValue = ((value / referenceViewportWidth) * 100).toFixed(5)
+
   // Process as vw value (handles setMaxForVw if needed)
   // Always apply zoom for dpx-derived values
-  return processVwValue(`${vwValue}vw`, config, bp, node, true);
+  return processVwValue(`${vwValue}vw`, config, bp, node, true)
 }
 
 /**
  * Check if a value contains a CSS unit
- * 
+ *
  * @param {string} size The size string to check
  * @returns {boolean} True if the size contains a CSS unit
  */
 function hasCssUnit(size) {
-  const units = ['px', 'vh', 'vw', 'rem', 'em', 'ch', '%', 'dpx'];
-  return units.some(unit => size.indexOf(unit) !== -1);
+  const units = ['px', 'vh', 'vw', 'rem', 'em', 'ch', '%', 'dpx']
+  return units.some(unit => size.indexOf(unit) !== -1)
 }
 
 /**
  * Handle column gutter multiplier for numeric values
- * 
+ *
  * @param {object} node PostCSS node for error reporting
  * @param {string|number} multiplier The multiplier value
  * @param {string} bp Current breakpoint
@@ -468,7 +500,7 @@ function renderColGutterMultiplier(node, multiplier, bp, config) {
 
 /**
  * Convert px value to rem
- * 
+ *
  * @param {string} px Value with px unit
  * @param {string} rootSize Root font size
  * @returns {string} Value converted to rem
@@ -479,8 +511,8 @@ function pxToRem(px, rootSize) {
 
 /**
  * Parse size values from a variety of formats into consistent CSS values
- * 
- * @param {object} node PostCSS node for error reporting 
+ *
+ * @param {object} node PostCSS node for error reporting
  * @param {object} config Configuration object
  * @param {string} size Size value to parse
  * @param {string} bp Current breakpoint
@@ -489,45 +521,45 @@ function pxToRem(px, rootSize) {
 export default function parseSize(node, config, size, bp) {
   // Handle special and simple cases first
   if (size === SPECIAL_VALUES.ZERO) {
-    return SPECIAL_VALUES.ZERO;
+    return SPECIAL_VALUES.ZERO
   }
 
   if (size === SPECIAL_VALUES.AUTO) {
-    return SPECIAL_VALUES.AUTO;
+    return SPECIAL_VALUES.AUTO
   }
 
   if (size && size.startsWith(CSS_VAR_PREFIX)) {
-    return size;
+    return size
   }
 
   // Handle multiplication for spacing keys (e.g., between*2)
-  let multiplier = 1;
+  let multiplier = 1
   if (size && size.indexOf('*') !== -1) {
-    const [spacingKey, mult] = size.split('*');
+    const [spacingKey, mult] = size.split('*')
     if (_.has(config.theme.spacing, spacingKey)) {
-      multiplier = parseFloat(mult);
-      size = spacingKey;
+      multiplier = parseFloat(mult)
+      size = spacingKey
     }
   }
-  
+
   // Check if size is a named spacing value in config
-  let sizeMap;
+  let sizeMap
   if (_.has(config.theme.spacing, size)) {
-    sizeMap = replaceWildcards(config.theme.spacing[size], config);
-    size = sizeMap[bp];
-    
+    sizeMap = replaceWildcards(config.theme.spacing[size], config)
+    size = sizeMap[bp]
+
     // Apply multiplier if needed
     if (multiplier !== 1) {
       // If it's a between expression, we'll handle it specially
       if (size && size.indexOf(BETWEEN_EXPRESSION) !== -1) {
-        const processedBetween = processBetween(size, config, bp, node);
+        const processedBetween = processBetween(size, config, bp, node)
         if (processedBetween.startsWith('calc(')) {
-          const calcExpression = processedBetween.match(/calc\((.*)\)/)[1];
-          return `calc((${calcExpression}) * ${multiplier})`;
+          const calcExpression = processedBetween.match(/calc\((.*)\)/)[1]
+          return `calc((${calcExpression}) * ${multiplier})`
         }
-        return renderCalcWithRounder(`${processedBetween}*${multiplier}`);
+        return renderCalcWithRounder(`${processedBetween}*${multiplier}`)
       } else if (size) {
-        return `calc(${size} * ${multiplier})`;
+        return `calc(${size} * ${multiplier})`
       }
     }
   }
@@ -536,62 +568,62 @@ export default function parseSize(node, config, size, bp) {
   if (size) {
     // Vertical rhythm expression
     if (size.indexOf(VERTICAL_RHYTHM_EXPRESSION) !== -1) {
-      return processVerticalRhythm(size, config, bp, node);
+      return processVerticalRhythm(size, config, bp, node)
     }
 
     // Between expression for responsive values
     if (size.indexOf(BETWEEN_EXPRESSION) !== -1) {
-      return processBetween(size, config, bp, node);
+      return processBetween(size, config, bp, node)
     }
 
     // Container-related values
-    const containerValue = processContainerSize(size, config, bp, node);
+    const containerValue = processContainerSize(size, config, bp, node)
     if (containerValue !== null) {
-      return containerValue;
+      return containerValue
     }
 
     // If size isn't in the spacing map, treat it as a direct value
     if (!_.has(config.theme.spacing, size)) {
       // Calc expression with var replacements
       if (size.indexOf(CALC_EXPRESSION) !== -1) {
-        return processCalcExpression(size, config, bp, node);
+        return processCalcExpression(size, config, bp, node)
       }
 
       // Fraction expression (e.g., "3/12")
       if (size.indexOf('/') !== -1) {
-        return processFractionExpression(size, config, bp, node);
+        return processFractionExpression(size, config, bp, node)
       }
 
       // Multiplication expression (e.g., "spacing*2")
       if (size.indexOf('*') !== -1) {
-        return processMultiplicationExpression(size, config, bp, node);
+        return processMultiplicationExpression(size, config, bp, node)
       }
 
       // Viewport width units with max size conversion
       if (size.indexOf('vw') !== -1) {
-        return processVwValue(size, config, bp, node);
+        return processVwValue(size, config, bp, node)
       }
-      
+
       // Design pixel units (dpx)
       if (size.indexOf(DPX_UNIT) !== -1) {
-        return processDpxValue(size, config, bp, node);
+        return processDpxValue(size, config, bp, node)
       }
 
       // Direct CSS values with units
       if (hasCssUnit(size)) {
-        return size;
+        return size
       }
 
       // Treat numeric values as column gutter multipliers
-      return renderColGutterMultiplier(node, size, bp, config);
+      return renderColGutterMultiplier(node, size, bp, config)
     }
   }
 
   // If we reached here and have a spacing key but no matching breakpoint, throw an error
   if (_.has(config.theme.spacing, size) && !_.has(config.theme.spacing[size], bp)) {
-    throw node.error(`SPACING: No \`${bp}\` breakpoint found in spacing map for \`${size}\`.`);
+    throw node.error(`SPACING: No \`${bp}\` breakpoint found in spacing map for \`${size}\`.`)
   }
 
   // Should not reach here, but return original size just in case
-  return size;
+  return size
 }

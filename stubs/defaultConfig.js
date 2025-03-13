@@ -1,4 +1,19 @@
 module.exports = {
+  // Global reference viewport width for dpx units
+  dpxViewportSize: 1440,
+  
+  // Per-breakpoint and per-collection reference viewport widths for dpx units
+  dpxViewportSizes: {
+    // Direct breakpoint references
+    xs: 375,
+    sm: 768,
+    
+    // Breakpoint collections
+    $desktop: 1440,
+    $tablet: 768,
+    $mobile: 375
+  },
+  
   theme: {
     breakpoints: {
       xs: '0',

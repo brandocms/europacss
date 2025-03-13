@@ -198,8 +198,13 @@ const WILDCARD_CFG = {
   }
 }
 
+// Mock PostCSS node for warnings
+const mockPostCSSNode = {
+  warn: jest.fn()
+}
+
 const DPX_CFG = {
-  dpxViewportSize: 1440, // Reference viewport width for dpx units
+  dpxViewportSize: 1440, // Global reference viewport width for dpx units
   theme: {
     breakpoints: {
       mobile: '0',
@@ -292,7 +297,156 @@ it('parses @fontsize dpx', () => {
     }
   `
 
-  return run(input, DPX_CFG).then(result => {
+  // Use a configuration with viewport sizes defined for all breakpoints to avoid warnings
+  const configWithViewportSizes = {
+    ...DPX_CFG,
+    dpxViewportSizes: {
+      mobile: 1440,
+      tablet: 1440,
+      desktop: 1440
+    }
+  }
+
+  return run(input, configWithViewportSizes).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @fontsize with per-collection reference viewport widths', () => {
+  const input = `
+    article {
+      h2 {
+        @fontsize 20dpx mobile;
+        @fontsize 20dpx tablet;
+        @fontsize 20dpx desktop;
+      }
+    }
+  `
+
+  const perCollectionConfig = {
+    dpxViewportSizes: {
+      mobile: 375, // iPhone reference size
+      tablet: 768, // iPad reference size
+      desktop: 1440, // Desktop reference size
+
+      // Collections
+      $test: 768 // Test collection reference size
+    },
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      },
+      typography: {
+        lineHeight: {
+          mobile: 1.6,
+          tablet: 1.6,
+          desktop: 1.6
+        }
+      }
+    }
+  }
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article h2 {
+        font-size: calc(5.33333vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article h2 {
+        font-size: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article h2 {
+        font-size: calc(1.38889vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, perCollectionConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @fontsize with dpx units using breakpoint collections', () => {
+  const input = `
+    article {
+      h2 {
+        @fontsize 20dpx $test;
+      }
+    }
+  `
+
+  const perCollectionConfig = {
+    dpxViewportSizes: {
+      // Collections
+      $test: 768 // Test collection reference size
+    },
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      },
+      typography: {
+        lineHeight: {
+          mobile: 1.6,
+          tablet: 1.6,
+          desktop: 1.6
+        }
+      }
+    }
+  }
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article h2 {
+        font-size: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article h2 {
+        font-size: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, perCollectionConfig).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })

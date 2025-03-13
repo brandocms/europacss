@@ -275,8 +275,13 @@ const MAX_PX_CFG = {
   }
 }
 
+// Mock PostCSS node for warnings
+const mockPostCSSNode = {
+  warn: jest.fn()
+}
+
 const DPX_CFG = {
-  dpxViewportSize: 1440, // Reference viewport width for dpx units
+  dpxViewportSize: 1440, // Global reference viewport width for dpx units
   theme: {
     breakpoints: {
       mobile: '0',
@@ -1310,7 +1315,17 @@ it('parses @space with dpx units', () => {
     }
   `
 
-  return run(input, DPX_CFG).then(result => {
+  // Bypass the warning by using a configuration that has dpxViewportSizes defined for all breakpoints
+  const configWithViewportSizes = {
+    ...DPX_CFG,
+    dpxViewportSizes: {
+      mobile: 1440,
+      tablet: 1440,
+      desktop: 1440
+    }
+  }
+
+  return run(input, configWithViewportSizes).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })
@@ -1325,8 +1340,13 @@ it('parses @space with dpx units and setMaxForVw', () => {
 
   const maxPxDpxConfig = {
     ...DPX_CFG,
-    setMaxForVw: true
-  };
+    setMaxForVw: true,
+    dpxViewportSizes: {
+      mobile: 1440,
+      tablet: 1440,
+      desktop: 1440
+    }
+  }
 
   const output = `
     @media (width >= 1024px) {
@@ -1337,6 +1357,128 @@ it('parses @space with dpx units and setMaxForVw', () => {
   `
 
   return run(input, maxPxDpxConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space with dpx units using per-collection reference viewport widths', () => {
+  const input = `
+    article {
+      @space margin-top 20dpx mobile;
+      @space margin-top 20dpx tablet;
+      @space margin-top 20dpx desktop;
+    }
+  `
+
+  // Configure with a complete set of viewport sizes to avoid warnings
+  const perCollectionConfig = {
+    dpxViewportSizes: {
+      mobile: 375, // iPhone reference size
+      tablet: 768, // iPad reference size
+      desktop: 1440, // Desktop reference size
+
+      // Collections
+      $test: 768 // Test collection reference size
+    },
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      }
+    }
+  }
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-top: calc(5.33333vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        margin-top: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article {
+        margin-top: calc(1.38889vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, perCollectionConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space with dpx units using breakpoint collections', () => {
+  const input = `
+    article {
+      @space margin-top 20dpx $test;
+    }
+  `
+
+  const perCollectionConfig = {
+    dpxViewportSizes: {
+      // Collections
+      $test: 768 // Test collection reference size
+    },
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      }
+    }
+  }
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-top: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        margin-top: calc(2.60417vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, perCollectionConfig).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })

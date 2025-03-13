@@ -85,23 +85,39 @@ For instance, if you have:
 we will replace the desktop key's `4vw` with `1920/100*4` so that the font will not scale
 beyond the container's maxWidth.
 
-`dpxViewportSize`
+`dpxViewportSize` and `dpxViewportSizes`
 
-When working with design pixel units (dpx), you can specify a reference viewport width to convert
+When working with design pixel units (dpx), you can specify reference viewport widths to convert
 design pixels to viewport width units. This is especially useful when working with Figma designs
-that are created at a specific desktop width (commonly 1440px).
+that are created at specific widths for different device sizes.
 
-For example, if you have:
-```
+You can set a global reference width with `dpxViewportSize`, or specify different reference widths
+for individual breakpoints and breakpoint collections using `dpxViewportSizes`:
+
+```js
 {
+  // Global fallback reference width (used if no specific width is defined)
   dpxViewportSize: 1440, // Default is 1440px if not specified
+  
+  // Per-breakpoint and per-collection reference viewport widths
+  dpxViewportSizes: {
+    // Direct breakpoint references
+    xs: 375,
+    sm: 768,
+    
+    // Breakpoint collections
+    $desktop: 1440,
+    $tablet: 768,
+    $mobile: 375
+  },
+  
   theme: {
     typography: {
       sizes: {
         heading: {
-          mobile: '25dpx',
-          tablet: '35dpx',
-          desktop: '45dpx'
+          mobile: '25dpx', // Uses 375px reference (from $mobile collection)
+          tablet: '35dpx', // Uses 768px reference (from $tablet collection)
+          desktop: '45dpx' // Uses 1440px reference (from $desktop collection)
         }
       }
     }
@@ -109,9 +125,18 @@ For example, if you have:
 }
 ```
 
-When using `25dpx` at the reference viewport width of 1440px, it will be converted to `1.736vw`
-(`(25/1440)*100`). This makes it easy to maintain the exact sizing from design files while keeping
-the responsive behavior of viewport units.
+For example, when using `25dpx` at the `$mobile` reference viewport width of 375px, it will be 
+converted to `6.667vw` (`(25/375)*100`). The same value in the `$desktop` collection would
+use the 1440px reference, resulting in `1.736vw` (`(25/1440)*100`).
+
+When processing dpx units, Europa looks for a reference width in this order:
+1. A direct match in `dpxViewportSizes` for the current breakpoint (e.g., `xs`, `md`, etc.)
+2. A match in `dpxViewportSizes` for a collection that includes the current breakpoint (e.g., `$mobile`, `$desktop`)
+3. The global `dpxViewportSize` value
+4. Default fallback of 1440px
+
+This makes it easy to maintain the exact sizing from design files while keeping
+the responsive behavior of viewport units across different device sizes.
 
 
 ### Typography
