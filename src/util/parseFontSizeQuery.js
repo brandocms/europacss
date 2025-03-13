@@ -5,192 +5,275 @@ import parseVWQuery from './parseVWQuery'
 import replaceWildcards from './replaceWildcards'
 import calcMaxFromBreakpoint from './calcMaxFromBreakpoint'
 
-export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoint) {
-  let lineHeight
-  let modifier
-  let renderedFontSize
+// Constants
+const BETWEEN_EXPRESSION = 'between(';
+const SLASH_SEPARATOR = '/';
+const VW_UNIT = 'vw';
+const DPX_UNIT = 'dpx';
 
-  if (fontSizeQuery.indexOf('/') !== -1) {
+/**
+ * Extract line height from font size query if present
+ * 
+ * @param {string} fontSizeQuery The font size query string
+ * @returns {Array} Array containing [fontSizeQuery, lineHeight]
+ */
+function extractLineHeight(fontSizeQuery) {
+  let lineHeight;
+  
+  if (fontSizeQuery.indexOf(SLASH_SEPARATOR) !== -1) {
     // we have a line-height parameter
-    ;[fontSizeQuery, lineHeight] = fontSizeQuery.split('/')
+    [fontSizeQuery, lineHeight] = fontSizeQuery.split(SLASH_SEPARATOR);
   }
+  
+  return [fontSizeQuery, lineHeight];
+}
 
-  if (fontSizeQuery.indexOf('between(') === -1) {
-    if (fontSizeQuery.indexOf('(') !== -1) {
-      // we have a modifier xs(1.6) --> multiplies the size with 1.6
-      modifier = fontSizeQuery.match(/\((.*)\)/)[1]
-      fontSizeQuery = fontSizeQuery.split('(')[0]
+/**
+ * Extract font size modifier from query if present (e.g., xs(1.6))
+ * 
+ * @param {string} fontSizeQuery The font size query string
+ * @returns {Array} Array containing [fontSizeQuery, modifier]
+ */
+function extractModifier(fontSizeQuery) {
+  let modifier;
+  
+  if (fontSizeQuery.indexOf(BETWEEN_EXPRESSION) === -1 && fontSizeQuery.indexOf('(') !== -1) {
+    // we have a modifier xs(1.6) --> multiplies the size with 1.6
+    modifier = fontSizeQuery.match(/\((.*)\)/)[1];
+    fontSizeQuery = fontSizeQuery.split('(')[0];
+  }
+  
+  return [fontSizeQuery, modifier];
+}
+
+/**
+ * Process device-pixel (dpx) units
+ * 
+ * @param {string} fontSize The font size value with dpx unit
+ * @param {string|null} lineHeight Optional line height value
+ * @param {string} breakpoint Current breakpoint
+ * @param {object} config Configuration object
+ * @param {object} node PostCSS node for error reporting
+ * @returns {object} Processed font size and line height properties
+ */
+function processDpxUnits(fontSize, lineHeight, breakpoint, config, node) {
+  const [fs, _fsUnit] = splitUnit(fontSize);
+  let [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint]);
+  
+  if (bpPx === 0) {
+    [bpPx, _bpUnit] = splitUnit(calcMaxFromBreakpoint(config.theme.breakpoints, breakpoint));
+  }
+  
+  const fsVw = ((fs / bpPx) * 100).toFixed(5);
+  
+  if (lineHeight && lineHeight.endsWith(VW_UNIT)) {
+    throw node.error(
+      `FONTSIZE: Mixing dpx and vw is not allowed with fontsize and lineheight`,
+      { name: breakpoint }
+    );
+  }
+  
+  if (lineHeight && lineHeight.endsWith(DPX_UNIT)) {
+    const [lh, _lhUnit] = splitUnit(lineHeight);
+    const lhVw = ((lh / bpPx) * 100).toFixed(5);
+    
+    return parseVWQuery(node, config, `${fsVw}vw`, `${lhVw}vw`, breakpoint, false);
+  }
+  
+  return {
+    'font-size': parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true),
+    ...(lineHeight && { 'line-height': lineHeight })
+  };
+}
+
+/**
+ * Process viewport width (vw) units
+ * 
+ * @param {string} fontSize The font size value with vw unit
+ * @param {string|null} lineHeight Optional line height value
+ * @param {string} breakpoint Current breakpoint
+ * @param {object} config Configuration object
+ * @param {object} node PostCSS node for error reporting
+ * @returns {object} Processed font size and line height properties
+ */
+function processVwUnits(fontSize, lineHeight, breakpoint, config, node) {
+  if (lineHeight && lineHeight.endsWith(VW_UNIT)) {
+    return parseVWQuery(node, config, fontSize, lineHeight, breakpoint, false);
+  } else {
+    return {
+      'font-size': parseVWQuery(node, config, fontSize, lineHeight, breakpoint, true),
+      ...(lineHeight && { 'line-height': lineHeight })
+    };
+  }
+}
+
+/**
+ * Process regular CSS units (px, rem, em, etc.)
+ * 
+ * @param {string} fontSize The font size value 
+ * @param {string|null} lineHeight Optional line height value
+ * @returns {object} Font size and line height properties
+ */
+function processRegularUnits(fontSize, lineHeight) {
+  return {
+    'font-size': fontSize,
+    ...(lineHeight && { 'line-height': lineHeight })
+  };
+}
+
+/**
+ * Apply modifier to font size
+ * 
+ * @param {string|object} resolvedFontsize The font size value or object
+ * @param {string} modifier The modifier value
+ * @param {string} breakpoint Current breakpoint
+ * @param {string|null} lineHeight Optional line height
+ * @returns {object} Font size and line height properties
+ */
+function applyModifier(resolvedFontsize, modifier, breakpoint, lineHeight) {
+  let fs;
+  
+  if (_.isString(resolvedFontsize)) {
+    fs = resolvedFontsize;
+  } else if (_.isObject(resolvedFontsize[breakpoint])) {
+    fs = resolvedFontsize[breakpoint]['font-size'];
+  } else {
+    fs = resolvedFontsize[breakpoint];
+  }
+  
+  const [val, unit] = splitUnit(fs);
+  const renderedFontSize = `${val * modifier}${unit}`;
+  
+  return {
+    'font-size': renderedFontSize,
+    ...(lineHeight && { 'line-height': lineHeight })
+  };
+}
+
+/**
+ * Process object-based font size definition
+ * 
+ * @param {object} fontSizeObj The font size object for the breakpoint
+ * @param {string|null} lineHeight Optional line height
+ * @param {string} breakpoint Current breakpoint
+ * @param {object} config Configuration object
+ * @param {object} node PostCSS node for error reporting
+ * @returns {object} Processed font properties
+ */
+function processObjectFontSize(fontSizeObj, lineHeight, breakpoint, config, node) {
+  const props = {};
+  
+  _.keys(fontSizeObj).forEach(key => {
+    const value = fontSizeObj[key];
+    
+    if (value.endsWith(VW_UNIT)) {
+      props[key] = parseVWQuery(node, config, value, lineHeight, breakpoint, true);
+    } else if (value.endsWith(DPX_UNIT)) {
+      const [fs, _fsUnit] = splitUnit(value);
+      const [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint]);
+      const fsVw = ((fs / bpPx) * 100).toFixed(5);
+      props[key] = parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true);
+    } else {
+      props[key] = value;
     }
-  }
+  });
+  
+  return props;
+}
 
-  const themePath = ['theme', 'typography', 'sizes']
-  const fontSize = fontSizeQuery
-  const path = fontSize.split('.')
-
-  let resolvedFontsize = _.get(config, themePath.concat(path))
+/**
+ * Parse a font size query and convert it to CSS properties
+ * 
+ * @param {object} node PostCSS node for error reporting
+ * @param {object} config Configuration object
+ * @param {string} fontSizeQuery The font size query to parse
+ * @param {string} breakpoint Current breakpoint
+ * @returns {object} Font properties object
+ */
+export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoint) {
+  // Extract line height and modifier if present
+  let lineHeight;
+  let modifier;
+  
+  [fontSizeQuery, lineHeight] = extractLineHeight(fontSizeQuery);
+  [fontSizeQuery, modifier] = extractModifier(fontSizeQuery);
+  
+  // Resolve font size from theme configuration
+  const themePath = ['theme', 'typography', 'sizes'];
+  const fontSize = fontSizeQuery;
+  const path = fontSize.split('.');
+  
+  let resolvedFontsize = _.get(config, themePath.concat(path));
   if (!resolvedFontsize) {
-    resolvedFontsize = fontSize
+    resolvedFontsize = fontSize;
   }
-
+  
+  // Early return for responsive font size with between() expression
+  if (_.isString(resolvedFontsize) && resolvedFontsize.indexOf(BETWEEN_EXPRESSION) !== -1) {
+    return parseRFSQuery(node, config, resolvedFontsize, lineHeight, breakpoint);
+  }
+  
+  // Handle non-object font size definitions
   if (!_.isString(resolvedFontsize)) {
-    resolvedFontsize = replaceWildcards(resolvedFontsize, config)
+    resolvedFontsize = replaceWildcards(resolvedFontsize, config);
+    
     if (!_.has(resolvedFontsize, breakpoint)) {
       throw node.error(
         `FONTSIZE: No breakpoint \`${breakpoint}\` found in theme.typography.sizes.${fontSize}`,
         { name: breakpoint }
-      )
-    }
-  } else {
-    if (resolvedFontsize.indexOf('between(') !== -1) {
-      // responsive font size
-      return parseRFSQuery(node, config, resolvedFontsize, lineHeight, breakpoint)
+      );
     }
   }
-
-  if (!modifier) {
-    if (_.isString(resolvedFontsize)) {
-      if (!lineHeight && resolvedFontsize.indexOf('/') !== -1) {
-        // if the resolvedFontsize has a lineHeight ie `iphone: '4vw/12vw'`
-        ;[resolvedFontsize, lineHeight] = resolvedFontsize.split('/')
-      }
-
-      if (resolvedFontsize.endsWith('vw')) {
-        if (lineHeight && lineHeight.endsWith('vw')) {
-          return parseVWQuery(node, config, resolvedFontsize, lineHeight, breakpoint, false)
-        } else {
-          return {
-            ...{
-              'font-size': parseVWQuery(
-                node,
-                config,
-                resolvedFontsize,
-                lineHeight,
-                breakpoint,
-                true
-              )
-            },
-            ...(lineHeight && { 'line-height': lineHeight })
-          }
-        }
-      } else if (resolvedFontsize.endsWith('dpx')) {
-        const [fs, _fsUnit] = splitUnit(resolvedFontsize)
-        const [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint])
-        const fsVw = ((fs / bpPx) * 100).toFixed(5)
-
-        if (lineHeight && lineHeight.endsWith('dpx')) {
-          const [lh, _fsUnit] = splitUnit(lineHeight)
-          const lhVw = ((lh / bpPx) * 100).toFixed(5)
-
-          return parseVWQuery(node, config, `${fsVw}vw`, `${lhVw}vw`, breakpoint, false)
-        } else {
-          return {
-            ...{
-              'font-size': parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true)
-            },
-            ...(lineHeight && { 'line-height': lineHeight })
-          }
-        }
-      } else {
-        return {
-          ...{ 'font-size': resolvedFontsize },
-          ...(lineHeight && { 'line-height': lineHeight })
-        }
-      }
+  
+  // Apply modifier if present
+  if (modifier) {
+    return applyModifier(resolvedFontsize, modifier, breakpoint, lineHeight);
+  }
+  
+  // Process string-based font sizes
+  if (_.isString(resolvedFontsize)) {
+    // Check for line height in the font size definition
+    if (!lineHeight && resolvedFontsize.indexOf(SLASH_SEPARATOR) !== -1) {
+      [resolvedFontsize, lineHeight] = resolvedFontsize.split(SLASH_SEPARATOR);
     }
-    let bpFS = resolvedFontsize[breakpoint]
-    if (_.isObject(bpFS)) {
-      const props = {}
-      _.keys(bpFS).forEach(key => {
-        const v = bpFS[key]
-
-        if (v.endsWith('vw')) {
-          props[key] = parseVWQuery(node, config, v, lineHeight, breakpoint, true)
-        } else if (v.endsWith('dpx')) {
-          const [fs, _fsUnit] = splitUnit(v)
-          const [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint])
-          const fsVw = ((fs / bpPx) * 100).toFixed(5)
-          props[key] = parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true)
-        } else {
-          props[key] = v
-        }
-      })
-      return props
+    
+    // Handle different unit types
+    if (resolvedFontsize.endsWith(VW_UNIT)) {
+      return processVwUnits(resolvedFontsize, lineHeight, breakpoint, config, node);
+    } else if (resolvedFontsize.endsWith(DPX_UNIT)) {
+      return processDpxUnits(resolvedFontsize, lineHeight, breakpoint, config, node);
     } else {
-      if (!lineHeight && bpFS.indexOf('/') !== -1) {
-        // if the resolvedFontsize has a lineHeight ie `iphone: '4vw/12vw'`
-        ;[bpFS, lineHeight] = bpFS.split('/')
-      }
-
-      if (bpFS.indexOf('between(') !== -1) {
-        // responsive font size
-        return parseRFSQuery(node, config, bpFS, lineHeight, breakpoint)
-      }
-
-      if (bpFS.endsWith('vw')) {
-        if (lineHeight && lineHeight.endsWith('vw')) {
-          return parseVWQuery(node, config, bpFS, lineHeight, breakpoint, false)
-        } else {
-          return {
-            ...{ 'font-size': parseVWQuery(node, config, bpFS, lineHeight, breakpoint, true) },
-            ...(lineHeight && { 'line-height': lineHeight })
-          }
-        }
-      }
-
-      if (bpFS.endsWith('dpx')) {
-        if (lineHeight && lineHeight.endsWith('vw')) {
-          throw node.error(
-            `FONTSIZE: Mixing dpx and vw is not allowed with fontsize and lineheight`,
-            { name: breakpoint }
-          )
-        }
-        const [fs, _fsUnit] = splitUnit(bpFS)
-        let [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint])
-
-        if (bpPx === 0) {
-          ;[bpPx, _bpUnit] = splitUnit(
-            calcMaxFromBreakpoint(config.theme.breakpoints, breakpoint)
-          )
-        }
-
-        const fsVw = ((fs / bpPx) * 100).toFixed(5)
-
-        if (lineHeight && lineHeight.endsWith('dpx')) {
-          const [lh, _fsUnit] = splitUnit(lineHeight)
-          const lhVw = ((lh / bpPx) * 100).toFixed(5)
-
-          return parseVWQuery(node, config, `${fsVw}vw`, `${lhVw}vw`, breakpoint, false)
-        }
-
-        return {
-          ...{
-            'font-size': parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true)
-          },
-          ...(lineHeight && { 'line-height': lineHeight })
-        }
-      }
-
-      return {
-        ...{ 'font-size': bpFS },
-        ...(lineHeight && { 'line-height': lineHeight })
-      }
+      return processRegularUnits(resolvedFontsize, lineHeight);
     }
+  }
+  
+  // Process object-based font sizes
+  let bpFontSize = resolvedFontsize[breakpoint];
+  
+  if (_.isObject(bpFontSize)) {
+    return processObjectFontSize(bpFontSize, lineHeight, breakpoint, config, node);
   } else {
-    let fs
-    if (_.isString(resolvedFontsize)) {
-      fs = resolvedFontsize
-    } else if (_.isObject(resolvedFontsize[breakpoint])) {
-      fs = resolvedFontsize[breakpoint]['font-size']
-    } else {
-      fs = resolvedFontsize[breakpoint]
+    // Handle string-based breakpoint font size
+    let localLineHeight = lineHeight;
+    
+    if (!localLineHeight && bpFontSize.indexOf(SLASH_SEPARATOR) !== -1) {
+      const parts = bpFontSize.split(SLASH_SEPARATOR);
+      bpFontSize = parts[0];
+      localLineHeight = parts[1];
     }
-
-    const [val, unit] = splitUnit(fs)
-    renderedFontSize = `${val * modifier}${unit}`
-
-    return {
-      ...{ 'font-size': renderedFontSize },
-      ...(lineHeight && { 'line-height': lineHeight })
+    
+    // Handle between expression
+    if (bpFontSize.indexOf(BETWEEN_EXPRESSION) !== -1) {
+      return parseRFSQuery(node, config, bpFontSize, localLineHeight, breakpoint);
+    }
+    
+    // Handle different unit types
+    if (bpFontSize.endsWith(VW_UNIT)) {
+      return processVwUnits(bpFontSize, localLineHeight, breakpoint, config, node);
+    } else if (bpFontSize.endsWith(DPX_UNIT)) {
+      return processDpxUnits(bpFontSize, localLineHeight, breakpoint, config, node);
+    } else {
+      return processRegularUnits(bpFontSize, localLineHeight);
     }
   }
 }

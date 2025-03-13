@@ -70,48 +70,65 @@ function format(input) {
 }
 
 function toMatchFormattedCss(received = '', argument = '') {
+  // Ensure we're working with strings to avoid circular reference issues
+  const receivedStr = typeof received === 'string' ? received : received.toString();
+  const argumentStr = typeof argument === 'string' ? argument : argument.toString();
+  
   let options = {
     comment: 'formatCSS(received) === formatCSS(argument)',
     isNot: this.isNot,
     promise: this.promise
   }
 
-  let [formattedReceived, formattingReceivedError] = format(received)
-  let [formattedArgument, formattingArgumentError] = format(argument)
+  try {
+    let [formattedReceived, formattingReceivedError] = format(receivedStr)
+    let [formattedArgument, formattingArgumentError] = format(argumentStr)
 
-  let pass = formattedReceived === formattedArgument
+    let pass = formattedReceived === formattedArgument
 
-  let message = pass
-    ? () => {
-        return (
-          this.utils.matcherHint('toMatchFormattedCss', undefined, undefined, options) +
-          '\n\n' +
-          `Expected: not ${this.utils.printExpected(formattedReceived)}\n` +
-          `Received: ${this.utils.printReceived(formattedArgument)}`
-        )
-      }
-    : () => {
-        let actual = formatPrettier(formattedReceived).replace(/\n\n/g, '\n')
-        let expected = formatPrettier(formattedArgument).replace(/\n\n/g, '\n')
+    let message = pass
+      ? () => {
+          return (
+            this.utils.matcherHint('toMatchFormattedCss', undefined, undefined, options) +
+            '\n\n' +
+            `Expected: not ${this.utils.printExpected(formattedReceived)}\n` +
+            `Received: ${this.utils.printReceived(formattedArgument)}`
+          )
+        }
+      : () => {
+          let actual = formatPrettier(formattedReceived).replace(/\n\n/g, '\n')
+          let expected = formatPrettier(formattedArgument).replace(/\n\n/g, '\n')
 
-        let diffString = diff(expected, actual, {
-          expand: this.expand
-        })
+          let diffString = diff(expected, actual, {
+            expand: this.expand
+          })
 
-        return (
-          this.utils.matcherHint('toMatchFormattedCss', undefined, undefined, options) +
-          '\n\n' +
-          (diffString && diffString.includes('- Expect')
-            ? `Difference:\n\n${diffString}`
-            : `Expected: ${this.utils.printExpected(expected)}\n` +
-              `Received: ${this.utils.printReceived(actual)}`) +
-          (formattingReceivedError ? '\n\n' + formattingReceivedError : '') +
-          (formattingArgumentError ? '\n\n' + formattingArgumentError : '') +
-          `\n\n\nReceived (no diff):\n\n${this.utils.printReceived(actual)}`
-        )
-      }
+          return (
+            this.utils.matcherHint('toMatchFormattedCss', undefined, undefined, options) +
+            '\n\n' +
+            (diffString && diffString.includes('- Expect')
+              ? `Difference:\n\n${diffString}`
+              : `Expected: ${this.utils.printExpected(expected)}\n` +
+                `Received: ${this.utils.printReceived(actual)}`) +
+            (formattingReceivedError ? '\n\n' + formattingReceivedError : '') +
+            (formattingArgumentError ? '\n\n' + formattingArgumentError : '') +
+            `\n\n\nReceived (no diff):\n\n${this.utils.printReceived(actual)}`
+          )
+        }
 
-  return { actual: received, message, pass }
+    return { actual: receivedStr, message, pass }
+  } catch (error) {
+    // Provide a more helpful error message if we encounter issues with circular structures
+    if (error.message && error.message.includes('circular structure')) {
+      return {
+        pass: false,
+        message: () => 
+          `Error comparing CSS: Circular reference detected. This usually happens when comparing PostCSS node objects directly. Make sure you're comparing string output rather than node objects.\n\nOriginal error: ${error.message}`
+      };
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 expect.extend({
@@ -120,46 +137,63 @@ expect.extend({
   toMatchCSS: toMatchFormattedCss,
   toMatchFormattedCSS: toMatchFormattedCss,
   toIncludeCSS(received, argument) {
+    // Ensure we're working with strings to avoid circular reference issues
+    const receivedStr = typeof received === 'string' ? received : received.toString();
+    const argumentStr = typeof argument === 'string' ? argument : argument.toString();
+    
     let options = {
       comment: 'stripped(received).includes(stripped(argument))',
       isNot: this.isNot,
       promise: this.promise
     }
 
-    let [formattedReceived, formattedReceivedError] = format(received)
-    let [formattedArgument, formattedArgumentError] = format(argument)
-    let pass = formattedReceived.includes(formattedArgument)
+    try {
+      let [formattedReceived, formattedReceivedError] = format(receivedStr)
+      let [formattedArgument, formattedArgumentError] = format(argumentStr)
+      let pass = formattedReceived.includes(formattedArgument)
 
-    let message = pass
-      ? () => {
-          return (
-            this.utils.matcherHint('toIncludeCss', undefined, undefined, options) +
-            '\n\n' +
-            `Expected: not ${this.utils.printExpected(formatPrettier(received))}\n` +
-            `Received: ${this.utils.printReceived(formatPrettier(argument))}`
-          )
-        }
-      : () => {
-          let actual = formatPrettier(received)
-          let expected = formatPrettier(argument)
+      let message = pass
+        ? () => {
+            return (
+              this.utils.matcherHint('toIncludeCss', undefined, undefined, options) +
+              '\n\n' +
+              `Expected: not ${this.utils.printExpected(formatPrettier(receivedStr))}\n` +
+              `Received: ${this.utils.printReceived(formatPrettier(argumentStr))}`
+            )
+          }
+        : () => {
+            let actual = formatPrettier(receivedStr)
+            let expected = formatPrettier(argumentStr)
 
-          let diffString = diff(expected, actual, {
-            expand: this.expand
-          })
+            let diffString = diff(expected, actual, {
+              expand: this.expand
+            })
 
-          return (
-            this.utils.matcherHint('toIncludeCss', undefined, undefined, options) +
-            '\n\n' +
-            (diffString && diffString.includes('- Expect')
-              ? `Difference:\n\n${diffString}`
-              : `Expected: ${this.utils.printExpected(expected)}\n` +
-                `Received: ${this.utils.printReceived(actual)}`) +
-            (formattedReceivedError ? '\n\n' + formattedReceivedError : '') +
-            (formattedArgumentError ? '\n\n' + formattedArgumentError : '')
-          )
-        }
+            return (
+              this.utils.matcherHint('toIncludeCss', undefined, undefined, options) +
+              '\n\n' +
+              (diffString && diffString.includes('- Expect')
+                ? `Difference:\n\n${diffString}`
+                : `Expected: ${this.utils.printExpected(expected)}\n` +
+                  `Received: ${this.utils.printReceived(actual)}`) +
+              (formattedReceivedError ? '\n\n' + formattedReceivedError : '') +
+              (formattedArgumentError ? '\n\n' + formattedArgumentError : '')
+            )
+          }
 
-    return { actual: received, message, pass }
+      return { actual: receivedStr, message, pass }
+    } catch (error) {
+      // Provide a more helpful error message if we encounter issues with circular structures
+      if (error.message && error.message.includes('circular structure')) {
+        return {
+          pass: false,
+          message: () => 
+            `Error comparing CSS: Circular reference detected. This usually happens when comparing PostCSS node objects directly. Make sure you're comparing string output rather than node objects.\n\nOriginal error: ${error.message}`
+        };
+      }
+      // Re-throw other errors
+      throw error;
+    }
   },
   toHaveBeenWarned() {
     let passed = warn.mock.calls.length > 0

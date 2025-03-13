@@ -1,8 +1,8 @@
 import _ from 'lodash'
+import postcss from 'postcss'
 import buildFullMediaQuery from '../../util/buildFullMediaQuery'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
 import findResponsiveParent from '../../util/findResponsiveParent'
-import postcss from 'postcss'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'
 import buildDecl from '../../util/buildDecl'
 import parseSize from '../../util/parseSize'
@@ -12,14 +12,15 @@ import advancedBreakpointQuery from '../../util/advancedBreakpointQuery'
 /**
  * SPACE
  *
- * @param prop          - prop to modify
- * @param size          - size of spacing
- * @param breakpoint    - if this should only apply to ONE breakpoint
+ * @param prop          - CSS property to modify (e.g., margin-top, padding)
+ * @param size          - Size of spacing (e.g., xs, md, xl)
+ * @param breakpoint    - Optional breakpoint query (e.g., desktop, >=md)
  *
  * Examples:
  *
- *    @space margin-top xl;
- *    @space margin-top sm xs;
+ *    @space margin-top xl;         // Apply xl margin-top across all breakpoints
+ *    @space margin-top sm xs;      // Apply sm margin-top only at xs breakpoint
+ *    @space padding-x md >=tablet; // Apply md padding for tablet and up
  *
  */
 
@@ -31,9 +32,11 @@ module.exports = getConfig => {
     prepare() {
       return {
         AtRule: {
+          // Handle regular @space rule
           space: atRule => {
             processRule(atRule, config, false)
           },
+          // Handle @space! rule (important flag)
           'space!': atRule => {
             processRule(atRule, config, true)
           }
@@ -46,6 +49,7 @@ module.exports = getConfig => {
 module.exports.postcss = true
 
 function processRule(atRule, config, flagAsImportant) {
+  // Validate rule context
   if (atRule.parent.type === 'root') {
     throw atRule.error(`SPACING: Should only be used inside a rule, not on root.`)
   }
@@ -62,9 +66,13 @@ function processRule(atRule, config, flagAsImportant) {
 
   // Clone rule to act upon. We remove the atRule from DOM later, but
   // we still need some data from the original.
-  let clonedRule = atRule.clone()
+  const clonedRule = atRule.clone()
   let parsedBreakpoints
+  
+  // Parse the rule parameters: property, size, and optional breakpoint query
   let [prop, size, bpQuery] = postcss.list.space(clonedRule.params)
+  
+  // Special case for container
   if (prop === 'container') {
     bpQuery = size
     size = null
@@ -76,20 +84,19 @@ function processRule(atRule, config, flagAsImportant) {
   const responsiveParent = findResponsiveParent(atRule)
 
   if (responsiveParent) {
+    // Under @responsive, we can't have a breakpoint query in @space
     if (bpQuery) {
       throw clonedRule.error(
         `SPACING: @space cannot be nested under @responsive and have a breakpoint query.`,
-        {
-          name: bpQuery
-        }
+        { name: bpQuery }
       )
     }
 
+    // Use the parent's media query
     bpQuery = responsiveParent.__mediaQuery
 
-    // try to grab the breakpoint
+    // For advanced queries, parse the breakpoints
     if (advancedBreakpointQuery(responsiveParent.__mediaQuery)) {
-      // parse the breakpoints
       parsedBreakpoints = extractBreakpointKeys(
         { breakpoints, breakpointCollections },
         responsiveParent.__mediaQuery
@@ -99,64 +106,63 @@ function processRule(atRule, config, flagAsImportant) {
 
   const src = atRule.source
 
+  // Parse breakpoints from advanced query if not already processed
   if (!parsedBreakpoints && bpQuery && advancedBreakpointQuery(bpQuery)) {
     parsedBreakpoints = extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
   }
 
   if (bpQuery) {
-    // We have a breakpoint query, like '>=sm'. Extract all breakpoints
-    // we need media queries for. Since there is a breakpoint query, we
-    // HAVE to generate breakpoints even if the sizeQuery doesn't
-    // call for it.
-    let affectedBreakpoints
+    // We have a breakpoint query, extract all affected breakpoints
+    let affectedBreakpoints = parsedBreakpoints || 
+      extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
 
-    if (!parsedBreakpoints) {
-      affectedBreakpoints = extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
-    } else {
-      affectedBreakpoints = parsedBreakpoints
-    }
-
+    // Create media queries for each affected breakpoint
     _.each(affectedBreakpoints, bp => {
-      let parsedSize = null
-      if (size) {
-        parsedSize = parseSize(clonedRule, config, size, bp)
-      }
+      // Parse size for this breakpoint
+      const parsedSize = size ? parseSize(clonedRule, config, size, bp) : null
+      
+      // Build the CSS declarations
       const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant, config, bp)
 
+      // Create media query rule
       const mediaRule = clonedRule.clone({
         name: 'media',
         params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
       })
 
+      // Add declarations and insert before the @space rule
       mediaRule.append(sizeDecls)
       mediaRule.source = src
       atRule.before(mediaRule)
     })
   } else {
+    // No breakpoint query specified
     if (sizeNeedsBreakpoints(spacing, size)) {
+      // Size is responsive, create media queries for all breakpoints
       _.keys(breakpoints).forEach(bp => {
-        let parsedSize = null
-        if (size) {
-          parsedSize = parseSize(clonedRule, config, size, bp)
-        }
+        const parsedSize = size ? parseSize(clonedRule, config, size, bp) : null
+        
         const mediaRule = clonedRule.clone({
           name: 'media',
           params: buildFullMediaQuery(breakpoints, bp)
         })
+        
         const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant, config, bp)
         mediaRule.append(sizeDecls)
         atRule.before(mediaRule)
       })
     } else {
+      // Size is not responsive, add directly to parent rule
       const parsedSize = parseSize(clonedRule, config, size)
       const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant)
       parent.prepend(sizeDecls)
     }
   }
 
+  // Cleanup - remove the original @space rule
   atRule.remove()
 
-  // check if parent has anything
+  // Remove parent if it's now empty
   if (parent && !parent.nodes.length) {
     parent.remove()
   }
