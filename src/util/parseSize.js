@@ -330,10 +330,28 @@ function processComplexFraction(size, config, bp, node) {
 function processMultiplicationExpression(size, config, bp, node) {
   const [head, tail] = size.split('*')
 
+  // Handle a between() expression that needs to be multiplied
+  if (head.indexOf(BETWEEN_EXPRESSION) !== -1) {
+    // Process the between expression first
+    const processedBetween = processBetween(head, config, bp, node)
+    
+    // If it returned a calc expression, multiply inside the calc
+    if (processedBetween.startsWith('calc(')) {
+      // Extract the calculation inside calc()
+      const calcExpression = processedBetween.match(/calc\((.*)\)/)[1]
+      return `calc((${calcExpression}) * ${tail})`
+    }
+    
+    // For non-calc expressions, multiply directly
+    return renderCalcWithRounder(`${processedBetween}*${tail}`)
+  }
+
+  // Check if it's a spacing key in the config
   if (!_.has(config.theme.spacing, head)) {
     return renderCalcWithRounder(size)
   }
 
+  // Check if the breakpoint exists for this spacing key
   if (!_.has(config.theme.spacing[head], bp)) {
     throw node.error(`SPACING: No \`${bp}\` breakpoint found in spacing map for \`${head}\`.`)
   }
@@ -448,11 +466,36 @@ export default function parseSize(node, config, size, bp) {
     return size;
   }
 
+  // Handle multiplication for spacing keys (e.g., between*2)
+  let multiplier = 1;
+  if (size && size.indexOf('*') !== -1) {
+    const [spacingKey, mult] = size.split('*');
+    if (_.has(config.theme.spacing, spacingKey)) {
+      multiplier = parseFloat(mult);
+      size = spacingKey;
+    }
+  }
+  
   // Check if size is a named spacing value in config
   let sizeMap;
   if (_.has(config.theme.spacing, size)) {
     sizeMap = replaceWildcards(config.theme.spacing[size], config);
     size = sizeMap[bp];
+    
+    // Apply multiplier if needed
+    if (multiplier !== 1) {
+      // If it's a between expression, we'll handle it specially
+      if (size && size.indexOf(BETWEEN_EXPRESSION) !== -1) {
+        const processedBetween = processBetween(size, config, bp, node);
+        if (processedBetween.startsWith('calc(')) {
+          const calcExpression = processedBetween.match(/calc\((.*)\)/)[1];
+          return `calc((${calcExpression}) * ${multiplier})`;
+        }
+        return renderCalcWithRounder(`${processedBetween}*${multiplier}`);
+      } else if (size) {
+        return `calc(${size} * ${multiplier})`;
+      }
+    }
   }
 
   // Process different expressions based on their pattern

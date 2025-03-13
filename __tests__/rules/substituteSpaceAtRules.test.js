@@ -770,27 +770,26 @@ it('parses @space for between() breakpoint', () => {
   })
 })
 
-// TODO! FIX
-// it('parses @space for between() breakpoint multiplied', () => {
-//   const input = `
-//     body article .test {
-//       @space margin-top between*2 mobile;
-//     }
-//   `
+it('parses @space for between() breakpoint multiplied', () => {
+  const input = `
+    body article .test {
+      @space margin-top between*2 mobile;
+    }
+  `
 
-//   const output = `
-//     @media (min-width: 0) and (max-width: 739px){
-//       body article .test {
-//         margin-top: calc(200px + 200 * ((100vw - 320px) / 739))
-//       }
-//     }
-//   `
+  const output = `
+    @media (min-width: 0) and (max-width: 739px){
+      body article .test {
+        margin-top: calc((100px + 100 * ((100vw - 320px) / 739)) * 2)
+      }
+    }
+  `
 
-//   return run(input, BETWEEN_CFG).then(result => {
-//     expect(result.css).toMatchCSS(output)
-//     expect(result.warnings().length).toBe(0)
-//   })
-// })
+  return run(input, BETWEEN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
 
 it('parses @space for fraction', () => {
   const input = `
