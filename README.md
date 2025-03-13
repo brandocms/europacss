@@ -307,6 +307,7 @@ If no params are given, only the first child gets a margin-left of 0.
   - `vertical-rhythm(theme.typography.sizes.xl, 1.2)` > Grabs object for breakpoint and multiplies with 1.2 as line-height.
   - `calc(100vw - var[container] + var[1])` > Switches out `var[container]` and `var[1]` with correct values for
     container padding and 1 gutter unit per breakpoint.
+  - `20dpx` > Design pixel units that scale with viewport width based on the `dpxViewportSize` setting (defaults to 1440px).
 
 **EXAMPLES**:
 

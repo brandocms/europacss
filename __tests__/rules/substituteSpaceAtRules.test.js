@@ -275,6 +275,70 @@ const MAX_PX_CFG = {
   }
 }
 
+const DPX_CFG = {
+  dpxViewportSize: 1440, // Reference viewport width for dpx units
+  theme: {
+    breakpoints: {
+      mobile: '0',
+      tablet: '740px',
+      desktop: '1024px'
+    },
+
+    breakpointCollections: {
+      $test: 'mobile/tablet'
+    },
+
+    container: {
+      maxWidth: {
+        mobile: '100%',
+        tablet: '100%',
+        desktop: '1920px'
+      },
+
+      padding: {
+        mobile: '15px',
+        tablet: '35px',
+        desktop: '50px'
+      }
+    },
+
+    spacing: {
+      xs: {
+        mobile: '10px',
+        tablet: '20px',
+        desktop: '30px'
+      },
+      md: {
+        mobile: '15px',
+        tablet: '25px',
+        desktop: '50px'
+      },
+      xl: {
+        mobile: '25px',
+        tablet: '50px',
+        desktop: '75px'
+      }
+    },
+
+    typography: {
+      base: '16px',
+      lineHeight: {
+        mobile: 1.6,
+        tablet: 1.6,
+        desktop: 1.6
+      }
+    },
+
+    columns: {
+      gutters: {
+        mobile: '20px',
+        tablet: '30px',
+        desktop: '50px'
+      }
+    }
+  }
+}
+
 const WILDCARD_CFG = {
   theme: {
     breakpoints: {
@@ -1222,6 +1286,57 @@ it('parses @space 0 w/ breakpoint', () => {
   `
 
   return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space with dpx units', () => {
+  const input = `
+    article {
+      @space margin-top 20dpx;
+      @space padding-left 45dpx desktop;
+    }
+  `
+
+  const output = `
+    article {
+      margin-top: calc(1.38889vw * var(--ec-zoom));
+    }
+    @media (width >= 1024px) {
+      article {
+        padding-left: calc(3.125vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, DPX_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space with dpx units and setMaxForVw', () => {
+  const input = `
+    article {
+      @space margin-top 20dpx desktop;
+    }
+  `
+
+  const maxPxDpxConfig = {
+    ...DPX_CFG,
+    setMaxForVw: true
+  };
+
+  const output = `
+    @media (width >= 1024px) {
+      article {
+        margin-top: 26.6667px;
+      }
+    }
+  `
+
+  return run(input, maxPxDpxConfig).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })

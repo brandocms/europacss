@@ -23,6 +23,7 @@ const CONTAINER_HALF = 'container/2';
 const CONTAINER_NEGATIVE = '-container';
 const CONTAINER_NEGATIVE_HALF = '-container/2';
 const CSS_VAR_PREFIX = 'var(--';
+const DPX_UNIT = 'dpx';
 
 /**
  * Process a 'between' expression which creates a responsive value
@@ -365,9 +366,11 @@ function processMultiplicationExpression(size, config, bp, node) {
  * @param {string} size The size string with vw
  * @param {object} config Configuration object
  * @param {string} bp Current breakpoint
+ * @param {object} node PostCSS node for error reporting
+ * @param {boolean} applyZoom Whether to apply the zoom variable (default: false)
  * @returns {string} Processed vw value
  */
-function processVwValue(size, config, bp, node) {
+function processVwValue(size, config, bp, node, applyZoom = false) {
   if (config.hasOwnProperty('setMaxForVw') && config.setMaxForVw === true) {
     // get the max container size
     const containerBps = config.theme.container.maxWidth
@@ -385,7 +388,38 @@ function processVwValue(size, config, bp, node) {
       return `${maxVal}${unitMax}`
     }
   }
+  
+  // Apply zoom variable to vw units if requested
+  if (applyZoom) {
+    return `calc(${size} * var(--ec-zoom))`
+  }
+  
   return size
+}
+
+/**
+ * Process design-pixel (dpx) units
+ * Converts dpx values to vw units based on a reference viewport width (defaulting to 1440px)
+ * 
+ * @param {string} size The size string with dpx unit
+ * @param {object} config Configuration object
+ * @param {string} bp Current breakpoint
+ * @param {object} node PostCSS node for error reporting
+ * @returns {string} Processed vw value
+ */
+function processDpxValue(size, config, bp, node) {
+  // Extract the numeric value from the size
+  const [value, _unit] = splitUnit(size);
+  
+  // Get the reference viewport width (default to 1440px if not specified)
+  const referenceViewportWidth = config.dpxViewportSize || 1440;
+  
+  // Calculate the equivalent vw value: (value / referenceWidth) * 100
+  const vwValue = ((value / referenceViewportWidth) * 100).toFixed(5);
+  
+  // Process as vw value (handles setMaxForVw if needed)
+  // Always apply zoom for dpx-derived values
+  return processVwValue(`${vwValue}vw`, config, bp, node, true);
 }
 
 /**
@@ -395,7 +429,7 @@ function processVwValue(size, config, bp, node) {
  * @returns {boolean} True if the size contains a CSS unit
  */
 function hasCssUnit(size) {
-  const units = ['px', 'vh', 'vw', 'rem', 'em', 'ch', '%'];
+  const units = ['px', 'vh', 'vw', 'rem', 'em', 'ch', '%', 'dpx'];
   return units.some(unit => size.indexOf(unit) !== -1);
 }
 
@@ -536,6 +570,11 @@ export default function parseSize(node, config, size, bp) {
       // Viewport width units with max size conversion
       if (size.indexOf('vw') !== -1) {
         return processVwValue(size, config, bp, node);
+      }
+      
+      // Design pixel units (dpx)
+      if (size.indexOf(DPX_UNIT) !== -1) {
+        return processDpxValue(size, config, bp, node);
       }
 
       // Direct CSS values with units
