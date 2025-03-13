@@ -47,7 +47,8 @@ function extractModifier(fontSizeQuery) {
 }
 
 /**
- * Process device-pixel (dpx) units
+ * Process design-pixel (dpx) units
+ * Converts dpx values to vw units based on a reference viewport width (defaulting to 1440px)
  * 
  * @param {string} fontSize The font size value with dpx unit
  * @param {string|null} lineHeight Optional line height value
@@ -57,15 +58,16 @@ function extractModifier(fontSizeQuery) {
  * @returns {object} Processed font size and line height properties
  */
 function processDpxUnits(fontSize, lineHeight, breakpoint, config, node) {
+  // Extract the numeric value from the font size
   const [fs, _fsUnit] = splitUnit(fontSize);
-  let [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint]);
   
-  if (bpPx === 0) {
-    [bpPx, _bpUnit] = splitUnit(calcMaxFromBreakpoint(config.theme.breakpoints, breakpoint));
-  }
+  // Get the reference viewport width (default to 1440px if not specified)
+  const referenceViewportWidth = config.dpxViewportSize || 1440;
   
-  const fsVw = ((fs / bpPx) * 100).toFixed(5);
+  // Calculate the equivalent vw value: (fontSize / referenceWidth) * 100
+  const fsVw = ((fs / referenceViewportWidth) * 100).toFixed(5);
   
+  // Handle validation for mixing units
   if (lineHeight && lineHeight.endsWith(VW_UNIT)) {
     throw node.error(
       `FONTSIZE: Mixing dpx and vw is not allowed with fontsize and lineheight`,
@@ -73,13 +75,15 @@ function processDpxUnits(fontSize, lineHeight, breakpoint, config, node) {
     );
   }
   
+  // Handle line height if it also uses dpx units
   if (lineHeight && lineHeight.endsWith(DPX_UNIT)) {
     const [lh, _lhUnit] = splitUnit(lineHeight);
-    const lhVw = ((lh / bpPx) * 100).toFixed(5);
+    const lhVw = ((lh / referenceViewportWidth) * 100).toFixed(5);
     
     return parseVWQuery(node, config, `${fsVw}vw`, `${lhVw}vw`, breakpoint, false);
   }
   
+  // Return font size as vw with original line height if provided
   return {
     'font-size': parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true),
     ...(lineHeight && { 'line-height': lineHeight })
@@ -170,8 +174,8 @@ function processObjectFontSize(fontSizeObj, lineHeight, breakpoint, config, node
       props[key] = parseVWQuery(node, config, value, lineHeight, breakpoint, true);
     } else if (value.endsWith(DPX_UNIT)) {
       const [fs, _fsUnit] = splitUnit(value);
-      const [bpPx, _bpUnit] = splitUnit(config.theme.breakpoints[breakpoint]);
-      const fsVw = ((fs / bpPx) * 100).toFixed(5);
+      const referenceViewportWidth = config.dpxViewportSize || 1440;
+      const fsVw = ((fs / referenceViewportWidth) * 100).toFixed(5);
       props[key] = parseVWQuery(node, config, `${fsVw}vw`, lineHeight, breakpoint, true);
     } else {
       props[key] = value;

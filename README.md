@@ -85,6 +85,34 @@ For instance, if you have:
 we will replace the desktop key's `4vw` with `1920/100*4` so that the font will not scale
 beyond the container's maxWidth.
 
+`dpxViewportSize`
+
+When working with design pixel units (dpx), you can specify a reference viewport width to convert
+design pixels to viewport width units. This is especially useful when working with Figma designs
+that are created at a specific desktop width (commonly 1440px).
+
+For example, if you have:
+```
+{
+  dpxViewportSize: 1440, // Default is 1440px if not specified
+  theme: {
+    typography: {
+      sizes: {
+        heading: {
+          mobile: '25dpx',
+          tablet: '35dpx',
+          desktop: '45dpx'
+        }
+      }
+    }
+  }
+}
+```
+
+When using `25dpx` at the reference viewport width of 1440px, it will be converted to `1.736vw`
+(`(25/1440)*100`). This makes it easy to maintain the exact sizing from design files while keeping
+the responsive behavior of viewport units.
+
 
 ### Typography
 #### Sizes
@@ -330,6 +358,7 @@ Selects a font family. Can also be passed a font size query.
   - `lg(2.0)/2.0` > Adds a modifier `(2.0)` that gets used as a multiplier in a calc() for the final font-size.
   - `between(18px-22px)` > Responsive font sizing, from 18px to 22px. Needs a breakpoint to function properly.
   - `product.size` > Traverses the keypath `product.size` within `theme.typography.sizes`
+  - `20dpx` > Design pixel units that scale with viewport width based on the `dpxViewportSize` setting (defaults to 1440px)
 
 `[breakpointQuery]`
   - `xs` > Only for the `xs` breakpoint

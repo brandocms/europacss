@@ -199,6 +199,7 @@ const WILDCARD_CFG = {
 }
 
 const DPX_CFG = {
+  dpxViewportSize: 1440, // Reference viewport width for dpx units
   theme: {
     breakpoints: {
       mobile: '0',
@@ -264,29 +265,29 @@ it('parses @fontsize dpx', () => {
   const output = `
     @media (width >= 0) and (width <= 739px) {
       article h1 {
-        font-size: calc(6.7659vw * var(--ec-zoom));
+        font-size: calc(3.47222vw * var(--ec-zoom));
         line-height: 1.2;
       }
       article h2 {
-        font-size: calc(3.38295vw * var(--ec-zoom));
+        font-size: calc(1.73611vw * var(--ec-zoom));
       }
     }
     @media (width >= 740px) and (width <= 1023px) {
       article h1 {
-        font-size: calc(12.8378vw * var(--ec-zoom));
+        font-size: calc(6.59722vw * var(--ec-zoom));
         line-height: 1.2;
       }
       article h2 {
-        font-size: calc(4.72973vw * var(--ec-zoom));
+        font-size: calc(2.43056vw * var(--ec-zoom));
       }
     }
     @media (width >= 1024px) {
       article h1 {
-        font-size: calc(9.27734vw * var(--ec-zoom));
+        font-size: calc(6.59722vw * var(--ec-zoom));
         line-height: 1.2;
       }
       article h2 {
-        font-size: calc(4.39453vw * var(--ec-zoom));
+        font-size: calc(3.125vw * var(--ec-zoom));
       }
     }
   `
