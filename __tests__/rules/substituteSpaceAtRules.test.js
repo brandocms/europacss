@@ -1997,59 +1997,109 @@ it('does not create breakpoints for hard coded values', () => {
   })
 })
 
-// it('optimizes partially identical values across breakpoints', () => {
-//   // Using the same config defined in the previous test
-//   const EQUAL_VALUES_CFG = {
-//     theme: {
-//       breakpoints: {
-//         mobile: '0',
-//         tablet: '740px',
-//         desktop: '1024px',
-//         wide: '1280px'
-//       },
-//       spacing: {
-//         equal: {
-//           mobile: '10px',
-//           tablet: '15px',
-//           desktop: '15px', // Same as tablet
-//           wide: '15px' // Same as tablet and desktop
-//         },
-//         partially_equal: {
-//           mobile: '10px',
-//           tablet: '15px',
-//           desktop: '15px', // Same as tablet
-//           wide: '20px' // Different
-//         }
-//       }
-//     }
-//   }
+it('optimizes partially identical values across breakpoints', () => {
+  const EQUAL_VALUES_CFG = {
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px',
+        wide: '1280px'
+      },
+      spacing: {
+        equal: {
+          mobile: '10px',
+          tablet: '15px',
+          desktop: '15px', // Same as tablet
+          wide: '15px' // Same as tablet and desktop
+        },
+        partially_equal: {
+          mobile: '10px',
+          tablet: '15px',
+          desktop: '15px', // Same as tablet
+          wide: '20px' // Different
+        }
+      }
+    }
+  }
 
-//   const input = `
-//     article {
-//       @space margin-left partially_equal;
-//     }
-//   `
+  const input = `
+    article {
+      @space margin-left partially_equal;
+    }
+  `
 
-//   const output = `
-//     @media (width >= 0) and (width <= 739px) {
-//       article {
-//         margin-left: 10px;
-//       }
-//     }
-//     @media (width >= 740px) and (width <= 1279px) {
-//       article {
-//         margin-left: 15px;
-//       }
-//     }
-//     @media (width >= 1280px) {
-//       article {
-//         margin-left: 20px;
-//       }
-//     }
-//   `
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-left: 10px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1279px) {
+      article {
+        margin-left: 15px;
+      }
+    }
+    @media (width >= 1280px) {
+      article {
+        margin-left: 20px;
+      }
+    }
+  `
 
-//   return run(input, EQUAL_VALUES_CFG).then(result => {
-//     expect(result.css).toMatchCSS(output)
-//     expect(result.warnings().length).toBe(0)
-//   })
-// })
+  return run(input, EQUAL_VALUES_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('optimizes equal values across breakpoints', () => {
+  const EQUAL_VALUES_CFG = {
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px',
+        wide: '1280px'
+      },
+      spacing: {
+        equal: {
+          mobile: '10px',
+          tablet: '15px',
+          desktop: '15px', // Same as tablet
+          wide: '15px' // Same as tablet and desktop
+        },
+        partially_equal: {
+          mobile: '10px',
+          tablet: '15px',
+          desktop: '15px', // Same as tablet
+          wide: '20px' // Different
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space margin-left equal;
+    }
+  `
+
+  const output = `
+    @media (width >= 0) and (width <= 739px) {
+      article {
+        margin-left: 10px;
+      }
+    }
+    @media (width >= 740px) {
+      article {
+        margin-left: 15px;
+      }
+    }
+  `
+
+  return run(input, EQUAL_VALUES_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
