@@ -109,7 +109,7 @@ it('parses @display w/ advanced bpQuery', () => {
   `
 
   const output = `
-  @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+  @media (min-width: 1024px) {
     .inner article {
       display: flex
     }
@@ -132,7 +132,7 @@ it('parses @display w/ advanced bpQuery and flex dir params', () => {
   `
 
   const output = `
-  @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+  @media (min-width: 1024px) {
     .inner article {
       display: flex;
       flex-direction: row
@@ -156,7 +156,7 @@ it('parses @display w/ advanced bpQuery and flex dir and wrap params', () => {
   `
 
   const output = `
-  @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+  @media (min-width: 1024px) {
     .inner article {
       display: flex;
       flex-direction: row;
@@ -189,7 +189,7 @@ it('parses multiple @display w/ advanced bpQuery and flex dir and wrap params', 
       flex-wrap: nowrap
     }
   }
-  @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+  @media (min-width: 1024px) {
     .inner article {
       display: flex;
       flex-direction: row;

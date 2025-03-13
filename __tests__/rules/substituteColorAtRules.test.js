@@ -119,7 +119,7 @@ it('parses @color w/deep key inside @responsive', () => {
   `
 
   const output = `
-    @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+    @media (min-width: 1024px) {
       article {
         color: #ffffff;
         background-color: #000000

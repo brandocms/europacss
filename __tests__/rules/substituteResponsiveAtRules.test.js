@@ -90,7 +90,7 @@ it('parses @responsive for multiple breakpoints', () => {
       color: red
     }
 
-    @media (min-width: 0) and (max-width: 739px), (min-width: 740px) and (max-width: 1023px), (min-width: 1900px) {
+    @media (min-width: 0) and (max-width: 1023px), (min-width: 1900px) {
       body article .test {
         color: yellow;
         font-size: 15px
@@ -135,7 +135,7 @@ it('parses multiple @responsive within same rule', () => {
       background-color: black
     }
 
-    @media (min-width: 0) and (max-width: 739px), (min-width: 740px) and (max-width: 1023px) {
+    @media (min-width: 0) and (max-width: 1023px) {
       article {
         width: 100%
       }
@@ -469,10 +469,7 @@ it('parses multiple breakpoints slashed', () => {
   `
 
   const output = `
-    @media (width >= 1024px) and (width <= 1199px),
-      (width >= 1200px) and (width <= 1559px),
-      (width >= 1560px) and (width <= 1919px),
-      (width >= 1920px) {
+    @media (width >= 1024px) {
       article {
         color: red;
         font-size: 16px;

@@ -82,7 +82,7 @@ it('parses @order w/ advanced bpQuery', () => {
   `
 
   const output = `
-  @media (min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px) {
+  @media (min-width: 1024px) {
     .inner article {
       order: 1
     }

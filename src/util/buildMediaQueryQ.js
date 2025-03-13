@@ -131,8 +131,22 @@ function areAdjacentBreakpoints(query1, query2, orderedKeys, breakpoints) {
   const index1 = orderedKeys.indexOf(key1)
   const index2 = orderedKeys.indexOf(key2)
   
-  // Two queries are adjacent if:
-  // 1. Their keys are adjacent in the ordered list
-  // 2. The max value of the first query is the same as the min value of the second query minus 1px
-  return Math.abs(index1 - index2) === 1
+  // Two queries are adjacent if they're adjacent in the ordered breakpoint list AND
+  // the first query has a max-width and the second has a min-width, making them continuous
+  if (Math.abs(index1 - index2) === 1) {
+    // For adjacent breakpoints, the first one's max value should equal the second one's min value minus 1
+    // This ensures there's no gap between the two media queries
+    if (query1.max && query2.min) {
+      // Get the numeric values for comparison
+      const maxValue = parseInt(query1.max.replace('px', ''), 10)
+      const minValue = parseInt(query2.min.replace('px', ''), 10)
+      
+      // For truly adjacent queries, the max of one should be 1px less than the min of the next
+      return minValue === maxValue + 1
+    }
+    
+    return true
+  }
+  
+  return false
 }
