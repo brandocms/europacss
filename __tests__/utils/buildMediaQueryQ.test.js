@@ -73,12 +73,12 @@ it('returns only xl', () => {
 
 it('parses multiple bps', () => {
   const output = buildMediaQueryQ({ breakpoints, breakpointCollections }, 'xs/sm/xl')
-  const expected = '(min-width: 0) and (max-width: 739px), (min-width: 740px) and (max-width: 1023px), (min-width: 1900px)'
+  const expected = '(min-width: 0) and (max-width: 1023px), (min-width: 1900px)'
   expect(output).toEqual(expected)
 })
 
 it('parses collection', () => {
   const output = buildMediaQueryQ({ breakpoints, breakpointCollections }, '$desktop')
-  const expected = '(min-width: 1024px) and (max-width: 1398px), (min-width: 1399px) and (max-width: 1899px), (min-width: 1900px)'
+  const expected = '(min-width: 1024px)'
   expect(output).toEqual(expected)
 })

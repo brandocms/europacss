@@ -10,7 +10,7 @@
     "helpers"
   ],
   "scripts": {
-    "test": "jest __tests__",
+    "test": "jest",
     "coverage": "jest __tests__ --coverage",
     "prebuild": "rimraf lib",
     "build": "swc src --out-dir lib --copy-files"
