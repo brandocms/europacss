@@ -357,13 +357,20 @@ it('parses advanced nesting', () => {
         line-height: 12px;
       }
     }
-    @media (width >= 1399px) and (width <= 1899px) {
+    @media (width >= 1399px) {
       header[data-nav] {
         width: 100%;
         max-width: 100%;
         margin-left: auto;
         margin-right: auto;
-        padding: 70px 100px;
+        padding-left: 100px;
+        padding-right: 100px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      header[data-nav] {
+        padding-top: 70px;
+        padding-bottom: 70px;
       }
       header[data-nav] nav figure.brand svg {
         letter-spacing: 0.12rem;
@@ -373,11 +380,8 @@ it('parses advanced nesting', () => {
     }
     @media (width >= 1900px) {
       header[data-nav] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding: 80px 100px;
+        padding-top: 80px;
+        padding-bottom: 80px;
       }
       header[data-nav] nav figure.brand svg {
         letter-spacing: 2px;

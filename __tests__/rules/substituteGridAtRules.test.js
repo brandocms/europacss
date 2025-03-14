@@ -29,12 +29,7 @@ it('sets column gap and display grid', () => {
         grid-column-gap: 35px;
       }
     }
-    @media (width >= 1024px) and (width <= 1398px) {
-      article {
-        grid-column-gap: 50px;
-      }
-    }
-    @media (width >= 1399px) and (width <= 1899px) {
+    @media (width >= 1024px) and (width <= 1899px) {
       article {
         grid-column-gap: 50px;
       }

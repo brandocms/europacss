@@ -48,6 +48,85 @@ module.exports = getConfig => {
 
 module.exports.postcss = true
 
+/**
+ * Group breakpoints by equal values to optimize media queries
+ * @param {Object} config - Configuration object
+ * @param {String} size - The size identifier
+ * @param {Array} breakpointKeys - Array of breakpoint names to process
+ * @param {String} prop - The CSS property being modified
+ * @returns {Object} Object where keys are values and values are breakpoint groups
+ */
+function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop) {
+  const valueGroups = {};
+  const orderedBreakpointKeys = [...breakpointKeys].sort((a, b) => {
+    // Sort breakpoints by value numerically (low to high)
+    const valueA = parseInt(config.theme.breakpoints[a], 10) || 0;
+    const valueB = parseInt(config.theme.breakpoints[b], 10) || 0;
+    return valueA - valueB;
+  });
+  
+  // Special case: setMaxForVw setting 
+  // When this is true, we need to handle the largest breakpoint separately
+  // as it will have px values instead of vw values
+  const hasMaxForVw = config && config.setMaxForVw === true;
+  const largestBreakpoint = hasMaxForVw ? orderedBreakpointKeys[orderedBreakpointKeys.length - 1] : null;
+  
+  // Special case: Handle container values based on both padding and maxWidth
+  const isContainer = prop === 'container';
+  
+  // Parse size for each breakpoint and group by value
+  orderedBreakpointKeys.forEach(bp => {
+    // Special case: When using setMaxForVw, always treat the largest breakpoint as a separate group
+    if (hasMaxForVw && bp === largestBreakpoint) {
+      const parsedSize = parseSize(clonedRule, config, size, bp);
+      const valueKey = String(parsedSize) + '_maxBreakpoint'; // Ensure it's a unique key
+      valueGroups[valueKey] = [bp];
+      return;
+    }
+    
+    // For container, we need to compare both padding and maxWidth
+    // Only merge if both values are the same
+    if (isContainer) {
+      // For container, we need to create a composite key with both padding and maxWidth
+      const { theme } = config;
+      
+      // Only proceed if container config exists
+      if (theme && theme.container) {
+        // Create a composite key from both container properties
+        const paddingValue = theme.container.padding && theme.container.padding[bp];
+        const maxWidthValue = theme.container.maxWidth && theme.container.maxWidth[bp];
+        
+        const containerKey = `padding:${paddingValue},maxWidth:${maxWidthValue}`;
+        
+        if (!valueGroups[containerKey]) {
+          valueGroups[containerKey] = [];
+        }
+        
+        valueGroups[containerKey].push(bp);
+      } else {
+        // If no container config, treat each breakpoint separately
+        const uniqueKey = `container_${bp}`;
+        valueGroups[uniqueKey] = [bp];
+      }
+      return;
+    }
+    
+    // Regular case for non-container properties
+    const parsedSize = parseSize(clonedRule, config, size, bp);
+    
+    // Convert to string for comparison
+    const valueKey = String(parsedSize);
+    
+    if (!valueGroups[valueKey]) {
+      valueGroups[valueKey] = [];
+    }
+    
+    valueGroups[valueKey].push(bp);
+  });
+  
+  return valueGroups;
+}
+
 function processRule(atRule, config, flagAsImportant) {
   // Validate rule context
   if (atRule.parent.type === 'root') {
@@ -138,19 +217,44 @@ function processRule(atRule, config, flagAsImportant) {
   } else {
     // No breakpoint query specified
     if (sizeNeedsBreakpoints(spacing, size)) {
-      // Size is responsive, create media queries for all breakpoints
-      _.keys(breakpoints).forEach(bp => {
-        const parsedSize = size ? parseSize(clonedRule, config, size, bp) : null
-        
-        const mediaRule = clonedRule.clone({
-          name: 'media',
-          params: buildFullMediaQuery(breakpoints, bp)
-        })
-        
-        const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant, config, bp)
-        mediaRule.append(sizeDecls)
-        atRule.before(mediaRule)
-      })
+      // Get all breakpoint keys
+      const breakpointKeys = _.keys(breakpoints);
+      
+      // Group breakpoints with equal values
+      const groupedBreakpoints = groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop);
+      
+      // For each distinct value, create a media query with the combined breakpoints
+      Object.entries(groupedBreakpoints).forEach(([value, bps]) => {
+        if (bps.length > 0) {
+          // Parse size for the first breakpoint in the group (they all have the same value)
+          const parsedSize = size ? parseSize(clonedRule, config, size, bps[0]) : null;
+          
+          // Build the CSS declarations
+          const sizeDecls = buildDecl(prop, parsedSize, flagAsImportant, config, bps[0]);
+          
+          // Special case: If we're targeting all breakpoints and there's only one value,
+          // we don't need a media query at all - can add directly to parent
+          if (bps.length === breakpointKeys.length) {
+            // This value applies to all breakpoints, so no media query needed
+            parent.prepend(sizeDecls);
+          } else {
+            // If multiple breakpoints have the same value, join them with "/"
+            const bpString = bps.join('/');
+            
+            // Create media query rule with the combined breakpoint string
+            const mediaRule = clonedRule.clone({
+              name: 'media',
+              // Use the combined string for building the media query
+              params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bpString)
+            });
+            
+            // Add declarations and insert before the @space rule
+            mediaRule.append(sizeDecls);
+            mediaRule.source = src;
+            atRule.before(mediaRule);
+          }
+        }
+      });
     } else {
       // Size is not responsive, add directly to parent rule
       const parsedSize = parseSize(clonedRule, config, size)

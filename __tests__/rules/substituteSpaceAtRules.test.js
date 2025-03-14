@@ -395,19 +395,14 @@ it('parses vw with maxPx', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test{
-        padding-top: 5vw
+    @media (width >= 0) and (width <= 1023px) {
+      body article .test {
+        padding-top: 5vw;
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px){
-      body article .test{
-        padding-top: 5vw
-      }
-    }
-    @media (min-width: 1024px){
-      body article .test{
-        padding-top: 96px
+    @media (width >= 1024px) {
+      body article .test {
+        padding-top: 96px;
       }
     }
   `
@@ -426,19 +421,14 @@ it('parses gutter with maxPx', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test{
-        padding-top: 2vw
+    @media (width >= 0) and (width <= 1023px) {
+      body article .test {
+        padding-top: 2vw;
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px){
-      body article .test{
-        padding-top: 2vw
-      }
-    }
-    @media (min-width: 1024px){
-      body article .test{
-        padding-top: 38.4px
+    @media (width >= 1024px) {
+      body article .test {
+        padding-top: 38.4px;
       }
     }
   `
@@ -457,12 +447,7 @@ it('parses with wildcards', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      body article .test{
-        padding-top: 2vw
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (min-width: 0) and (max-width: 1023px){
       body article .test{
         padding-top: 2vw
       }

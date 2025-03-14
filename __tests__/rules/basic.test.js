@@ -360,10 +360,9 @@ it('combine mqs when advanced', () => {
 
   const output = `
     article {
-      background-color: black;
-      color: white;
+      color: #fff;
+      background-color: #000;
     }
-
     @media (width >= 0) and (width <= 739px) {
       article .inner {
         width: 100%;
@@ -403,17 +402,7 @@ it('combine mqs when advanced', () => {
         font-size: 12px;
       }
     }
-    @media (width >= 1399px) and (width <= 1899px) {
-      article .inner {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 100px;
-        padding-right: 100px;
-      }
-    }
-    @media (width >= 1900px) {
+    @media (width >= 1399px) {
       article .inner {
         width: 100%;
         max-width: 100%;
@@ -1424,7 +1413,7 @@ it('nested @extend fancy %', () => {
       z-index: 56;
       pointer-events: none;
     }
-    @media (width >= 0) and (width <= 479px) {
+    @media (width >= 0) and (width <= 479px), (width >= 1024px) and (width <= 1199px) {
       [b-tpl=\"tag cloud\"] {
         width: 100%;
         max-width: 100%;
@@ -1433,6 +1422,24 @@ it('nested @extend fancy %', () => {
         padding-left: 20px;
         padding-right: 20px;
       }
+    }
+    @media (width >= 0) and (width <= 767px) {
+      [b-tpl=\"tag cloud\"] .inner {
+        flex-direction: column;
+        gap: 50px;
+      }
+      @media (width >= 0) and (width <= 479px) {
+        [b-tpl=\"tag cloud\"] .inner > .cases .canvas {
+          padding-bottom: 75px;
+        }
+      }
+      @media (width >= 480px) and (width <= 767px) {
+        [b-tpl=\"tag cloud\"] .inner > .cases .canvas {
+          padding-bottom: 75px;
+        }
+      }
+    }
+    @media (width >= 0) and (width <= 479px) {
       [b-tpl=\"tag cloud\"] .inner > .tags {
         flex: 0 0 100%;
         max-width: 100%;
@@ -1455,22 +1462,6 @@ it('nested @extend fancy %', () => {
       [b-tpl=\"tag cloud\"] .inner > .cases .canvas .case-card:nth-child(5),
       [b-tpl=\"tag cloud\"] .inner > .cases .canvas .case-card:nth-child(6) {
         width: 125px;
-      }
-    }
-    @media (width >= 0) and (width <= 767px) {
-      [b-tpl=\"tag cloud\"] .inner {
-        flex-direction: column;
-        gap: 50px;
-      }
-      @media (width >= 0) and (width <= 479px) {
-        [b-tpl=\"tag cloud\"] .inner > .cases .canvas {
-          padding-bottom: 75px;
-        }
-      }
-      @media (width >= 480px) and (width <= 767px) {
-        [b-tpl=\"tag cloud\"] .inner > .cases .canvas {
-          padding-bottom: 75px;
-        }
       }
     }
     @media (width >= 480px) and (width <= 767px) {
@@ -1571,12 +1562,6 @@ it('nested @extend fancy %', () => {
     }
     @media (width >= 1024px) and (width <= 1199px) {
       [b-tpl=\"tag cloud\"] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 20px;
-        padding-right: 20px;
         margin-top: -5.714vw !important;
         padding-top: 0 !important;
       }
@@ -1615,7 +1600,7 @@ it('nested @extend fancy %', () => {
         aspect-ratio: 1;
       }
     }
-    @media (width >= 1200px) and (width <= 1439px) {
+    @media (width >= 1200px) and (width <= 1919px) {
       [b-tpl=\"tag cloud\"] {
         width: 100%;
         max-width: 100%;
@@ -1623,6 +1608,10 @@ it('nested @extend fancy %', () => {
         margin-right: auto;
         padding-left: 1.389vw;
         padding-right: 1.389vw;
+      }
+    }
+    @media (width >= 1200px) and (width <= 1439px) {
+      [b-tpl=\"tag cloud\"] {
         margin-top: -5.714vw !important;
         padding-top: 0 !important;
       }
@@ -1658,12 +1647,6 @@ it('nested @extend fancy %', () => {
     }
     @media (width >= 1440px) and (width <= 1919px) {
       [b-tpl=\"tag cloud\"] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 1.389vw;
-        padding-right: 1.389vw;
         margin-top: -5.714vw !important;
         padding-top: 0 !important;
       }

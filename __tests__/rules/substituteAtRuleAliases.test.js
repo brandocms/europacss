@@ -23,12 +23,7 @@ it('aliases @column-offset', () => {
         margin-left: calc(8.333333% - 32.083333px)
       }
     }
-    @media (min-width: 1024px) and (max-width: 1398px){
-      article{
-        margin-left: calc(8.333333% - 45.833333px)
-      }
-    }
-    @media (min-width: 1399px) and (max-width: 1899px){
+    @media (min-width: 1024px) and (max-width: 1899px){
       article{
         margin-left: calc(8.333333% - 45.833333px)
       }
@@ -64,12 +59,7 @@ it('aliases @column-offset negative value', () => {
         margin-left: calc(-8.333333% - 37.916667px)
       }
     }
-    @media (min-width: 1024px) and (max-width: 1398px){
-      article{
-        margin-left: calc(-8.333333% - 54.166667px)
-      }
-    }
-    @media (min-width: 1399px) and (max-width: 1899px){
+    @media (min-width: 1024px) and (max-width: 1899px){
       article{
         margin-left: calc(-8.333333% - 54.166667px)
       }
@@ -100,7 +90,7 @@ it('aliases @column-offset for single bp', () => {
         margin-left: calc(8.333333% - 22.916667px)
       }
     }
-    
+
   `
 
   return run(input).then(result => {

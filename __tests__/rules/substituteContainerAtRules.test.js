@@ -91,17 +91,7 @@ it('parses @space container with no other decls', () => {
         width: 100%
       }
     }
-    @media (min-width: 1399px) and (max-width: 1899px){
-      article{
-        padding-left: 100px;
-        padding-right: 100px;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%
-      }
-    }
-    @media (min-width: 1900px){
+    @media (min-width: 1399px) {
       article{
         padding-left: 100px;
         padding-right: 100px;
@@ -163,17 +153,7 @@ it('parses container with other decls', () => {
         width: 100%;
       }
     }
-    @media (min-width: 1399px) and (max-width: 1899px){
-      article {
-        padding-left: 100px;
-        padding-right: 100px;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%;
-      }
-    }
-    @media (min-width: 1900px){
+    @media (min-width: 1399px) {
       article {
         padding-left: 100px;
         padding-right: 100px;
@@ -199,17 +179,7 @@ it('parses @space container with vws and setMax', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        padding-left: 4vw;
-        padding-right: 4vw;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px){
+    @media (min-width: 0) and (max-width: 1023px){
       article{
         padding-left: 4vw;
         padding-right: 4vw;
@@ -245,34 +215,24 @@ it('parses @space container with vws without setMax', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        padding-left: 4vw;
-        padding-right: 4vw;
+    @media (width >= 0) and (width <= 1023px) {
+      article {
+        width: 100%;
         max-width: 100%;
         margin-left: auto;
         margin-right: auto;
-        width: 100%
-      }
-    }
-    @media (min-width: 740px) and (max-width: 1023px){
-      article{
         padding-left: 4vw;
         padding-right: 4vw;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%
       }
     }
-    @media (min-width: 1024px){
-      article{
-        padding-left: 4vw;
-        padding-right: 4vw;
+    @media (width >= 1024px) {
+      article {
+        width: 100%;
         max-width: 1024px;
         margin-left: auto;
         margin-right: auto;
-        width: 100%
+        padding-left: 4vw;
+        padding-right: 4vw;
       }
     }
   `

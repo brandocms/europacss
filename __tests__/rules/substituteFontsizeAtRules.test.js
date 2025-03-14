@@ -1557,9 +1557,6 @@ it('can mix @fontsize with and without breakpoint', () => {
         padding-left: 50px;
         padding-right: 50px;
       }
-      [b-tpl=\"case text | list\"] .inner {
-        gap: 50px;
-      }
       [b-tpl=\"case text | list\"] .inner > .text {
         font-size: body;
       }
@@ -1573,7 +1570,12 @@ it('can mix @fontsize with and without breakpoint', () => {
         font-size: 16px;
       }
     }
-    @media (width >= 1399px) and (width <= 1899px) {
+    @media (width >= 1024px) and (width <= 1899px) {
+      [b-tpl=\"case text | list\"] .inner {
+        gap: 50px;
+      }
+    }
+    @media (width >= 1399px) {
       [b-tpl=\"case text | list\"] {
         width: 100%;
         max-width: 100%;
@@ -1582,8 +1584,9 @@ it('can mix @fontsize with and without breakpoint', () => {
         padding-left: 100px;
         padding-right: 100px;
       }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
       [b-tpl=\"case text | list\"] .inner {
-        gap: 50px;
         display: flex;
       }
       [b-tpl=\"case text | list\"] .inner > .text {
@@ -1611,14 +1614,6 @@ it('can mix @fontsize with and without breakpoint', () => {
       }
     }
     @media (width >= 1900px) {
-      [b-tpl=\"case text | list\"] {
-        width: 100%;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        padding-left: 100px;
-        padding-right: 100px;
-      }
       [b-tpl=\"case text | list\"] .inner {
         gap: 60px;
       }
