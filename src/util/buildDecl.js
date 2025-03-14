@@ -50,6 +50,14 @@ export default function buildDecl (p, value, important = false, config, bp) {
     case 'scale':
       props.push({ prop: 'transform', value: `scale(${value})` })
       break
+      
+    case 'abs100':
+      props.push({ prop: 'position', value: 'absolute' })
+      props.push({ prop: 'width', value: '100%' })
+      props.push({ prop: 'height', value: '100%' })
+      props.push({ prop: 'top', value: '0' })
+      props.push({ prop: 'left', value: '0' })
+      break
 
     case 'container':
       let paddingValue = config.theme.container.padding[bp]

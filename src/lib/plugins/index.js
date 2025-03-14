@@ -15,6 +15,7 @@ import substituteResponsiveAtRules from './substituteResponsiveAtRules'
 import substituteEmbedResponsiveAtRules from './substituteEmbedResponsiveAtRules'
 import substituteGridAtRules from './substituteGridAtRules'
 import substituteRowAtRules from './substituteRowAtRules'
+import substituteAbs100AtRules from './substituteAbs100AtRules'
 
 export default [
   substituteEuropaAtRules,
@@ -33,5 +34,6 @@ export default [
   substituteEmbedResponsiveAtRules,
   substituteColumnAtRules,
   substituteResponsiveAtRules,
-  substituteRowAtRules
+  substituteRowAtRules,
+  substituteAbs100AtRules
 ]
