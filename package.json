@@ -39,6 +39,7 @@
     "postcss-functions": "^4.0.0",
     "postcss-nested": "7.0.2",
     "postcss-nesting": "^13.0.1",
+    "postcss-preset-env": "^10.1.5",
     "postcss-reporter": "^7.1.0",
     "reduce-css-calc": "^2.1.8"
   },

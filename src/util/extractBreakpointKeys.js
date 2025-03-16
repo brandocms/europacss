@@ -12,27 +12,27 @@ export default function extractBreakpointKeys({ breakpoints, breakpointCollectio
   const firstChar = q[0]
   const secondChar = q[1]
   const keys = _.keys(breakpoints)
-  
+
   // Handle breakpoint collection ($collection)
   if (firstChar === '$') {
     return processBreakpointCollection({ breakpoints, breakpointCollections }, q)
   }
-  
+
   // Handle less-than queries (< or <=)
   if (firstChar === '<') {
     return processLessThanQuery(keys, q, secondChar)
   }
-  
+
   // Handle greater-than queries (> or >=)
   if (firstChar === '>') {
     return processGreaterThanQuery(keys, q, secondChar)
   }
-  
+
   // Handle equals queries (=)
   if (firstChar === '=') {
     throw new Error('extractBreakpointKeys: Mediaqueries should never start with =')
   }
-  
+
   // Default: Split by forward slash
   return q.split('/')
 }
@@ -45,14 +45,16 @@ export default function extractBreakpointKeys({ breakpoints, breakpointCollectio
  */
 function processBreakpointCollection({ breakpoints, breakpointCollections }, key) {
   if (!breakpointCollections) {
-    throw new Error(`extractBreakpointKeys: No \`breakpointCollection\` set in config, but \`${key}\` was referenced`)
+    throw new Error(
+      `extractBreakpointKeys: No \`breakpointCollection\` set in config, but \`${key}\` was referenced`
+    )
   }
-  
+
   const resolvedBreakpointQ = breakpointCollections[key]
   if (!resolvedBreakpointQ) {
     throw new Error(`extractBreakpointKeys: Breakpoint collection \`${key}\` not found!`)
   }
-  
+
   return extractBreakpointKeys({ breakpoints, breakpointCollections }, resolvedBreakpointQ)
 }
 
@@ -66,12 +68,16 @@ function processBreakpointCollection({ breakpoints, breakpointCollections }, key
 function processLessThanQuery(keys, q, secondChar) {
   const bps = []
   let key, idx
-  
+
   if (secondChar === '=') {
     // <= (less than or equal to)
     key = q.substring(2)
     idx = keys.indexOf(key)
-    
+
+    if (idx === -1) {
+      throw new Error(`extractBreakpointKeys: Breakpoint \`${key}\` not found!`)
+    }
+
     // Include this breakpoint and all smaller ones
     for (let i = idx; i >= 0; i--) {
       bps.unshift(keys[i])
@@ -80,13 +86,17 @@ function processLessThanQuery(keys, q, secondChar) {
     // < (less than)
     key = q.substring(1)
     idx = keys.indexOf(key)
-    
+
+    if (idx === -1) {
+      throw new Error(`extractBreakpointKeys: Breakpoint \`${key}\` not found!`)
+    }
+
     // Include all breakpoints smaller than this one
     for (let i = idx - 1; i >= 0; i--) {
       bps.unshift(keys[i])
     }
   }
-  
+
   return bps
 }
 
@@ -100,12 +110,16 @@ function processLessThanQuery(keys, q, secondChar) {
 function processGreaterThanQuery(keys, q, secondChar) {
   const bps = []
   let key, idx
-  
+
   if (secondChar === '=') {
     // >= (greater than or equal to)
     key = q.substring(2)
     idx = keys.indexOf(key)
-    
+
+    if (idx === -1) {
+      throw new Error(`extractBreakpointKeys: Breakpoint \`${key}\` not found!`)
+    }
+
     // Include this breakpoint and all larger ones
     for (let i = idx; i < keys.length; i++) {
       bps.push(keys[i])
@@ -114,12 +128,16 @@ function processGreaterThanQuery(keys, q, secondChar) {
     // > (greater than)
     key = q.substring(1)
     idx = keys.indexOf(key)
-    
+
+    if (idx === -1) {
+      throw new Error(`extractBreakpointKeys: Breakpoint \`${key}\` not found!`)
+    }
+
     // Include all breakpoints larger than this one
     for (let i = idx + 1; i < keys.length; i++) {
       bps.push(keys[i])
     }
   }
-  
+
   return bps
 }

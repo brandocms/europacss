@@ -395,7 +395,7 @@ it('parses vw with maxPx', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 1023px) {
+    @media (width <= 1023px) {
       body article .test {
         padding-top: 5vw;
       }
@@ -421,7 +421,7 @@ it('parses gutter with maxPx', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 1023px) {
+    @media (width <= 1023px) {
       body article .test {
         padding-top: 2vw;
       }
@@ -447,7 +447,7 @@ it('parses with wildcards', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 1023px){
+    @media (width <= 1023px){
       body article .test{
         padding-top: 2vw
       }
@@ -477,7 +477,7 @@ it('parses @space translateX', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         transform: translateX(calc(100vw + 5px));
       }
@@ -512,7 +512,7 @@ it('parses @space calced', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         width: calc(100vw + 5px);
       }
@@ -547,7 +547,7 @@ it('parses @space per mq size', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         margin-top: 15px;
       }
@@ -632,7 +632,7 @@ it('parses @space! only for requested bp', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         margin-top: 15px !important;
       }
@@ -759,7 +759,7 @@ it('parses @space for theme(..)', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test{
         margin-top: calc(18px * 1.6);
         margin-top: calc(18px * 1.2)
@@ -785,12 +785,12 @@ it('parses @space for between() vertical-rhythm()', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test{
         margin-top: calc(18px + 4 * ((100vw - 320px) / 739) * 1.6)
       }
     }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test{
         margin-top: calc(18px + 4 * ((100vw - 320px) / 739) * 1.2)
       }
@@ -811,7 +811,7 @@ it('parses @space for between() breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test {
         margin-top: calc(100px + 100 * ((100vw - 320px) / 739))
       }
@@ -832,7 +832,7 @@ it('parses @space for between() breakpoint multiplied', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test {
         margin-top: calc((100px + 100 * ((100vw - 320px) / 739)) * 2)
       }
@@ -857,7 +857,7 @@ it('parses @space for fraction', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: calc(50% - 10px);
       }
@@ -882,7 +882,7 @@ it('parses @space for fraction with gutter multiplier', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: calc(50% - 30px);
       }
@@ -996,7 +996,7 @@ it('parses @space for fraction of breakpoint key', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: 5px;
       }
@@ -1021,7 +1021,7 @@ it('parses @space for 0.5 of gutter', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: 10px;
       }
@@ -1046,7 +1046,7 @@ it('parses @space for 1.5 of gutter', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: 30px;
       }
@@ -1071,7 +1071,7 @@ it('parses @space for fraction of breakpoint key for all breakpoints', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: 5px;
       }
@@ -1106,7 +1106,7 @@ it('@space with fraction and no breakpointQuery', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-left: calc(50% - 10px);
       }
@@ -1141,7 +1141,7 @@ it('parses @space as gutter multiplier for regular number', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         padding-left: 20px;
       }
@@ -1166,7 +1166,7 @@ it('parses @space as negative gutter multiplier for regular number', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         padding-left: -20px;
       }
@@ -1191,7 +1191,7 @@ it('parses @space as gutter multiplier for regular number across bps', () => {
     article {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         padding-left: 20px;
       }
@@ -1267,7 +1267,7 @@ it('parses @space 0 w/ breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         margin-top: 0;
         margin-bottom: 0
@@ -1391,7 +1391,7 @@ it('parses @space with dpx units using per-collection reference viewport widths'
   }
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-top: calc(5.33333vw * var(--ec-zoom));
       }
@@ -1415,12 +1415,6 @@ it('parses @space with dpx units using per-collection reference viewport widths'
 })
 
 it('parses @space with dpx units using breakpoint collections', () => {
-  const input = `
-    article {
-      @space margin-top 20dpx $test;
-    }
-  `
-
   const perCollectionConfig = {
     dpxViewportSizes: {
       // Collections
@@ -1450,13 +1444,14 @@ it('parses @space with dpx units using breakpoint collections', () => {
     }
   }
 
-  const output = `
-    @media (width >= 0) and (width <= 739px) {
-      article {
-        margin-top: calc(2.60417vw * var(--ec-zoom));
-      }
+  const input = `
+    article {
+      @space margin-top 20dpx $test;
     }
-    @media (width >= 740px) and (width <= 1023px) {
+  `
+
+  const output = `
+    @media (width <= 1023px) {
       article {
         margin-top: calc(2.60417vw * var(--ec-zoom));
       }
@@ -1539,7 +1534,7 @@ it('parses @space with q', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         margin-top: 25px;
       }
@@ -1581,7 +1576,7 @@ it('parses @space with > *', () => {
     article > :first-of-type {
       margin-left: 0;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article > * {
         margin-left: 40px;
       }
@@ -1616,7 +1611,7 @@ it('parses @space with multiple split bps', () => {
     body article .test {
       font-size: 18px;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       body article .test {
         margin-top: 25px;
       }
@@ -1641,7 +1636,7 @@ it('parses @space per mq size with shortcuts', () => {
     }
   `
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body{
         margin-top: 25px;
         margin-bottom: 25px
@@ -1679,8 +1674,8 @@ it('works inside @responsive', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
-      @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
+      @media (width <= 739px) {
         article {
           margin-top: 25px;
         }
@@ -1701,7 +1696,7 @@ it('can use container as size', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         margin-left: 15px
       }
@@ -1722,9 +1717,30 @@ it('can use -container as size', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         margin-left: -15px
+      }
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses >=tablet correctly', () => {
+  const input = `
+    article {
+      @space margin-left 15px >=tablet;
+    }
+  `
+
+  const output = `
+    @media (width >= 740px) {
+      article {
+        margin-left: 15px;
       }
     }
   `
@@ -1774,8 +1790,8 @@ it('works inside @responsive as dbl parent', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
-      @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
+      @media (width <= 739px) {
         article {
           margin-top: 25px;
         }
@@ -1842,7 +1858,7 @@ it('parses @space with breakpointCollection', () => {
       font-size: 18px;
     }
 
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       body article .test {
         margin-top: 25px;
       }
@@ -2015,7 +2031,7 @@ it('optimizes partially identical values across breakpoints', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-left: 10px;
       }
@@ -2071,7 +2087,7 @@ it('optimizes equal values across breakpoints', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         margin-left: 10px;
       }

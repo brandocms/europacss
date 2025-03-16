@@ -18,15 +18,14 @@ export default function buildMediaQuery(breakpoints, breakpoint) {
     .map(screen => {
       return _(screen)
         .map((value, feature) => {
-          feature = _.get(
-            {
-              min: 'min-width',
-              max: 'max-width'
-            },
-            feature,
-            feature
-          )
-          return `(${feature}: ${value})`
+          // Use modern width syntax instead of min-width/max-width
+          if (feature === 'min') {
+            return `(width >= ${value})`
+          } else if (feature === 'max') {
+            return `(width <= ${value})`
+          } else {
+            return `(${feature}: ${value})`
+          }
         })
         .join(' and ')
     })

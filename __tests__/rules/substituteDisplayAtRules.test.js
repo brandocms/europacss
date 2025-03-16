@@ -34,7 +34,7 @@ it('parses @display under @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     article {
       display: flex
     }
@@ -59,7 +59,7 @@ it('parses @display as child under @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     .inner article {
       display: flex
     }
@@ -86,7 +86,7 @@ it('parses @display as nested child under @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     .inner article figure {
       display: flex
     }
@@ -182,7 +182,7 @@ it('parses multiple @display w/ advanced bpQuery and flex dir and wrap params', 
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     .inner article {
       display: flex;
       flex-direction: column;

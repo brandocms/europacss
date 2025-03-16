@@ -5,22 +5,8 @@
     position: relative;
   }
 }
-@media (width >= 1024px) and (width <= 1398px) {
-  figure {
-    flex: 0 0 calc(58.3333% - 20.8333px);
-    max-width: calc(58.3333% - 20.8333px);
-    position: relative;
-  }
-}
 @media (width >= 1024px) {
-  @media (width >= 1024px) and (width <= 1398px) {
-    figure:first-of-type {
-      margin-right: -50px;
-      padding-top: 175px;
-      padding-left: 75px;
-    }
-  }
-  @media (width >= 1399px) and (width <= 1899px) {
+  @media (width >= 1024px) and (width <= 1899px) {
     figure:first-of-type {
       margin-right: -50px;
       padding-top: 175px;
@@ -34,15 +20,7 @@
       padding-left: 90px;
     }
   }
-  @media (width >= 1024px) and (width <= 1398px) {
-    figure:last-of-type {
-      margin-top: -100px;
-      margin-left: -50px;
-      margin-right: 50px;
-      padding-right: 25px;
-    }
-  }
-  @media (width >= 1399px) and (width <= 1899px) {
+  @media (width >= 1024px) and (width <= 1899px) {
     figure:last-of-type {
       margin-top: -100px;
       margin-left: -50px;
@@ -58,14 +36,7 @@
       padding-right: 30px;
     }
   }
-  @media (width >= 1024px) and (width <= 1398px) {
-    figure.center {
-      margin-top: -100px;
-      padding-left: 200px;
-      padding-right: 200px;
-    }
-  }
-  @media (width >= 1399px) and (width <= 1899px) {
+  @media (width >= 1024px) and (width <= 1899px) {
     figure.center {
       margin-top: -100px;
       padding-left: 200px;
@@ -78,5 +49,12 @@
       padding-left: 240px;
       padding-right: 240px;
     }
+  }
+}
+@media (width >= 1024px) and (width <= 1398px) {
+  figure {
+    flex: 0 0 calc(58.3333% - 20.8333px);
+    max-width: calc(58.3333% - 20.8333px);
+    position: relative;
   }
 }

@@ -84,20 +84,18 @@ function processBreakpointCollection({ breakpoints, breakpointCollections }, key
  * @returns {Object} Media query constraints
  */
 function processLessThanQuery({ breakpoints }, q, secondChar) {
-  const min = '0'
-  let max
-  
   if (secondChar === '=') {
     // <= (less than or equal to)
     const key = q.substring(2)
-    max = calcMaxFromBreakpoint(breakpoints, key)
+    const max = calcMaxFromBreakpoint(breakpoints, key)
+    // For <= queries, we want a min-width of 0 and the calculated max
+    return { min: '0', max }
   } else {
     // < (less than)
     const key = q.substring(1)
-    max = calcMaxFromPreviousBreakpoint(breakpoints, key)
+    const max = calcMaxFromPreviousBreakpoint(breakpoints, key)
+    return { min: '0', ...(max && { max }) }
   }
-  
-  return { min, ...(max && { max }) }
 }
 
 /**
@@ -111,6 +109,7 @@ function processGreaterThanQuery({ breakpoints }, q, secondChar) {
   if (secondChar === '=') {
     // >= (greater than or equal to)
     const key = q.substring(2)
+    // Only return min with no max for >= queries
     return { min: breakpoints[key] }
   } else {
     // > (greater than)

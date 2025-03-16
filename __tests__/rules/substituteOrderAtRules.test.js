@@ -1,7 +1,7 @@
 const postcss = require('postcss')
 const plugin = require('../../src')
 
-function run (input, opts) {
+function run(input, opts) {
   return postcss([plugin(opts)]).process(input, { from: undefined })
 }
 
@@ -34,7 +34,7 @@ it('parses @order under @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     article {
       order: 1
     }
@@ -59,7 +59,7 @@ it('parses @order as child under @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     .inner article {
       order: 1
     }

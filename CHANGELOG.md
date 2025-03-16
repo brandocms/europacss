@@ -8,6 +8,9 @@
   now nest the media-queries!
 - Remove deprecated `@container`
 - Deprecate and remove `@row`
+- Added built-in postcss-preset-env support with configurable options
+- Improved media query handling with custom mqpacker implementation
+- Removed redundant `(width >= 0)` constraint from media queries
 
 
 ### 0.13.1

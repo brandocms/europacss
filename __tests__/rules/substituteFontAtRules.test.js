@@ -34,7 +34,7 @@ it('parses @font inside @responsive', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px) {
+  @media (width <= 739px) {
     article {
       font-family: Georgia,Cambria,"Times New Roman",Times,serif
     }
@@ -58,7 +58,7 @@ it('parses @font with size', () => {
     article {
       font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         font-size: 12px;
       }
@@ -103,7 +103,7 @@ it('parses @font with size and breakpoints', () => {
     article {
       font-family: Georgia, Cambria, Times New Roman, Times, serif;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         font-size: 16.8px;
         line-height: 1.53;

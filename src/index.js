@@ -3,13 +3,13 @@ import _ from 'lodash'
 import postcss from 'postcss'
 import postcssNested from 'postcss-nested'
 import postcssNesting from 'postcss-nesting'
+import postcssPresetEnv from 'postcss-preset-env'
 import postcssExtendRule from './lib/plugins/extend'
 import postcssCombineDuplicatedSelectors from 'postcss-combine-duplicated-selectors'
-import postcssMQGroup from 'css-mqgroup'
+import postcssMQPacker from './lib/plugins/postcss/mqpacker'
 
 import defaultConfig from '../stubs/defaultConfig'
 import resolveConfig from './util/resolveConfig'
-import registerConfigAsDependency from './lib/registerConfigAsDependency'
 import resolveConfigPath from './util/resolveConfigPath'
 import plugins from './lib/plugins'
 
@@ -26,18 +26,48 @@ const getConfigFunction = config => () => {
 }
 
 module.exports = config => {
-  const resolvedConfigPath = resolveConfigPath(config)
-  const cfgFunction = getConfigFunction(resolvedConfigPath || config)
+  // Extract the europacss config and presetEnv options
+  let europacssConfig = config
+  let presetEnvOptions = {}
 
-  const configuredEuropaPlugins = plugins.map(plug => {
-    return plug(cfgFunction)
-  })
+  // If config is an object and has presetEnv property, extract it
+  if (_.isObject(config) && !_.isUndefined(config.presetEnv)) {
+    presetEnvOptions = config.presetEnv
 
-  const europaPipeline = [...configuredEuropaPlugins]
-
-  if (!_.isUndefined(resolvedConfigPath)) {
-    europaPipeline.push(registerConfigAsDependency(resolvedConfigPath))
+    // If the config also has an actual europacss config, use that
+    if (!_.isUndefined(config.config)) {
+      europacssConfig = config.config
+    } else {
+      // Otherwise, use config without the presetEnv prop
+      europacssConfig = _.omit(config, ['presetEnv'])
+    }
   }
+
+  // if europacssConfig is empty, set it as undefined
+  if (_.isEmpty(europacssConfig)) {
+    europacssConfig = undefined
+  }
+
+  const resolvedConfigPath = resolveConfigPath(europacssConfig)
+  const cfgFunction = getConfigFunction(resolvedConfigPath || europacssConfig)
+
+  // Extract options for postcss-preset-env
+  const usePresetEnv = _.get(presetEnvOptions, 'disable', false) !== true
+  
+  // Default preset-env options
+  const defaultPresetEnvOptions = {
+    browsers: ['defaults'],
+    features: {
+      'custom-properties': false,
+    },
+  }
+  
+  // Merge default options with user-provided options
+  const presetEnvConfig = _.merge(
+    {},
+    defaultPresetEnvOptions,
+    _.omit(presetEnvOptions, ['disable'])
+  )
 
   return {
     postcssPlugin: 'europacss',
@@ -62,9 +92,12 @@ module.exports = config => {
             )
           }
 
-          if (plugin.postcssPlugin === 'css-mqgroup') {
+          if (
+            plugin.postcssPlugin === 'css-mqgroup' ||
+            plugin.postcssPlugin === 'europacss-mqpacker'
+          ) {
             throw new Error(
-              'europacss runs its own media query packing plugin. please remove css-mqgroup from your config'
+              'europacss runs its own media query packing plugin. please remove css-mqgroup or europacss-mqpacker from your config'
             )
           }
 
@@ -73,6 +106,26 @@ module.exports = config => {
               'europacss runs its own selector deduping plugin. please remove postcss-combine-duplicated-selectors from your config'
             )
           }
+
+          if (plugin.postcssPlugin === 'postcss-preset-env') {
+            throw new Error(
+              'europacss runs its own postcss-preset-env plugin. please remove postcss-preset-env from your config and pass options via europacss instead'
+            )
+          }
+
+          if (plugin.postcssPlugin === 'autoprefixer') {
+            throw new Error(
+              'europacss runs postcss-preset-env which includes autoprefixer. please remove autoprefixer from your config'
+            )
+          }
+        }
+
+        if (resolvedConfigPath) {
+          result.messages.push({
+            type: 'dependency',
+            file: resolvedConfigPath,
+            parent: root.source.input.file
+          })
         }
 
         // run nesting
@@ -85,6 +138,11 @@ module.exports = config => {
         result = await postcss([postcssExtendRule()]).process(root, result.opts)
 
         // then we blast through the europaPipeline
+        const configuredEuropaPlugins = plugins.map(plug => {
+          return plug(cfgFunction)
+        })
+
+        const europaPipeline = [...configuredEuropaPlugins]
         result = await postcss(europaPipeline).process(root, result.opts)
 
         // try to lose all @nest garbage
@@ -98,11 +156,16 @@ module.exports = config => {
         // then we run nesting again
         result = await postcss([postcssNested()]).process(root, result.opts)
 
-        // then we sort mqs
-        result = await postcss([postcssMQGroup({ sort: true })]).process(root, result.opts)
+        // Use our custom media query packer with mobile-first sorting
+        result = await postcss([postcssMQPacker({ sort: true })]).process(root, result.opts)
 
         // then finally combine selectors
         result = await postcss([postcssCombineDuplicatedSelectors()]).process(root, result.opts)
+
+        // Apply postcss-preset-env if enabled
+        if (usePresetEnv) {
+          result = await postcss([postcssPresetEnv(presetEnvConfig)]).process(root, result.opts)
+        }
       }
     ]
   }

@@ -61,7 +61,7 @@ it('parses @space container with no other decls', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         padding-left: 15px;
         padding-right: 15px;
@@ -123,7 +123,7 @@ it('parses container with other decls', () => {
       background-color: red;
       padding-bottom: 50px;
     }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article {
         padding-left: 15px;
         padding-right: 15px;
@@ -179,7 +179,7 @@ it('parses @space container with vws and setMax', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 1023px){
+    @media (width <= 1023px){
       article{
         padding-left: 4vw;
         padding-right: 4vw;
@@ -215,7 +215,7 @@ it('parses @space container with vws without setMax', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 1023px) {
+    @media (width <= 1023px) {
       article {
         width: 100%;
         max-width: 100%;
@@ -257,7 +257,7 @@ it('parses @space container for specific breakpoints', () => {
       background-color: red;
       padding-bottom: 50px;
     }
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article {
         padding-left: 15px;
         padding-right: 15px;
@@ -312,8 +312,8 @@ it('runs correctly inside @responsive', () => {
       background-color: red;
       padding-bottom: 50px;
     }
-    @media (width >= 0) and (width <= 739px) {
-      @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
+      @media (width <= 739px) {
         article {
           width: 100%;
           max-width: 740px;
@@ -341,7 +341,7 @@ it('parses @container for specific breakpoints', () => {
   `
 
   const output = `
-  @media (min-width: 0) and (max-width: 739px){
+  @media (width <= 739px){
     article{
       padding-left: 15px;
       padding-right: 15px;

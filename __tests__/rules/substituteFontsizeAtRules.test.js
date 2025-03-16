@@ -198,9 +198,61 @@ const WILDCARD_CFG = {
   }
 }
 
-// Mock PostCSS node for warnings
-const mockPostCSSNode = {
-  warn: jest.fn()
+const WILDCARD2_CFG = {
+  theme: {
+    breakpoints: {
+      iphone: '0',
+      mobile: '450px',
+      ipad_portrait: '740px',
+      ipad_landscape: '1024px',
+      desktop_md: '1280px',
+      desktop_lg: '1440px',
+      desktop_xl: '1600px'
+    },
+
+    container: {
+      maxWidth: {
+        iphone: '100%',
+        mobile: '100%',
+        ipad_portrait: '100%',
+        ipad_landscape: '100%',
+        desktop_md: '100%',
+        desktop_lg: '100%',
+        desktop_xl: '100%'
+      },
+
+      padding: {
+        iphone: '15px',
+        mobile: '35px',
+        ipad_portrait: '35px',
+        ipad_landscape: '35px',
+        desktop_md: '50px',
+        desktop_lg: '50px',
+        desktop_xl: '50px'
+      }
+    },
+
+    typography: {
+      base: '16px',
+      lineHeight: {
+        iphone: 1.6,
+        mobile: 1.6,
+        ipad_portrait: 1.6,
+        ipad_landscape: 1.6,
+        desktop_md: 1.6,
+        desktop_lg: 1.6,
+        desktop_xl: 1.6
+      },
+      sizes: {
+        header_text: {
+          iphone: '17px',
+          mobile: '17px',
+          ipad_portrait: '17px',
+          '*': '1.0vw'
+        }
+      }
+    }
+  }
 }
 
 const DPX_CFG = {
@@ -268,7 +320,7 @@ it('parses @fontsize dpx', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article h1 {
         font-size: calc(3.47222vw * var(--ec-zoom));
         line-height: 1.2;
@@ -365,7 +417,7 @@ it('parses @fontsize with per-collection reference viewport widths', () => {
   }
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article h2 {
         font-size: calc(5.33333vw * var(--ec-zoom));
       }
@@ -434,7 +486,7 @@ it('parses @fontsize with dpx units using breakpoint collections', () => {
   }
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article h2 {
         font-size: calc(2.60417vw * var(--ec-zoom));
       }
@@ -471,7 +523,7 @@ it('parses @fontsize config with line-height', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(8vw * var(--ec-zoom));
         line-height: calc(12vw * var(--ec-zoom))
@@ -505,7 +557,7 @@ it('parses @fontsize config with wildcards and regular prop', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(4vw * var(--ec-zoom))
       }
@@ -536,7 +588,7 @@ it('parses @fontsize config with only wildcards', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(3vw * var(--ec-zoom))
       }
@@ -559,6 +611,57 @@ it('parses @fontsize config with only wildcards', () => {
   })
 })
 
+it('parses @fontsize config with a wildcard', () => {
+  const input = `
+    article {
+      @fontsize header_text;
+    }
+  `
+
+  const output = `
+    @media (width <= 449px) {
+      article {
+        font-size: 17px;
+      }
+    }
+    @media (width >= 450px) and (width <= 739px) {
+      article {
+        font-size: 17px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        font-size: 17px;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1279px) {
+      article {
+        font-size: calc(1vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1280px) and (width <= 1439px) {
+      article {
+        font-size: calc(1vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1440px) and (width <= 1599px) {
+      article {
+        font-size: calc(1vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1600px) {
+      article {
+        font-size: calc(1vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, WILDCARD2_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('parses @fontsize config with max px', () => {
   const input = `
     article {
@@ -567,7 +670,7 @@ it('parses @fontsize config with max px', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(4vw * var(--ec-zoom))
       }
@@ -624,7 +727,7 @@ it('parses @fontsize vw with max px', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(4vw * var(--ec-zoom))
       }
@@ -655,7 +758,7 @@ it('parses @fontsize vw with max px and vw lineheight', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(4vw * var(--ec-zoom));
         line-height: calc(4vw * var(--ec-zoom))
@@ -702,7 +805,7 @@ it('parses @fontsize without max px', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: calc(4vw * var(--ec-zoom))
       }
@@ -733,7 +836,7 @@ it('parses regular @fontsize for all breakpoints', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 19px
       }
@@ -778,7 +881,7 @@ it('parses regular @fontsize for single breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 19px
       }
@@ -799,7 +902,7 @@ it('parses hardcoded @fontsize for single breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 50px
       }
@@ -820,7 +923,7 @@ it('parses regular @fontsize for single breakpoint with line-height', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 19px;
         line-height: 2.0
@@ -842,7 +945,7 @@ it('parses regular @fontsize for single breakpoint with line-height and modifier
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 38px;
         line-height: 2.0
@@ -864,7 +967,7 @@ it('parses regular @fontsize for all breakpoints with line-height and modifier',
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 38px;
         line-height: 2.0
@@ -914,7 +1017,7 @@ it('parses regular @fontsize for all breakpoints with modifier and no line-heigh
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 38px
       }
@@ -955,7 +1058,7 @@ it('parses regular @fontsize for single breakpoint with modifier and no line-hei
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 38px
       }
@@ -1063,7 +1166,7 @@ it('parses object @fontsize for single breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 17px;
         line-height: 24px;
@@ -1212,8 +1315,8 @@ it('runs correctly inside @responsive', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
-      @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
+      @media (width <= 739px) {
         article {
           font-size: 19px;
         }
@@ -1270,7 +1373,7 @@ it('parses a selector path', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 14px
       }
@@ -1355,7 +1458,7 @@ it('can mix @fontsize with and without breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (width <= 739px){
       article{
         font-size: 20px;
         font-size: calc(8vw * var(--ec-zoom))
@@ -1486,7 +1589,7 @@ it('can mix @fontsize with and without breakpoint', () => {
     [b-tpl=\"case text | list\"] .inner .list ul:first-child {
       padding-top: 0;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       [b-tpl=\"case text | list\"] {
         width: 100%;
         max-width: 740px;

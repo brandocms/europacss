@@ -63,7 +63,7 @@ it('parses @unpack', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         font-size: 17px;
         line-height: 17px;
@@ -96,18 +96,26 @@ it('parses @unpack', () => {
 
 it('parses @unpack containerPadding', () => {
   const input = `
-  @unpack containerPadding;
+    :root {
+      @unpack containerPadding;
+    }
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
-      --container-padding: 25px
+    @media (width <= 739px) {
+      :root {
+        --container-padding: 25px
+      }
     }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      --container-padding: 5.555556vw
+    @media (width >= 740px) and (width <= 1023px) {
+      :root {
+        --container-padding: 5.555556vw
+      }
     }
-    @media (min-width: 1024px) {
-      --container-padding: 5.555556vw
+    @media (width >= 1024px) {
+      :root {
+        --container-padding: 5.555556vw
+      }
     }
   `
 
@@ -119,18 +127,26 @@ it('parses @unpack containerPadding', () => {
 
 it('parses @unpack gridGutter', () => {
   const input = `
-  @unpack gridGutter;
+    :root {
+      @unpack gridGutter;
+    }
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
-      --grid-gutter: 15px
+    @media (width <= 739px) {
+      :root {
+        --grid-gutter: 15px;
+      }
     }
-    @media (min-width: 740px) and (max-width: 1023px) {
-      --grid-gutter: 40px
+    @media (width >= 740px) and (width <= 1023px) {
+      :root {
+        --grid-gutter: 40px;
+      }
     }
-    @media (min-width: 1024px) {
-      --grid-gutter: 4.1667vw
+    @media (width >= 1024px) {
+      :root {
+        --grid-gutter: 4.1667vw;
+      }
     }
   `
 
@@ -198,7 +214,7 @@ it('parses advanced @unpack', () => {
     article h1 {
       color: #00f;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         letter-spacing: 0.12rem;
         font-size: 17px;

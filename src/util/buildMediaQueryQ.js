@@ -8,20 +8,33 @@ export default function buildMediaQueryQ ({ breakpoints, breakpointCollections }
   
   // Optimize by collapsing adjacent breakpoints
   const optimizedQueryStrings = optimizeQueries(queryStrings, breakpoints)
+  
+  // We need to preserve the consistent ordering approach (mobile-first)
+  // This needs to handle the case where we have converted min:0 to just max constraints
+  // For consistent ordering, calculate the min value for sorting:
+  // - If there's a min value, use it
+  // - If there's no min value but a max value, use 0 
+  const sortedQueryStrings = _.sortBy(optimizedQueryStrings, [
+    (query) => parseInt((query.min || '0').replace('px', ''), 10)
+  ]);
 
-  return _(optimizedQueryStrings)
+  return _(sortedQueryStrings)
     .map(screen => {
-      return _(screen)
+      // Skip min constraint if it's 0
+      const filterZeroMin = _.omitBy(screen, (value, feature) => 
+        feature === 'min' && (value === '0' || value === '0px')
+      );
+      
+      return _(filterZeroMin)
         .map((value, feature) => {
-          feature = _.get(
-            {
-              min: 'min-width',
-              max: 'max-width'
-            },
-            feature,
-            feature
-          )
-          return `(${feature}: ${value})`
+          // Use modern width syntax instead of min-width/max-width
+          if (feature === 'min') {
+            return `(width >= ${value})`
+          } else if (feature === 'max') {
+            return `(width <= ${value})`
+          } else {
+            return `(${feature}: ${value})`
+          }
         })
         .join(' and ')
     })

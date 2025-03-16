@@ -23,7 +23,7 @@
   color: #fff;
   background-color: #000;
 }
-@media (width >= 0) and (width <= 739px) {
+@media (width <= 739px) {
   .button-one,
   .button-two {
     color: pink;
@@ -48,21 +48,24 @@
     font-size: 14px;
   }
 }
+@media (width >= 1024px) {
+  .pill-button {
+    letter-spacing: 0.3px;
+  }
+}
+@media (width >= 1024px) and (width <= 1398px) {
+  .pill-button {
+    font-size: 14px;
+  }
+}
 @media (width >= 1024px) and (width <= 1899px) {
   .button-one,
   .button-two {
     padding: 50px;
   }
 }
-@media (width >= 1024px) and (width <= 1398px) {
-  .pill-button {
-    letter-spacing: 0.3px;
-    font-size: 14px;
-  }
-}
 @media (width >= 1399px) and (width <= 1899px) {
   .pill-button {
-    letter-spacing: 0.3px;
     font-size: 14px;
   }
 }
@@ -72,7 +75,6 @@
     padding: 70px;
   }
   .pill-button {
-    letter-spacing: 0.3px;
     font-size: 17px;
   }
 }

@@ -24,7 +24,7 @@ it('parses @responsive for single breakpoint', () => {
       color: red
     }
 
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       body article .test {
         color: yellow;
         font-size: 15px
@@ -57,7 +57,7 @@ it('parses @responsive for single breakpoint eq or down', () => {
       color: red
     }
 
-    @media (min-width: 0) and (max-width: 1023px) {
+    @media (width <= 1023px) {
       body article .test {
         color: yellow;
         font-size: 15px
@@ -90,7 +90,7 @@ it('parses @responsive for multiple breakpoints', () => {
       color: red
     }
 
-    @media (min-width: 0) and (max-width: 1023px), (min-width: 1900px) {
+    @media (width <= 1023px), (min-width: 1900px) {
       body article .test {
         color: yellow;
         font-size: 15px
@@ -135,7 +135,7 @@ it('parses multiple @responsive within same rule', () => {
       background-color: black
     }
 
-    @media (min-width: 0) and (max-width: 1023px) {
+    @media (width <= 1023px) {
       article {
         width: 100%
       }
@@ -181,7 +181,7 @@ it('can run from root', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       .alert-yellow {
         color: yellow;
       }
@@ -221,7 +221,7 @@ it('can run multiple from root', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       .alert-yellow {
         color: yellow;
       }
@@ -310,7 +310,7 @@ it('parses advanced nesting', () => {
     header[data-nav] nav figure.brand {
       z-index: 5;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       header[data-nav] {
         width: 100%;
         max-width: 740px;
@@ -324,7 +324,7 @@ it('parses advanced nesting', () => {
         line-height: 17px;
       }
     }
-    @media (width >= 0) and (width <= 1023px) {
+    @media (width <= 1023px) {
       header[data-nav] nav figure.brand {
         align-items: flex-start;
       }

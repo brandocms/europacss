@@ -124,7 +124,7 @@ it('applies abs100 with advanced breakpoint query', () => {
   `
 
   const output = `
-    @media (width >= 740px) and (width <= 1023px) {
+    @media (width >= 740px) {
       .element {
         width: 100%;
         height: 100%;

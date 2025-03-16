@@ -19,4 +19,6 @@ export default function resolveConfigPath(filePath) {
       return configPath
     } catch (err) {}
   }
+
+  return undefined
 }

@@ -13,7 +13,7 @@ it('aliases @column-offset', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
+    @media (max-width: 739px){
       article{
         margin-left: calc(8.333333% - 22.916667px)
       }
@@ -49,24 +49,24 @@ it('aliases @column-offset negative value', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        margin-left: calc(-8.333333% - 27.083333px)
+    @media (width <= 739px) {
+      article {
+        margin-left: calc(-8.33333% - 27.0833px);
       }
     }
-    @media (min-width: 740px) and (max-width: 1023px){
-      article{
-        margin-left: calc(-8.333333% - 37.916667px)
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        margin-left: calc(-8.33333% - 37.9167px);
       }
     }
-    @media (min-width: 1024px) and (max-width: 1899px){
-      article{
-        margin-left: calc(-8.333333% - 54.166667px)
+    @media (width >= 1024px) and (width <= 1899px) {
+      article {
+        margin-left: calc(-8.33333% - 54.1667px);
       }
     }
-    @media (min-width: 1900px){
-      article{
-        margin-left: calc(-8.333333% - 65px)
+    @media (width >= 1900px) {
+      article {
+        margin-left: calc(-8.33333% - 65px);
       }
     }
   `
@@ -85,12 +85,11 @@ it('aliases @column-offset for single bp', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px){
-      article{
-        margin-left: calc(8.333333% - 22.916667px)
+    @media (width <= 739px) {
+      article {
+        margin-left: calc(8.33333% - 22.9167px);
       }
     }
-
   `
 
   return run(input).then(result => {

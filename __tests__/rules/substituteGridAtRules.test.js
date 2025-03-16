@@ -19,7 +19,7 @@ it('sets column gap and display grid', () => {
       grid-template-columns: repeat(12, 1fr);
       display: grid;
     }
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         grid-column-gap: 25px;
       }

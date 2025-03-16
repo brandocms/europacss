@@ -23,20 +23,31 @@ Example `postcss.config.js`:
 ```js
 module.exports = {
   plugins: [
-    require('postcss-easy-import')({
-      prefix: '_',
-      extensions: ['pcss', 'scss', 'css'],
-      plugins: [
-        require('stylelint')
-      ]
+    require('@univers-agency/europacss')({
+      // You can specify your config in one of these ways:
+
+      // 1. Default: Automatically looks for ./europa.config.js or ./europa.config.cjs
+
+      // 2. Path to config file:
+      // config: './path/to/europa.config.js',
+
+      // 3. Direct configuration object:
+      // config: { /* Your europacss config */ },
+
+      // 4. PostCSS Preset Env options:
+      presetEnv: {
+        // browsers: ['> 1%', 'last 2 versions'],
+        // features: { /* specific features */ },
+        // preserve: false,
+        // disable: false  // Set to true to disable postcss-preset-env entirely
+      }
     }),
-    require('@univers-agency/europacss'),
-    require('autoprefixer')({ grid: 'on' }),
-    require('css-mqgroup')({ sort: true }),
     require('postcss-reporter')({ clearReportedMessages: true, throwError: false })
   ]
 }
 ```
+
+> Note: You no longer need to include `autoprefixer` or `css-mqgroup` as those are now handled internally by EuropaCSS.
 
 ## NOTES
 
@@ -98,19 +109,19 @@ for individual breakpoints and breakpoint collections using `dpxViewportSizes`:
 {
   // Global fallback reference width (used if no specific width is defined)
   dpxViewportSize: 1440, // Default is 1440px if not specified
-  
+
   // Per-breakpoint and per-collection reference viewport widths
   dpxViewportSizes: {
     // Direct breakpoint references
     xs: 375,
     sm: 768,
-    
+
     // Breakpoint collections
     $desktop: 1440,
     $tablet: 768,
     $mobile: 375
   },
-  
+
   theme: {
     typography: {
       sizes: {
@@ -125,7 +136,7 @@ for individual breakpoints and breakpoint collections using `dpxViewportSizes`:
 }
 ```
 
-For example, when using `25dpx` at the `$mobile` reference viewport width of 375px, it will be 
+For example, when using `25dpx` at the `$mobile` reference viewport width of 375px, it will be
 converted to `6.667vw` (`(25/375)*100`). The same value in the `$desktop` collection would
 use the 1440px reference, resulting in `1.736vw` (`(25/1440)*100`).
 
@@ -509,3 +520,6 @@ This would not be possible without the following great plugins:
   - `postcss-extend-rule`
   - `postcss-functions`
   - `postcss-nested`
+  - `postcss-preset-env`
+  - `postcss-combine-duplicated-selectors`
+  - `postcss-nesting`

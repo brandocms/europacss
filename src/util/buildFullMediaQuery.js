@@ -16,16 +16,20 @@ export default function buildFullMediaQuery(breakpoints, breakpoint) {
     .map(screen => {
       return _(screen)
         .map((value, feature) => {
-          feature = _.get(
-            {
-              min: 'min-width',
-              max: 'max-width'
-            },
-            feature,
-            feature
-          )
-          return `(${feature}: ${value})`
+          // Use modern width syntax instead of min-width/max-width
+          if (feature === 'min') {
+            // Skip min constraint if it's 0
+            if (value === '0' || value === '0px') {
+              return null; // This will be filtered out
+            }
+            return `(width >= ${value})`
+          } else if (feature === 'max') {
+            return `(width <= ${value})`
+          } else {
+            return `(${feature}: ${value})`
+          }
         })
+        .filter(Boolean) // Remove null values (skipped min: 0)
         .join(' and ')
     })
     .join(', ')

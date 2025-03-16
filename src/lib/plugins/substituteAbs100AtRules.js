@@ -111,19 +111,35 @@ function processRule(atRule, config, flagAsImportant) {
     let affectedBreakpoints = parsedBreakpoints || 
       extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
 
-    // Create media queries for each affected breakpoint
-    affectedBreakpoints.forEach(bp => {
-      // Create media query rule
+    // If we have a breakpoint query that extracted multiple breakpoints,
+    // check if they would all have the same value
+    if (affectedBreakpoints.length > 1 && advancedBreakpointQuery(bpQuery)) {
+      // For abs100, the declarations are always the same,
+      // so we can use the original query directly
       const mediaRule = clonedRule.clone({
         name: 'media',
-        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
+        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bpQuery)
       })
 
       // Add declarations and insert before the @abs100 rule
       mediaRule.append(absDecls)
       mediaRule.source = src
       atRule.before(mediaRule)
-    })
+    } else {
+      // Create media queries for each affected breakpoint
+      affectedBreakpoints.forEach(bp => {
+        // Create media query rule
+        const mediaRule = clonedRule.clone({
+          name: 'media',
+          params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
+        })
+
+        // Add declarations and insert before the @abs100 rule
+        mediaRule.append(absDecls)
+        mediaRule.source = src
+        atRule.before(mediaRule)
+      })
+    }
   } else {
     // No breakpoint query specified, add directly to parent
     parent.prepend(absDecls)

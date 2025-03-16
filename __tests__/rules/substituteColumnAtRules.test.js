@@ -80,7 +80,7 @@ it('parses regular @column', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -123,7 +123,7 @@ it('parses vw @column', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -166,7 +166,7 @@ it('parses calc()ed @column', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -209,7 +209,7 @@ it('parses regular @column + gutter', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -252,7 +252,7 @@ it('parses regular @column + half gutter', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -310,7 +310,7 @@ it('parses regular @column + gutter + total gutter', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         flex: 0 0 calc(83.3333% + 16.6667px);
         max-width: calc(83.3333% + 16.6667px);
@@ -420,7 +420,7 @@ it('parses @column for single bp', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -447,7 +447,7 @@ it('parses multiple @column for different bp', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -492,7 +492,7 @@ it('runs correctly inside @responsive', () => {
   `
 
   const output = `
-    @media (width >= 0) and (width <= 739px) {
+    @media (width <= 739px) {
       article {
         flex: 0 0 calc(50% - 10px);
         max-width: calc(50% - 10px);
@@ -659,7 +659,7 @@ it('runs with gutters and breakpoint', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -698,7 +698,7 @@ it('parses 12/12', () => {
     }
   `
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;
@@ -742,7 +742,7 @@ it('parses properly with multiple @column in a row', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         position: relative;
         flex-grow: 0;

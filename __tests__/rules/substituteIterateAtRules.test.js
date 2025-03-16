@@ -1,7 +1,7 @@
 const postcss = require('postcss')
 const plugin = require('../../src')
 
-function run (input, opts) {
+function run(input, opts) {
   return postcss([plugin(opts)]).process(input, { from: undefined })
 }
 
@@ -34,7 +34,7 @@ it('parses @iterate', () => {
   `
 
   const output = `
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         margin-bottom: 25px
       }
@@ -76,7 +76,7 @@ it('parses @iterate in context', () => {
       margin-top: 100px
     }
 
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       article {
         margin-bottom: 25px
       }
@@ -182,7 +182,7 @@ it('switches out $key as decl value', () => {
       text-align: center
     }
 
-    @media (min-width: 0) and (max-width: 739px) {
+    @media (width <= 739px) {
       i.dbg:after {
         content: 'xs';
       }
