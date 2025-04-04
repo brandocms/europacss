@@ -6,7 +6,6 @@ import extractBreakpointKeys from '../../util/extractBreakpointKeys'
 import buildDecl from '../../util/buildDecl'
 import parseFontSizeQuery from '../../util/parseFontSizeQuery'
 import findResponsiveParent from '../../util/findResponsiveParent'
-import sizeNeedsBreakpoints from '../../util/sizeNeedsBreakpoints'
 
 /**
  * FONTSIZE

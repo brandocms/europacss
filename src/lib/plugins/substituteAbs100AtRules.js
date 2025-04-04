@@ -1,5 +1,4 @@
 import postcss from 'postcss'
-import buildFullMediaQuery from '../../util/buildFullMediaQuery'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
 import findResponsiveParent from '../../util/findResponsiveParent'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'
@@ -66,10 +65,10 @@ function processRule(atRule, config, flagAsImportant) {
   // we still need some data from the original.
   const clonedRule = atRule.clone()
   let parsedBreakpoints
-  
+
   // Parse the rule parameters: only breakpoint query is accepted
   let [bpQuery] = postcss.list.space(clonedRule.params)
-  
+
   // Check if we're nested under a @responsive rule.
   // If so, we don't create a media query, and we also won't
   // accept a query param for @abs100
@@ -108,8 +107,8 @@ function processRule(atRule, config, flagAsImportant) {
 
   if (bpQuery) {
     // We have a breakpoint query, extract all affected breakpoints
-    let affectedBreakpoints = parsedBreakpoints || 
-      extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
+    let affectedBreakpoints =
+      parsedBreakpoints || extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
 
     // If we have a breakpoint query that extracted multiple breakpoints,
     // check if they would all have the same value

@@ -1,5 +1,4 @@
 import _ from 'lodash'
-import postcss from 'postcss'
 import cloneNodes from '../../util/cloneNodes'
 
 module.exports = getConfig => {
@@ -22,8 +21,6 @@ module.exports = getConfig => {
 module.exports.postcss = true
 
 function processRule(atRule, config) {
-  const parent = atRule.parent
-
   const nodes = atRule.nodes
   if (!nodes) {
     throw atRule.error(`IF: Must include child nodes.`, { word: 'if' })

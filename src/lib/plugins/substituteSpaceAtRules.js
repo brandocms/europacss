@@ -1,6 +1,5 @@
 import _ from 'lodash'
 import postcss from 'postcss'
-import buildFullMediaQuery from '../../util/buildFullMediaQuery'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
 import findResponsiveParent from '../../util/findResponsiveParent'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'

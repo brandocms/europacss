@@ -4,8 +4,6 @@ import postcss from 'postcss'
 import updateSource from '../../util/updateSource'
 
 module.exports = getConfig => {
-  const config = getConfig()
-
   return {
     postcssPlugin: 'europacss-europa',
     prepare({ root }) {

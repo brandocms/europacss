@@ -7,8 +7,6 @@ import buildDecl from '../../util/buildDecl'
  */
 
 module.exports = getConfig => {
-  const config = getConfig()
-
   return {
     postcssPlugin: 'europacss-grid',
     prepare() {

@@ -3,7 +3,6 @@ import splitUnit from './splitUnit'
 import parseRFSQuery from './parseRFSQuery'
 import parseVWQuery from './parseVWQuery'
 import replaceWildcards from './replaceWildcards'
-import calcMaxFromBreakpoint from './calcMaxFromBreakpoint'
 
 // Constants
 const BETWEEN_EXPRESSION = 'between('
@@ -229,7 +228,6 @@ export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoi
   // Extract line height and modifier if present
   let lineHeight
   let modifier
-
   ;[fontSizeQuery, lineHeight] = extractLineHeight(fontSizeQuery)
   ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
 
