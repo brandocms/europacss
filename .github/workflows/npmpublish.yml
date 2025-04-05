@@ -2,8 +2,10 @@ name: Node.js Package
 
 on:
   push:
+    branches:
+      - '**'
     tags:
-      - '*'
+      - '**'
 
 jobs:
   build:
@@ -12,22 +14,22 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 22
       - name: NPM Build and Test
         run: |
           npm install
           npm run build --if-present
           npm test
-      
 
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 22
           registry-url: https://registry.npmjs.org/
       - run: npm publish --access=public
         env:

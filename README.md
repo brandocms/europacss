@@ -5,8 +5,8 @@
 ![](http://univers.agency/europa.svg)
 
 <p align="center">
-    <a href="https://travis-ci.org/univers-agency/europacss"><img src="https://img.shields.io/travis/univers-agency/europacss/master.svg" alt="Build Status"></a>
-    <a href="https://badge.fury.io/js/%40univers-agency%2Feuropacss"><img src="https://badge.fury.io/js/%40univers-agency%2Feuropacss.svg" alt="npm version" height="18"></a>
+    <a href="https://travis-ci.org/brandocms/europacss"><img src="https://img.shields.io/travis/brandocms/europacss/master.svg" alt="Build Status"></a>
+    <a href="https://badge.fury.io/js/%40brandocms%2Feuropacss"><img src="https://badge.fury.io/js/%40brandocms%2Feuropacss.svg" alt="npm version" height="18"></a>
 </p>
 
 ------
@@ -16,7 +16,7 @@ handy when working with design agencies that had very specific designs over diff
 breakpoints. These design systems translate pretty well to configurations and allows
 weeding out a lot of the boilerplate involved.
 
-## USAGE WITH WEBPACK
+## USAGE WITH POSTCSS
 
 Example `postcss.config.js`:
 
@@ -51,7 +51,7 @@ module.exports = {
 
 ## NOTES
 
-- Remember to keep your `@import` statements at the top of your `.pcss` file
+- Remember to keep your `@import` statements at the top of your `.css` file
 - Add
 
 ```
@@ -278,37 +278,6 @@ Add shortcut for responsive order decls.
 article {
   @order 1 $mobile;
 }
-```
-
-
-### `@row [childrenPerRow[/wrapModifier][/verticalGap]] [breakpointQuery]`
-
-Spaces children correctly per row. Does not set child widths/columns!
-If no params are given, only the first child gets a margin-left of 0.
-
-`wrapModifier` defaults to `nowrap`.
-`verticalGap` defaults to nothing.
-
-**EXAMPLE**:
-
-```
-.row {
-  @row 3/wrap;
-
-  .child {
-    @column 4/12;
-  }
-}
-
-/* to apply the `sm` spacing as margin-top for every child, except the 3 first: */
-.row {
-  @row 3/wrap/sm;
-
-  .child {
-    @column 4/12;
-  }
-}
-
 ```
 
 

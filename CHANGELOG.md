@@ -1,13 +1,40 @@
 # Changelog
 
 
-### 0.14.0
+### 1.0.0-beta.1
 
 - Finally on PostCSS 8...
-- NOTE: Nested at-rules that generate media queries inside of @responsive will
+- **BREAKING**: Nested at-rules that generate media queries inside of @responsive will
   now nest the media-queries!
-- Remove deprecated `@container`
-- Deprecate and remove `@row`
+- **BREAKING**: Remove deprecated `@container`
+- **BREAKING**: Deprecate and remove `@row`
+- **BREAKING**: Changed how we reference Europa in postcss.config.(c)js
+  ```js
+  module.exports = {
+    plugins: [
+      require('@univers-agency/europacss')({
+        // You can specify your config in one of these ways:
+
+        // 1. Default: Automatically looks for ./europa.config.js or ./europa.config.cjs
+
+        // 2. Path to config file:
+        // config: './path/to/europa.config.js',
+
+        // 3. Direct configuration object:
+        // config: { /* Your europacss config */ },
+
+        // 4. PostCSS Preset Env options:
+        presetEnv: {
+          // browsers: ['> 1%', 'last 2 versions'],
+          // features: { /* specific features */ },
+          // preserve: false,
+          // disable: false  // Set to true to disable postcss-preset-env entirely
+        }
+      }),
+      require('postcss-reporter')({ clearReportedMessages: true, throwError: false })
+    ]
+  }
+  ```
 - Added built-in postcss-preset-env support with configurable options
 - Improved media query handling with custom mqpacker implementation
 - Removed redundant `(width >= 0)` constraint from media queries
