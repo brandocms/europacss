@@ -1,6 +1,6 @@
 {
   "name": "@brandocms/europacss",
-  "version": "0.14.0",
+  "version": "1.0.0-beta.1",
   "description": "Europa CSS system",
   "main": "lib/index.js",
   "keywords": [
@@ -31,7 +31,6 @@
   ],
   "dependencies": {
     "normalize.css": "^8.0.1",
-    "css-mqgroup": "^7.1.0",
     "lodash": "^4.17.21",
     "postcss-combine-duplicated-selectors": "^10.0.3",
     "postcss-extend-rule": "^4.0.0",

@@ -16,7 +16,7 @@ handy when working with design agencies that had very specific designs over diff
 breakpoints. These design systems translate pretty well to configurations and allows
 weeding out a lot of the boilerplate involved.
 
-## USAGE WITH WEBPACK
+## USAGE WITH POSTCSS
 
 Example `postcss.config.js`:
 
