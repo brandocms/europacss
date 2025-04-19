@@ -11,11 +11,15 @@ module.exports = getConfig => {
         AtRule: {
           europa: atRule => {
             if (atRule.params === 'base') {
+              const normalizePath = require.resolve('normalize.css')
               const normalizeStyles = postcss.parse(
-                fs.readFileSync(require.resolve('normalize.css'), 'utf8')
+                fs.readFileSync(normalizePath, 'utf8'),
+                { from: normalizePath }
               )
+              const basePath = `${__dirname}/css/base.css`
               const baseStyles = postcss.parse(
-                fs.readFileSync(`${__dirname}/css/base.css`, 'utf8')
+                fs.readFileSync(basePath, 'utf8'),
+                { from: basePath }
               )
               prepend(
                 root,
@@ -23,7 +27,8 @@ module.exports = getConfig => {
               )
               atRule.remove()
             } else if (atRule.params === 'arrows') {
-              const styles = postcss.parse(fs.readFileSync(`${__dirname}/css/arrows.css`, 'utf8'))
+              const arrowsPath = `${__dirname}/css/arrows.css`
+              const styles = postcss.parse(fs.readFileSync(arrowsPath, 'utf8'), { from: arrowsPath })
               prepend(root, updateSource([...styles.nodes], atRule.source))
               atRule.remove()
             }

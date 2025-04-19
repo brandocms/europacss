@@ -4,10 +4,10 @@ import postcss from 'postcss'
 import postcssNested from 'postcss-nested'
 import postcssNesting from 'postcss-nesting'
 import postcssPresetEnv from 'postcss-preset-env'
-import postcssExtendRule from './lib/plugins/extend'
 import postcssCombineDuplicatedSelectors from 'postcss-combine-duplicated-selectors'
-import postcssMQPacker from './lib/plugins/postcss/mqpacker'
 
+import postcssExtendRule from './lib/plugins/extend'
+import postcssMQPacker from './lib/plugins/postcss/mqpacker'
 import defaultConfig from '../stubs/defaultConfig'
 import resolveConfig from './util/resolveConfig'
 import resolveConfigPath from './util/resolveConfigPath'
@@ -53,15 +53,15 @@ module.exports = config => {
 
   // Extract options for postcss-preset-env
   const usePresetEnv = _.get(presetEnvOptions, 'disable', false) !== true
-  
+
   // Default preset-env options
   const defaultPresetEnvOptions = {
     browsers: ['defaults'],
     features: {
-      'custom-properties': false,
-    },
+      'custom-properties': false
+    }
   }
-  
+
   // Merge default options with user-provided options
   const presetEnvConfig = _.merge(
     {},

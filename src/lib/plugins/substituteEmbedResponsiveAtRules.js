@@ -52,7 +52,8 @@ function processRule(atRule, _config, _flagAsImportant) {
   pseudoBefore.source = src
   atRule.parent.insertAfter(atRule, pseudoBefore.append(...decls))
 
-  const styles = postcss.parse(fs.readFileSync(`${__dirname}/css/embed-responsive.css`, 'utf8'))
+  const embedPath = `${__dirname}/css/embed-responsive.css`
+  const styles = postcss.parse(fs.readFileSync(embedPath, 'utf8'), { from: embedPath })
   atRule.parent.insertAfter(atRule, updateSource([...styles.nodes], src))
   atRule.remove()
 }
