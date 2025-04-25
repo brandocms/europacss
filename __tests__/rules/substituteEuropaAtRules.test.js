@@ -11,6 +11,10 @@ it('imports @europa base', () => {
   `
 
   return run(input).then(result => {
+    expect(result.css).toMatch(
+      /font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";/
+    )
+    expect(result.css).toMatch(/font-size: 18px;/)
     expect(result.css).toMatch(/normalize\.css/)
     expect(result.warnings().length).toBe(0)
   })

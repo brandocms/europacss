@@ -255,55 +255,6 @@ const WILDCARD2_CFG = {
   }
 }
 
-const DPX_CFG = {
-  dpxViewportSize: 1440, // Global reference viewport width for dpx units
-  theme: {
-    breakpoints: {
-      mobile: '0',
-      tablet: '740px',
-      desktop: '1024px'
-    },
-
-    breakpointCollections: {
-      $test: 'mobile/tablet'
-    },
-
-    container: {
-      maxWidth: {
-        mobile: '100%',
-        tablet: '100%',
-        desktop: '1920px'
-      },
-
-      padding: {
-        mobile: '15px',
-        tablet: '35px',
-        desktop: '50px'
-      }
-    },
-
-    typography: {
-      base: '16px',
-      lineHeight: {
-        mobile: 1.6,
-        tablet: 1.6,
-        desktop: 1.6
-      },
-      sizes: {
-        h0: {
-          mobile: '50dpx/1.2',
-          '*': '95dpx/1.2'
-        },
-        h2: {
-          mobile: '25dpx',
-          tablet: '35dpx',
-          desktop: '45dpx'
-        }
-      }
-    }
-  }
-}
-
 it('parses @fontsize dpx', () => {
   const input = `
     article {
@@ -351,7 +302,52 @@ it('parses @fontsize dpx', () => {
 
   // Use a configuration with viewport sizes defined for all breakpoints to avoid warnings
   const configWithViewportSizes = {
-    ...DPX_CFG,
+    dpxViewportSize: 1440, // Global reference viewport width for dpx units
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      },
+
+      typography: {
+        base: '16px',
+        lineHeight: {
+          mobile: 1.6,
+          tablet: 1.6,
+          desktop: 1.6
+        },
+        sizes: {
+          h0: {
+            mobile: '50dpx/1.2',
+            '*': '95dpx/1.2'
+          },
+          h2: {
+            mobile: '25dpx',
+            tablet: '35dpx',
+            desktop: '45dpx'
+          }
+        }
+      }
+    },
     dpxViewportSizes: {
       mobile: 1440,
       tablet: 1440,
@@ -360,6 +356,184 @@ it('parses @fontsize dpx', () => {
   }
 
   return run(input, configWithViewportSizes).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @fontsize dpx (single config)', () => {
+  const input = `
+    article {
+      h1 {
+        @fontsize h0;
+      }
+
+      h2 {
+        @fontsize h2 mobile;
+        @fontsize h2 tablet;
+        @fontsize h2 desktop;
+      }
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article h1 {
+        font-size: calc(3.47222vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: 20px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article h1 {
+        font-size: calc(6.59722vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article h1 {
+        font-size: calc(6.59722vw * var(--ec-zoom));
+        line-height: 1.2;
+      }
+      article h2 {
+        font-size: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  const DPX_CFG = {
+    dpxViewportSize: 1440, // Global reference viewport width for dpx units
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      },
+
+      typography: {
+        base: '16px',
+        lineHeight: {
+          mobile: 1.6,
+          tablet: 1.6,
+          desktop: 1.6
+        },
+        sizes: {
+          h0: {
+            mobile: '50dpx/1.2',
+            '*': '95dpx/1.2'
+          },
+          h2: {
+            mobile: '20px',
+            '*': '35dpx'
+          }
+        }
+      }
+    }
+  }
+
+  return run(input, DPX_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @fontsize dpx (single config, same dpx for multiple breakpoints)', () => {
+  const input = `
+    article {
+      h2 {
+        @fontsize h2 mobile;
+        @fontsize h2 tablet;
+        @fontsize h2 desktop;
+      }
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article h2 {
+        font-size: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article h2 {
+        font-size: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article h2 {
+        font-size: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  const DPX_CFG = {
+    dpxViewportSize: 1440, // Global reference viewport width for dpx units
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+
+      breakpointCollections: {
+        $test: 'mobile/tablet'
+      },
+
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '1920px'
+        },
+
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      },
+
+      typography: {
+        base: '16px',
+        lineHeight: {
+          mobile: 1.6,
+          tablet: 1.6,
+          desktop: 1.6
+        },
+        sizes: {
+          h2: {
+            mobile: '35dpx',
+            '*': '35dpx'
+          }
+        }
+      }
+    }
+  }
+
+  return run(input, DPX_CFG).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })
