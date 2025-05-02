@@ -419,10 +419,8 @@ it('parses gutter with maxPx', () => {
   `
 
   const output = `
-    @media (width <= 1023px) {
-      body article .test {
-        padding-top: 2vw;
-      }
+    body article .test {
+      padding-top: 2vw;
     }
     @media (width >= 1024px) {
       body article .test {

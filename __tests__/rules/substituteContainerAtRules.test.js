@@ -179,15 +179,13 @@ it('parses @space container with vws and setMax', () => {
   `
 
   const output = `
-    @media (width <= 1023px){
-      article{
-        padding-left: 4vw;
-        padding-right: 4vw;
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%
-      }
+    article{
+      padding-left: 4vw;
+      padding-right: 4vw;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      width: 100%
     }
     @media (min-width: 1024px){
       article{

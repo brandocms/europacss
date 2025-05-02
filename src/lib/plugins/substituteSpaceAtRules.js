@@ -279,8 +279,17 @@ function processRule(atRule, config, flagAsImportant) {
         prop
       )
 
+      // if the last key in groupedBreakpoints ends with _maxBreakpoint,
+      // and we only have ONE other key, we only need to create one media query
+      // for the _maxBreakpoint value
+
+      const lastKey = _.last(Object.keys(groupedBreakpoints))
+      const hasMaxBreakpoint = lastKey.endsWith('_maxBreakpoint')
+      const hasOnlyOneOtherKey = Object.keys(groupedBreakpoints).length === 2
+
       // For each distinct value, create a media query with the combined breakpoints
       Object.entries(groupedBreakpoints).forEach(([value, bps]) => {
+        const isMaxBreakpoint = value.endsWith('_maxBreakpoint')
         if (bps.length > 0) {
           // Parse size for the first breakpoint in the group (they all have the same value)
           const parsedSize = size ? parseSize(clonedRule, config, size, bps[0]) : null
@@ -290,7 +299,10 @@ function processRule(atRule, config, flagAsImportant) {
 
           // Special case: If we're targeting all breakpoints and there's only one value,
           // we don't need a media query at all - can add directly to parent
-          if (bps.length === breakpointKeys.length) {
+          if (
+            bps.length === breakpointKeys.length ||
+            (hasMaxBreakpoint && hasOnlyOneOtherKey && !isMaxBreakpoint)
+          ) {
             // This value applies to all breakpoints, so no media query needed
             parent.prepend(sizeDecls)
           } else {
