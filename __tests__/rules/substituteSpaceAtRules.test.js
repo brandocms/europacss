@@ -395,10 +395,8 @@ it('parses vw with maxPx', () => {
   `
 
   const output = `
-    @media (width <= 1023px) {
-      body article .test {
-        padding-top: 5vw;
-      }
+    body article .test {
+      padding-top: 5vw;
     }
     @media (width >= 1024px) {
       body article .test {
