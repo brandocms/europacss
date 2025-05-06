@@ -101,6 +101,198 @@ const DEFAULT_CFG = {
   }
 }
 
+const DPX_PADDING_CFG = {
+  setMaxForVw: true,
+  theme: {
+    breakpoints: {
+      mobile: '0',
+      tablet: '740px',
+      desktop: '1024px'
+    },
+
+    breakpointCollections: {
+      $test: 'mobile/tablet'
+    },
+
+    container: {
+      maxWidth: {
+        mobile: '740px',
+        tablet: '1024px',
+        desktop: '1440px'
+      },
+
+      padding: {
+        mobile: '15px',
+        tablet: '35dpx',
+        desktop: '50dpx'
+      }
+    },
+
+    spacing: {
+      xs: {
+        mobile: '10px',
+        tablet: '20px',
+        desktop: '30px'
+      },
+      md: {
+        mobile: '15px',
+        tablet: '25px',
+        desktop: '50px'
+      },
+      xl: {
+        mobile: '25px',
+        tablet: '50px',
+        desktop: '75px'
+      },
+      var: {
+        mobile: '25px',
+        tablet: 'between(50px-100px)',
+        desktop: '100px'
+      }
+    },
+
+    typography: {
+      base: '16px',
+      lineHeight: {
+        mobile: 1.6,
+        tablet: 1.6,
+        desktop: 1.6
+      },
+      sizes: {
+        xs: {
+          mobile: '10px',
+          tablet: '12px',
+          desktop: '14px'
+        },
+        sm: {
+          mobile: '12px',
+          tablet: '14px',
+          desktop: '16px'
+        },
+        base: {
+          mobile: '14px',
+          tablet: '16px',
+          desktop: '18px'
+        },
+        lg: {
+          mobile: '16px',
+          tablet: '18px',
+          desktop: '20px'
+        },
+        xl: {
+          mobile: '18px',
+          tablet: '20px',
+          desktop: '22px'
+        }
+      }
+    },
+
+    columns: {
+      gutters: {
+        mobile: '20px',
+        tablet: '30px',
+        desktop: '50px'
+      }
+    }
+  }
+}
+
+const DPX_CONTAINER_COLUMN_CFG = {
+  setMaxForVw: true,
+  theme: {
+    breakpoints: {
+      mobile: '0',
+      tablet: '740px',
+      desktop: '1024px'
+    },
+
+    breakpointCollections: {
+      $test: 'mobile/tablet'
+    },
+
+    container: {
+      maxWidth: {
+        mobile: '740px',
+        tablet: '1024px',
+        desktop: '1440px'
+      },
+
+      padding: {
+        mobile: '15px',
+        tablet: '35dpx',
+        desktop: '50dpx'
+      }
+    },
+
+    columns: {
+      gutters: {
+        mobile: '20px',
+        tablet: '30dpx',
+        desktop: '50dpx'
+      }
+    },
+
+    spacing: {
+      xs: {
+        mobile: '10px',
+        tablet: '20px',
+        desktop: '30px'
+      },
+      md: {
+        mobile: '15px',
+        tablet: '25px',
+        desktop: '50px'
+      },
+      xl: {
+        mobile: '25px',
+        tablet: '50px',
+        desktop: '75px'
+      },
+      var: {
+        mobile: '25px',
+        tablet: 'between(50px-100px)',
+        desktop: '100px'
+      }
+    },
+
+    typography: {
+      base: '16px',
+      lineHeight: {
+        mobile: 1.6,
+        tablet: 1.6,
+        desktop: 1.6
+      },
+      sizes: {
+        xs: {
+          mobile: '10px',
+          tablet: '12px',
+          desktop: '14px'
+        },
+        sm: {
+          mobile: '12px',
+          tablet: '14px',
+          desktop: '16px'
+        },
+        base: {
+          mobile: '14px',
+          tablet: '16px',
+          desktop: '18px'
+        },
+        lg: {
+          mobile: '16px',
+          tablet: '18px',
+          desktop: '20px'
+        },
+        xl: {
+          mobile: '18px',
+          tablet: '20px',
+          desktop: '22px'
+        }
+      }
+    }
+  }
+}
+
 const BETWEEN_CFG = {
   theme: {
     breakpoints: {
@@ -273,11 +465,6 @@ const MAX_PX_CFG = {
       }
     }
   }
-}
-
-// Mock PostCSS node for warnings
-const mockPostCSSNode = {
-  warn: jest.fn()
 }
 
 const DPX_CFG = {
@@ -526,6 +713,203 @@ it('parses @space calced', () => {
   `
 
   return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space calced with dpx padding config', () => {
+  const input = `
+    body article .test {
+      @space width calc(100vw - var[container] + var[1]);
+      font-size: 18px;
+    }
+  `
+
+  const output = `
+    body article .test {
+      font-size: 18px;
+    }
+    @media (width <= 739px) {
+      body article .test {
+        width: calc(100vw + 5px);
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      body article .test {
+        width: calc(100vw - (2.43056vw * var(--ec-zoom)) + 30px);
+      }
+    }
+    @media (width >= 1024px) {
+      body article .test {
+        width: calc(100vw + 0.0000305176px);
+      }
+    }
+  `
+
+  return run(input, DPX_PADDING_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space calced with dpx padding config and column with gutter', () => {
+  const input = `
+    body article .test {
+      @space width calc(100% - var[container] - var[2:1/12]) desktop;
+      font-size: 18px;
+    }
+  `
+
+  const output = `
+    body article .test {
+      font-size: 18px;
+    }
+    @media (width >= 1024px) {
+      body article .test {
+        width: calc(83.3333% - 58.3333px);
+      }
+    }
+  `
+
+  return run(input, DPX_PADDING_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space calced with dpx container/column config and column with gutter', () => {
+  const input = `
+    body article .test {
+      @space width calc(100% - var[container] - var[2:1/12]) desktop;
+      font-size: 18px;
+    }
+  `
+
+  const output = `
+    body article .test {
+      font-size: 18px;
+    }
+    @media (width >= 1024px) {
+      body article .test {
+        width: calc(83.3333% - 58.3333px);
+      }
+    }
+  `
+
+  return run(input, DPX_CONTAINER_COLUMN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space calced with dpx container/column with gutter as value', () => {
+  const input = `
+    article {
+      @space padding-x 0.4;
+      @space padding-y 0.4;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article {
+        padding: 8px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        padding-left: calc(0.83333vw * var(--ec-zoom));
+        padding-right: calc(0.83333vw * var(--ec-zoom));
+        padding-top: calc(0.83333vw * var(--ec-zoom));
+        padding-bottom: calc(0.83333vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article {
+        padding: 20px;
+      }
+    }
+  `
+
+  return run(input, DPX_CONTAINER_COLUMN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space container with dpx container/column', () => {
+  const input = `
+    article {
+      @space container;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article {
+        width: 100%;
+        max-width: 740px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        padding-left: calc(2.43056vw * var(--ec-zoom));
+        padding-right: calc(2.43056vw * var(--ec-zoom));
+        width: 100%;
+        max-width: 1024px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+    @media (width >= 1024px) {
+      article {
+        width: 100%;
+        max-width: 1440px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 50px;
+        padding-right: 50px;
+      }
+    }
+  `
+
+  return run(input, DPX_CONTAINER_COLUMN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space padding-bottom container with dpx container/column', () => {
+  const input = `
+    article {
+      @space padding-bottom container;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article {
+        padding-bottom: 15px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      article {
+        padding-bottom: calc(2.43056vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      article {
+        padding-bottom: 50px;
+      }
+    }
+  `
+
+  return run(input, DPX_CONTAINER_COLUMN_CFG).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
   })

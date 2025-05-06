@@ -153,21 +153,51 @@ function processContainerSize(size, config, bp, node) {
     })
   }
 
+  // Get the raw padding value
+  const rawPaddingValue = config.theme.container.padding[bp]
+  const [val, unit] = splitUnit(rawPaddingValue)
+
+  // Check if the padding uses dpx units and process if needed
+  let paddingValue
+  if (unit === DPX_UNIT) {
+    paddingValue = processDpxValue(rawPaddingValue, config, bp, node)
+  } else {
+    paddingValue = rawPaddingValue
+  }
+
   switch (size) {
     case CONTAINER_FULL:
-      return config.theme.container.padding[bp]
+      return paddingValue
 
     case CONTAINER_HALF: {
-      const [val, unit] = splitUnit(config.theme.container.padding[bp])
-      return `${val / 2}${unit}`
+      // For calculated values like calc(...), we need to wrap in calc
+      if (paddingValue.startsWith('calc(')) {
+        // Extract the calculation inside calc() without adding extra parentheses
+        const calcContent = paddingValue.substring(5, paddingValue.length - 1)
+        return `calc(${calcContent} / 2)`
+      }
+      // For simple values, we can just divide the value
+      const [paddingVal, paddingUnit] = splitUnit(paddingValue)
+      return `${paddingVal / 2}${paddingUnit}`
     }
 
     case CONTAINER_NEGATIVE:
-      return '-' + config.theme.container.padding[bp]
+      // If it's a calc, we need to negate the entire expression
+      if (paddingValue.startsWith('calc(')) {
+        const calcContent = paddingValue.substring(5, paddingValue.length - 1)
+        return `calc(-1 * (${calcContent}))`
+      }
+      return '-' + paddingValue
 
     case CONTAINER_NEGATIVE_HALF: {
-      const [val, unit] = splitUnit(config.theme.container.padding[bp])
-      return `-${val / 2}${unit}`
+      // For calculated values like calc(...), we need to wrap in calc
+      if (paddingValue.startsWith('calc(')) {
+        const calcContent = paddingValue.substring(5, paddingValue.length - 1)
+        return `calc(-1 * (${calcContent} / 2))`
+      }
+      // For simple values, we can just negate and divide the value
+      const [paddingVal, paddingUnit] = splitUnit(paddingValue)
+      return `-${paddingVal / 2}${paddingUnit}`
     }
 
     default:
@@ -202,8 +232,52 @@ function processCalcExpression(size, config, bp, node) {
 
   matches.forEach(m => {
     const parsedMatch = parseSize(node, config, m, bp)
-    size = size.replace(`var[${m}]`, parsedMatch)
+    // Only add parentheses if the value contains operators and isn't already wrapped
+    const needsParens =
+      !parsedMatch.startsWith('(') &&
+      !parsedMatch.startsWith('calc(') &&
+      (parsedMatch.includes('+') ||
+        parsedMatch.includes('-') ||
+        parsedMatch.includes('*') ||
+        parsedMatch.includes('/'))
+
+    size = size.replace(`var[${m}]`, needsParens ? `(${parsedMatch})` : parsedMatch)
   })
+
+  // Pre-process any dpx units in the calc expression before passing to the reduceCSSCalc
+  if (size.indexOf(DPX_UNIT) !== -1) {
+    // First extract the content of the calc expression
+    const calcContent = size.match(/calc\((.*)\)/)?.[1] || size
+
+    // Create a pattern that finds all dpx values, even when inside nested expressions
+    const dpxRegex = /(\d*\.?\d+)dpx/g
+    let processedContent = calcContent
+    let match
+
+    // Process each dpx value found
+    while ((match = dpxRegex.exec(calcContent)) !== null) {
+      const value = match[1]
+      const dpxValue = `${value}${DPX_UNIT}`
+
+      // Process the dpx value but don't apply the calc wrapper yet
+      // For tablet/desktop with zoom, this returns something like "calc(2.43056vw * var(--ec-zoom))"
+      const dpxProcessed = processDpxValue(dpxValue, config, bp, node)
+
+      // Extract the content from calc() if present to avoid nested calc()
+      let processedForCalc
+      if (dpxProcessed.startsWith('calc(') && dpxProcessed.endsWith(')')) {
+        processedForCalc = dpxProcessed.substring(5, dpxProcessed.length - 1)
+      } else {
+        processedForCalc = dpxProcessed
+      }
+
+      // Replace the dpx value with its processed equivalent
+      processedContent = processedContent.replace(`${value}dpx`, processedForCalc)
+    }
+
+    // Rebuild the calc expression with processed values
+    return size.includes('calc(') ? `calc(${processedContent})` : `calc(${processedContent})`
+  }
 
   return stripNestedCalcs(size)
 }
@@ -266,7 +340,18 @@ function processComplexFraction(size, config, bp, node) {
   }
 
   const gutterSize = config.theme.columns.gutters[bp]
-  let [gutterValue, gutterUnit] = splitUnit(gutterSize)
+
+  // Pre-process dpx units in gutter size before using it in calculations
+  let processedGutterSize = gutterSize
+  if (typeof gutterSize === 'string' && gutterSize.indexOf(DPX_UNIT) !== -1) {
+    processedGutterSize = processDpxValue(gutterSize, config, bp, node)
+    // Remove calc() wrapper if present
+    if (processedGutterSize.startsWith('calc(') && processedGutterSize.endsWith(')')) {
+      processedGutterSize = processedGutterSize.substring(5, processedGutterSize.length - 1)
+    }
+  }
+
+  let [gutterValue, gutterUnit] = splitUnit(processedGutterSize)
 
   if (config.setMaxForVw && gutterUnit == 'vw' && isLargestBreakpoint(config, bp)) {
     const maxSize = getLargestContainer(config)
@@ -391,6 +476,7 @@ function processVwValue(size, config, bp, node, applyZoom = false) {
 
   // Apply zoom variable to vw units if requested
   if (applyZoom) {
+    // Return with calc() wrapper to handle the multiplication properly
     return `calc(${size} * var(--ec-zoom))`
   }
 
@@ -483,6 +569,37 @@ function renderColGutterMultiplier(node, multiplier, bp, config) {
   const gutter = config.theme.columns.gutters[bp]
   const [val, unit] = splitUnit(gutter)
 
+  // Check if the gutter uses dpx units
+  if (unit === DPX_UNIT) {
+    // Create a dpx value with the multiplier applied
+    const dpxValue = `${val * multiplier}${DPX_UNIT}`
+
+    // If this is the largest breakpoint and setMaxForVw is true,
+    // we need to handle this specially to ensure the max pixel value is used
+    if (
+      config.hasOwnProperty('setMaxForVw') &&
+      config.setMaxForVw === true &&
+      isLargestBreakpoint(config, bp)
+    ) {
+      // Get the reference viewport width
+      const referenceViewportWidth = getReferenceViewportWidth(config, bp, node)
+
+      // Get the container max width
+      const containerBps = config.theme.container.maxWidth
+      const lastKey = [...Object.keys(containerBps)].pop()
+      const maxSize = containerBps[lastKey]
+      const [valMax, unitMax] = splitUnit(maxSize)
+
+      // Calculate the pixel value: (dpx_value / referenceWidth) * maxContainerWidth
+      const pxValue = ((val * multiplier) / referenceViewportWidth) * valMax
+      return `${pxValue}${unitMax}`
+    }
+
+    // Otherwise, process the dpx value normally
+    return processDpxValue(dpxValue, config, bp, node)
+  }
+
+  // Handle vw units with max conversion
   if (
     unit === 'vw' &&
     config.hasOwnProperty('setMaxForVw') &&

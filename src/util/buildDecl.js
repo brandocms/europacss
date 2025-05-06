@@ -2,8 +2,9 @@ import postcss from 'postcss'
 import getLargestContainer from './getLargestContainer'
 import isLargestBreakpoint from './isLargestBreakpoint'
 import splitUnit from './splitUnit'
+import parseSize from './parseSize'
 
-export default function buildDecl (p, value, important = false, config, bp) {
+export default function buildDecl(p, value, important = false, config, bp) {
   const props = []
 
   switch (p) {
@@ -50,7 +51,7 @@ export default function buildDecl (p, value, important = false, config, bp) {
     case 'scale':
       props.push({ prop: 'transform', value: `scale(${value})` })
       break
-      
+
     case 'abs100':
       props.push({ prop: 'position', value: 'absolute' })
       props.push({ prop: 'width', value: '100%' })
@@ -60,14 +61,10 @@ export default function buildDecl (p, value, important = false, config, bp) {
       break
 
     case 'container':
-      let paddingValue = config.theme.container.padding[bp]
+      // Process the container padding value, handling dpx units if present
+      let rawPaddingValue = config.theme.container.padding[bp]
+      let paddingValue = parseSize({ error: () => {} }, config, rawPaddingValue, bp)
 
-      if (config.setMaxForVw && paddingValue.endsWith('vw') && isLargestBreakpoint(config, bp)) {
-        const maxVW = getLargestContainer(config)
-        const [maxVal, maxUnit] = splitUnit(maxVW)
-        const [paddingVal] = splitUnit(paddingValue)
-        paddingValue = `${maxVal / 100 * paddingVal}${maxUnit}`
-      }
       const maxWidth = config.theme.container.maxWidth[bp]
 
       props.push({ prop: 'padding-left', value: paddingValue })
@@ -82,5 +79,5 @@ export default function buildDecl (p, value, important = false, config, bp) {
       props.push({ prop: p, value: value })
   }
 
-  return props.map(({ prop, value }) => postcss.decl({ prop, value, important}))
+  return props.map(({ prop, value }) => postcss.decl({ prop, value, important }))
 }
