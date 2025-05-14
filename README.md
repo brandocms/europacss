@@ -301,6 +301,7 @@ article {
 
 `{sizeQuery}`
   - `xs` > Gets XS from `theme.spacing` map.
+  - `-xs` > Gets negative value of XS from `theme.spacing` map.
   - `2` > Gets `2` times the gutter padding.
   - `1/3` > Calcs a fraction.
   - `3:1/6` > Calcs a 3/6 fraction but with 1 added gutter unit
@@ -327,6 +328,11 @@ article {
   &:last-of-type {
     @space margin-bottom: xl;
   }
+}
+
+.overlap {
+  /* Use negative named spacing to create overlaps */
+  @space margin-top -block;
 }
 
 .powerful-stuff {

@@ -674,6 +674,12 @@ export default function parseSize(node, config, size, bp) {
       size = spacingKey
     }
   }
+  
+  // Handle negative named spacing sizes
+  if (size && size.startsWith('-') && _.has(config.theme.spacing, size.substring(1))) {
+    multiplier = -1
+    size = size.substring(1)
+  }
 
   // Check if size is a named spacing value in config
   let sizeMap

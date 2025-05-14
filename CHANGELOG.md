@@ -1,5 +1,30 @@
 # Changelog
 
+### 1.0.0-beta.5
+
+- Allow more @space units
+- Allow negating named spacing values with `-` prefix. For example:
+  ```
+  @space margin-top -block;
+  ```
+  produces negative margins using the `block` spacing value. This streamlines
+  the code between container special casing and negative named spacing values.
+
+
+### 1.0.0-beta.4
+
+- Fix dpx in calc vars and container
+
+
+### 1.0.0-beta.3
+
+- Skip creating breakpoint for excluded maxPx
+
+
+### 1.0.0-beta.2
+
+- Updated test expectation
+
 
 ### 1.0.0-beta.1
 

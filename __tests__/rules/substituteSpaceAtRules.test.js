@@ -52,6 +52,11 @@ const DEFAULT_CFG = {
         mobile: '25px',
         tablet: 'between(50px-100px)',
         desktop: '100px'
+      },
+      block: {
+        mobile: '20px',
+        tablet: '30px',
+        desktop: '40px'
       }
     },
 
@@ -2509,5 +2514,117 @@ it('optimizes equal values across breakpoints', () => {
   return run(input, EQUAL_VALUES_CFG).then(result => {
     expect(result.css).toMatchCSS(output)
     expect(result.warnings().length).toBe(0)
+  })
+})
+
+describe('Negative spacing values', () => {
+  it('should handle negative named spacing values', () => {
+    const input = `
+      article {
+        @space margin-top -block;
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: -20px;
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: -30px;
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: -40px;
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('should handle negative named spacing values for specific breakpoints', () => {
+    const input = `
+      article {
+        @space margin-top -block mobile;
+        @space margin-right -xl desktop;
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: -20px;
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-right: -75px;
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('should not affect direct negative values', () => {
+    const input = `
+      article {
+        @space margin-top -20px;
+        @space margin-left -20vw;
+      }
+    `
+
+    const output = `
+      article {
+        margin-top: -20px;
+        margin-left: -20vw;
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('should handle negative multipliers correctly for named spacing', () => {
+    const input = `
+      article {
+        @space margin-top block*-2;
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(20px * -2);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(30px * -2);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(40px * -2);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
   })
 })
