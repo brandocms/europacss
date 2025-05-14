@@ -547,7 +547,23 @@ function processDpxValue(size, config, bp, node) {
  * @returns {boolean} True if the size contains a CSS unit
  */
 function hasCssUnit(size) {
-  const units = ['px', 'vh', 'vw', 'rem', 'em', 'ch', '%', 'dpx']
+  const units = [
+    'px',
+    'vh',
+    'vw',
+    'rem',
+    'em',
+    'ch',
+    '%',
+    'lh',
+    'svw',
+    'lvw',
+    'dvw',
+    'svh',
+    'lvh',
+    'dvh',
+    'dpx'
+  ]
   return units.some(unit => size.indexOf(unit) !== -1)
 }
 

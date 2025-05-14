@@ -1153,6 +1153,33 @@ it('parses @space for theme(..)', () => {
   })
 })
 
+it('parses @space for lh, svh, lvh, dvh', () => {
+  const input = `
+    body article .test {
+      @space margin-top 1lh mobile;
+      @space margin-left 1svh mobile;
+      @space margin-right 1lvh mobile;
+      @space margin-bottom 1dvh mobile;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px){
+      body article .test{
+        margin-top: 1lh;
+        margin-left: 1svh;
+        margin-right: 1lvh;
+        margin-bottom: 1dvh;
+      }
+    }
+  `
+
+  return run(input, BETWEEN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('parses @space for between() vertical-rhythm()', () => {
   const input = `
     body article .test {
