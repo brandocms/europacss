@@ -377,6 +377,39 @@ Selects a font family. Can also be passed a font size query.
   - `>=md` > Only for larger or equal to `md`
 
 
+### `ease() function`
+
+Provides easing functions as CSS cubic-bezier values. This function can be used in any CSS property that accepts `transition-timing-function` values.
+
+**PARAMS**:
+
+`type`
+  - Standard: `ease`, `ease.in`, `ease.out`, `ease.inOut`
+  - Sine: `sine.in`, `sine.out`, `sine.inOut`
+  - Quad: `quad.in`, `quad.out`, `quad.inOut`
+  - Cubic: `cubic.in`, `cubic.out`, `cubic.inOut`
+  - Quart: `quart.in`, `quart.out`, `quart.inOut`
+  - Quint: `quint.in`, `quint.out`, `quint.inOut`
+  - Expo: `expo.in`, `expo.out`, `expo.inOut`
+  - Circ: `circ.in`, `circ.out`, `circ.inOut`
+  - Back: `back.in`, `back.out`, `back.inOut`
+  - Power1-4: `power1.in`, `power1.out`, `power1.inOut` through `power4.in`, `power4.out`, `power4.inOut`
+
+**EXAMPLES**:
+
+```postcss
+.element {
+  transition: transform 300ms ease('power3.out');
+}
+
+.another-element {
+  transition: opacity 500ms ease('sine.inOut'), transform 800ms ease('back.out');
+}
+```
+
+Note: If an invalid easing name is provided, an error will be thrown during CSS processing.
+
+
 ### `@if {value} {block}`
 
 Renders `{block}` if `{value}` is true. Ignores it otherwise.

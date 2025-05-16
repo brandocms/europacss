@@ -1,7 +1,9 @@
 # Changelog
 
-### 1.0.0-beta.5
 
+### 1.0.0-beta.5 (Unreleased)
+
+- Add `ease()` function
 - Allow more @space units
 - Allow negating named spacing values with `-` prefix. For example:
   ```
