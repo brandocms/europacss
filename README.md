@@ -187,6 +187,58 @@ If `value` is an object, all properties will be added to the selector, i.e:
   }
 ```
 
+**Hierarchical Typography (New in beta.6)**:
+
+You can organize your typography using slash notation for better design system alignment:
+
+```js
+typography: {
+  sizes: {
+    // Traditional flat structure (still supported)
+    xs: { mobile: '12px', tablet: '14px' },
+
+    // Hierarchical structure using literal slash keys
+    'header/large': { mobile: '32px', tablet: '40px', desktop: '48px' },
+    'header/medium': { mobile: '24px', tablet: '28px', desktop: '32px' },
+    'body/regular': { mobile: '14px', tablet: '16px', desktop: '18px' },
+
+    // OR use nested structure for path traversal
+    header: {
+      small: { mobile: '18px', tablet: '20px', desktop: '24px' }
+    },
+    body: {
+      small: { mobile: '12px', tablet: '14px', desktop: '16px' },
+      caption: { mobile: '10px', tablet: '12px', desktop: '14px' }
+    }
+  },
+
+  families: {
+    // Traditional flat structure
+    main: ['Helvetica', 'Arial', 'sans-serif'],
+
+    // Hierarchical structure using literal slash keys
+    'body/regular': ['Inter', 'Helvetica', 'sans-serif'],
+    'header/display': ['Playfair Display', 'Georgia', 'serif'],
+
+    // OR use nested structure for path traversal
+    body: {
+      strong: ['Inter-Bold', 'Helvetica-Bold', 'sans-serif']
+    }
+  }
+}
+```
+
+This allows for more intuitive usage that matches design tools like Figma:
+```css
+@font header/display;        /* Uses literal 'header/display' key or header.display path */
+@fontsize body/regular;      /* Uses literal 'body/regular' key or body.regular path */
+@fontsize header/large/1.2;  /* With line-height */
+@fontsize header/small;      /* Uses nested header.small structure */
+@font body/strong;           /* Uses nested body.strong structure */
+```
+
+**Priority**: Literal string keys are checked first, then path traversal is attempted if no literal key is found.
+
 
 ## AT-RULES
 
@@ -355,9 +407,17 @@ Selects a font family. Can also be passed a font size query.
 
 `{fontFamily}`
   - picks `fontFamily` from `typography.families`
+  - **Hierarchical keys**: Use slash notation for organized typography (e.g., `body/regular`, `header/display`)
+  - **Path traversal**: Slash notation also supports path traversal like dots (e.g., `body/regular` works for both `'body/regular': [...]` and `body: { regular: [...] }`)
 
 `[fsQuery]`
   - can also be passed. Will then create a `@fontsize` rule with `fsQuery` as params
+
+**Example with hierarchical typography**:
+```css
+@font body/regular;        /* Uses 'body/regular' from families config */
+@font header/display xl;   /* Uses 'header/display' font with 'xl' size */
+```
 
 
 ### `@fontsize {fsQuery} [breakpointQuery]`
@@ -371,10 +431,21 @@ Selects a font family. Can also be passed a font size query.
   - `between(18px-22px)` > Responsive font sizing, from 18px to 22px. Needs a breakpoint to function properly.
   - `product.size` > Traverses the keypath `product.size` within `theme.typography.sizes`
   - `20dpx` > Design pixel units that scale with viewport width based on the `dpxViewportSize` setting (defaults to 1440px)
+  - **Hierarchical keys**: Use slash notation for organized sizes (e.g., `header/large`, `body/small`)
+  - **Path traversal**: Slash notation also supports path traversal like dots (e.g., `header/large` works for both `'header/large': {...}` and `header: { large: {...} }`)
 
 `[breakpointQuery]`
   - `xs` > Only for the `xs` breakpoint
   - `>=md` > Only for larger or equal to `md`
+
+**Example with hierarchical typography**:
+```css
+@fontsize header/large;        /* Uses 'header/large' size from config */
+@fontsize body/small/1.5;      /* Uses 'body/small' size with line-height 1.5 */
+@fontsize header/large >=md;   /* Responsive: header/large for md and up */
+```
+
+**Note**: The parser intelligently differentiates between hierarchical keys (e.g., `header/large`) and line-height syntax (e.g., `24px/1.5`) by checking config keys first.
 
 
 ### `ease() function`

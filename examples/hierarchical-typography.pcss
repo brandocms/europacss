@@ -1,0 +1,46 @@
+/* Example of using hierarchical typography in EuropaCSS */
+
+/* Using hierarchical font families - both approaches work */
+.header-title {
+  @font header/display;  /* Works with 'header/display': [...] OR header: { display: [...] } */
+}
+
+.body-text {
+  @font body/regular;    /* Works with 'body/regular': [...] OR body: { regular: [...] } */
+}
+
+.body-emphasized {
+  @font body/strong;     /* Path traversal: body: { strong: [...] } */
+}
+
+/* Using hierarchical font sizes - both approaches work */
+h1 {
+  @fontsize header/large;   /* Works with 'header/large': {...} OR header: { large: {...} } */
+}
+
+h6 {
+  @fontsize header/xsmall;  /* Works with 'header/xsmall': {...} OR header: { xsmall: {...} } */
+}
+
+p {
+  @fontsize body/regular;   /* Works with 'body/regular': {...} OR body: { regular: {...} } */
+}
+
+/* Combining hierarchical family and size */
+.hero-title {
+  @font header/display header/large;
+}
+
+/* With line-height override */
+.article-heading {
+  @fontsize header/large/1.2;
+}
+
+/* With responsive breakpoints */
+.responsive-header {
+  @fontsize header/large >=md;
+}
+
+/* Priority: literal string keys take precedence over path traversal */
+/* If you have both 'header/large': {...} AND header: { large: {...} }, */
+/* the literal 'header/large' key will be used first */

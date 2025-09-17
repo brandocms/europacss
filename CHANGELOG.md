@@ -1,8 +1,15 @@
 # Changelog
 
 
-### 1.0.0-beta.6 (unreleased)
+### 1.0.0-beta.6
 
+- Add support for hierarchical typography configuration using slash notation
+  - Font families can now be organized hierarchically: `@font body/regular`, `@font header/display`
+  - Font sizes support hierarchy: `@fontsize header/large`, `@fontsize body/small`
+  - Works with line-height: `@fontsize header/large/1.5`
+  - Supports both literal slash keys (`'header/large': {...}`) and path traversal (`header: { large: {...} }`)
+  - Literal keys have priority over path traversal for consistency with dot notation
+  - Backward compatible with existing flat configurations and line-height syntax
 - Fix @space dpx units not applying setMaxForVw threshold limits like @fontsize does
 
 

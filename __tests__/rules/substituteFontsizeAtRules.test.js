@@ -1914,3 +1914,452 @@ it('can mix @fontsize with and without breakpoint', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('parses hierarchical @fontsize with slash notation', () => {
+  const hierarchicalConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px',
+        lg: '1399px',
+        xl: '1900px'
+      },
+      typography: {
+        sizes: {
+          'header/xsmall': {
+            xs: '10px',
+            sm: '11px',
+            md: '12px',
+            lg: '13px',
+            xl: '14px'
+          },
+          'header/large': {
+            xs: '24px',
+            sm: '28px',
+            md: '32px',
+            lg: '36px',
+            xl: '40px'
+          },
+          'body/regular': {
+            xs: '14px',
+            sm: '15px',
+            md: '16px',
+            lg: '17px',
+            xl: '18px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large;
+    }
+    h6 {
+      @fontsize header/xsmall;
+    }
+    p {
+      @fontsize body/regular;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 24px;
+      }
+      h6 {
+        font-size: 10px;
+      }
+      p {
+        font-size: 14px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h1 {
+        font-size: 28px;
+      }
+      h6 {
+        font-size: 11px;
+      }
+      p {
+        font-size: 15px;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1398px) {
+      h1 {
+        font-size: 32px;
+      }
+      h6 {
+        font-size: 12px;
+      }
+      p {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1399px) and (width <= 1899px) {
+      h1 {
+        font-size: 36px;
+      }
+      h6 {
+        font-size: 13px;
+      }
+      p {
+        font-size: 17px;
+      }
+    }
+    @media (width >= 1900px) {
+      h1 {
+        font-size: 40px;
+      }
+      h6 {
+        font-size: 14px;
+      }
+      p {
+        font-size: 18px;
+      }
+    }
+  `
+
+  return run(input, hierarchicalConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('supports slash notation path traversal for @fontsize', () => {
+  const pathTraversalConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          // Nested structure (no literal slash keys)
+          header: {
+            large: {
+              xs: '24px',
+              sm: '28px',
+              md: '32px'
+            },
+            small: {
+              xs: '14px',
+              sm: '16px',
+              md: '18px'
+            }
+          },
+          body: {
+            text: {
+              xs: '14px',
+              sm: '15px',
+              md: '16px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large;
+    }
+    h6 {
+      @fontsize header/small;
+    }
+    p {
+      @fontsize body/text;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 24px;
+      }
+      h6 {
+        font-size: 14px;
+      }
+      p {
+        font-size: 14px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h1 {
+        font-size: 28px;
+      }
+      h6 {
+        font-size: 16px;
+      }
+      p {
+        font-size: 15px;
+      }
+    }
+    @media (width >= 1024px) {
+      h1 {
+        font-size: 32px;
+      }
+      h6 {
+        font-size: 18px;
+      }
+      p {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input, pathTraversalConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('prioritizes literal string keys over path traversal for @fontsize', () => {
+  const mixedConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px'
+      },
+      typography: {
+        sizes: {
+          // Literal string key
+          'header/large': {
+            xs: '30px',
+            sm: '35px'
+          },
+          // Nested structure that could be accessed via path traversal
+          header: {
+            large: {
+              xs: '20px',
+              sm: '25px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large;
+    }
+  `
+
+  // Should use the literal string key (30px/35px), not path traversal (20px/25px)
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 30px;
+      }
+    }
+    @media (width >= 740px) {
+      h1 {
+        font-size: 35px;
+      }
+    }
+  `
+
+  return run(input, mixedConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses hierarchical @fontsize with line-height', () => {
+  const hierarchicalConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          'header/large': {
+            xs: '24px',
+            sm: '28px',
+            md: '32px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large/1.5;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 24px;
+        line-height: 1.5;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h1 {
+        font-size: 28px;
+        line-height: 1.5;
+      }
+    }
+    @media (width >= 1024px) {
+      h1 {
+        font-size: 32px;
+        line-height: 1.5;
+      }
+    }
+  `
+
+  return run(input, hierarchicalConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('supports slash notation path traversal for @fontsize', () => {
+  const pathTraversalConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          // Nested structure (no literal slash keys)
+          header: {
+            large: {
+              xs: '24px',
+              sm: '28px',
+              md: '32px'
+            },
+            small: {
+              xs: '14px',
+              sm: '16px',
+              md: '18px'
+            }
+          },
+          body: {
+            text: {
+              xs: '14px',
+              sm: '15px',
+              md: '16px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large;
+    }
+    h6 {
+      @fontsize header/small;
+    }
+    p {
+      @fontsize body/text;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 24px;
+      }
+      h6 {
+        font-size: 14px;
+      }
+      p {
+        font-size: 14px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h1 {
+        font-size: 28px;
+      }
+      h6 {
+        font-size: 16px;
+      }
+      p {
+        font-size: 15px;
+      }
+    }
+    @media (width >= 1024px) {
+      h1 {
+        font-size: 32px;
+      }
+      h6 {
+        font-size: 18px;
+      }
+      p {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input, pathTraversalConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('prioritizes literal string keys over path traversal for @fontsize', () => {
+  const mixedConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px'
+      },
+      typography: {
+        sizes: {
+          // Literal string key
+          'header/large': {
+            xs: '30px',
+            sm: '35px'
+          },
+          // Nested structure that could be accessed via path traversal
+          header: {
+            large: {
+              xs: '20px',
+              sm: '25px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize header/large;
+    }
+  `
+
+  // Should use the literal string key (30px/35px), not path traversal (20px/25px)
+  const output = `
+    @media (width <= 739px) {
+      h1 {
+        font-size: 30px;
+      }
+    }
+    @media (width >= 740px) {
+      h1 {
+        font-size: 35px;
+      }
+    }
+  `
+
+  return run(input, mixedConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

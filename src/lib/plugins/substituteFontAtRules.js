@@ -37,7 +37,15 @@ function processRule(atRule, config) {
   let [family, fsQuery, bpQuery] = postcss.list.space(atRule.params)
 
   const fsParams = fsQuery ? fsQuery + (bpQuery ? ' ' + bpQuery : '') : null
+
+  // Try to resolve the family as-is (which may include slashes for hierarchical keys)
   let ff = config.theme.typography.families[family]
+
+  // If not found and contains slash, try path traversal
+  if (!ff && family.includes('/')) {
+    const pathParts = family.split('/')
+    ff = _.get(config.theme.typography.families, pathParts)
+  }
 
   if (!ff) {
     throw atRule.error(`FONT: Could not find \`${family}\` in typography.families config`)

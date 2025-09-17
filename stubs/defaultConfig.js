@@ -148,6 +148,43 @@ module.exports = {
           md: '79px',
           lg: '90px',
           xl: '95px'
+        },
+
+        // Hierarchical font size examples using slash notation
+        'header/xsmall': {
+          xs: '10px',
+          sm: '11px',
+          md: '12px',
+          lg: '13px',
+          xl: '14px'
+        },
+        'header/small': {
+          xs: '14px',
+          sm: '16px',
+          md: '18px',
+          lg: '20px',
+          xl: '22px'
+        },
+        'header/large': {
+          xs: '24px',
+          sm: '28px',
+          md: '32px',
+          lg: '36px',
+          xl: '40px'
+        },
+        'body/regular': {
+          xs: '14px',
+          sm: '15px',
+          md: '16px',
+          lg: '17px',
+          xl: '18px'
+        },
+        'body/strong': {
+          xs: '14px',
+          sm: '15px',
+          md: '16px',
+          lg: '17px',
+          xl: '18px'
         }
       },
 
@@ -270,7 +307,30 @@ module.exports = {
 
         serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
 
-        mono: ['Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace']
+        mono: ['Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace'],
+
+        // Hierarchical font family examples using slash notation
+        'body/regular': [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif'
+        ],
+        'body/strong': [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif'
+        ],
+        'header/display': [
+          'Georgia',
+          'Cambria',
+          '"Times New Roman"',
+          'Times',
+          'serif'
+        ]
       }
     },
 

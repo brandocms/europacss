@@ -225,20 +225,78 @@ function processObjectFontSize(fontSizeObj, lineHeight, breakpoint, config, node
  * @returns {object} Font properties object
  */
 export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoint) {
-  // Extract line height and modifier if present
+  // First, check if the full query (before any line-height) exists as a config key
+  // This allows hierarchical keys like 'header/xsmall' to work
+  const themePath = ['theme', 'typography', 'sizes']
   let lineHeight
   let modifier
-  ;[fontSizeQuery, lineHeight] = extractLineHeight(fontSizeQuery)
-  ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
+  const originalQuery = fontSizeQuery
 
-  // Resolve font size from theme configuration
-  const themePath = ['theme', 'typography', 'sizes']
-  const fontSize = fontSizeQuery
-  const path = fontSize.split('.')
+  // Split by space to get the first part (size query without breakpoint)
+  const sizeQueryPart = fontSizeQuery.split(' ')[0]
 
-  let resolvedFontsize = _.get(config, themePath.concat(path))
-  if (!resolvedFontsize) {
-    resolvedFontsize = fontSize
+  // Check if this might be a hierarchical key (contains / but not a line-height pattern)
+  const hasSlash = sizeQueryPart.includes('/')
+  let resolvedFontsize = null
+
+  if (hasSlash) {
+    // Count slashes to determine how to parse
+    const slashCount = (sizeQueryPart.match(/\//g) || []).length
+
+    // Try different split points to find a valid config key
+    // Start with assuming no line-height, then try with one less segment
+    let foundKey = false
+    for (let i = slashCount; i >= 1; i--) {
+      const parts = sizeQueryPart.split('/')
+      const potentialKey = parts.slice(0, i + 1).join('/')
+      const potentialLineHeight = parts.slice(i + 1).join('/')
+
+      // First try as literal string key
+      resolvedFontsize = _.get(config, themePath.concat(potentialKey))
+
+      // If not found, try path traversal (convert slashes to dots)
+      if (!resolvedFontsize) {
+        const pathParts = potentialKey.split('/')
+        resolvedFontsize = _.get(config, themePath.concat(pathParts))
+      }
+
+      if (resolvedFontsize) {
+        fontSizeQuery = potentialKey
+        if (potentialLineHeight) {
+          lineHeight = potentialLineHeight
+        }
+        foundKey = true
+        break
+      }
+    }
+
+    if (!foundKey) {
+      // Not a config key, parse normally for line-height
+      ;[fontSizeQuery, lineHeight] = extractLineHeight(sizeQueryPart)
+      ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
+
+      // Try to resolve again after extracting line-height
+      const fontSize = fontSizeQuery
+      const path = fontSize.split('.')
+      resolvedFontsize = _.get(config, themePath.concat(path))
+      if (!resolvedFontsize) {
+        resolvedFontsize = fontSize
+      }
+    } else {
+      // Extract modifier if present for the found key
+      ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
+    }
+  } else {
+    // No slash, parse normally
+    ;[fontSizeQuery, lineHeight] = extractLineHeight(fontSizeQuery)
+    ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
+
+    const fontSize = fontSizeQuery
+    const path = fontSize.split('.')
+    resolvedFontsize = _.get(config, themePath.concat(path))
+    if (!resolvedFontsize) {
+      resolvedFontsize = fontSize
+    }
   }
 
   // Early return for responsive font size with between() expression
@@ -252,7 +310,7 @@ export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoi
 
     if (!_.has(resolvedFontsize, breakpoint)) {
       throw node.error(
-        `FONTSIZE: No breakpoint \`${breakpoint}\` found in theme.typography.sizes.${fontSize}`,
+        `FONTSIZE: No breakpoint \`${breakpoint}\` found in theme.typography.sizes.${fontSizeQuery}`,
         { name: breakpoint }
       )
     }
