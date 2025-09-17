@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import postcss from 'postcss'
 import buildDecl from '../../util/buildDecl'
+import parseSize from '../../util/parseSize'
 
 module.exports = getConfig => {
   const config = getConfig()
@@ -41,6 +42,11 @@ function processRule(atRule, config) {
     _.keys(obj).forEach(breakpoint => {
       let value = obj[breakpoint]
 
+      // Process dpx units in the value if present
+      if (typeof value === 'string' && value.includes('dpx')) {
+        value = parseSize({ error: () => {} }, config, value, breakpoint)
+      }
+
       // build decls for each k/v
       const decls = [buildDecl('--container-padding', value)]
 
@@ -64,6 +70,11 @@ function processRule(atRule, config) {
     // iterate through breakpoints
     _.keys(obj).forEach(breakpoint => {
       let value = obj[breakpoint]
+
+      // Process dpx units in the value if present
+      if (typeof value === 'string' && value.includes('dpx')) {
+        value = parseSize({ error: () => {} }, config, value, breakpoint)
+      }
 
       // build decls for each k/v
       const decls = [buildDecl('--grid-gutter', value)]

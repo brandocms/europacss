@@ -456,22 +456,18 @@ function processMultiplicationExpression(size, config, bp, node) {
  * @returns {string} Processed vw value
  */
 function processVwValue(size, config, bp, node, applyZoom = false) {
-  if (config.hasOwnProperty('setMaxForVw') && config.setMaxForVw === true) {
-    // get the max container size
-    const containerBps = config.theme.container.maxWidth
-    const lastKey = [...Object.keys(containerBps)].pop()
-    if (bp === lastKey) {
-      const maxSize = containerBps[lastKey]
-      const [valMax, unitMax] = splitUnit(maxSize)
-      if (unitMax === '%') {
-        throw node.error(
-          `SPACING: When setMaxForVw is true, the container max cannot be % based.`
-        )
-      }
-      const [valVw, unitVw] = splitUnit(size)
-      const maxVal = (valMax / 100) * valVw
-      return `${maxVal}${unitMax}`
+  // Check if we should use fixed size for the largest breakpoint (same logic as parseVWQuery)
+  if (config.hasOwnProperty('setMaxForVw') && config.setMaxForVw === true && isLargestBreakpoint(config, bp)) {
+    const maxSize = getLargestContainer(config)
+    const [valMax, unitMax] = splitUnit(maxSize)
+    if (unitMax === '%') {
+      throw node.error(
+        `SPACING: When setMaxForVw is true, the container max cannot be % based.`
+      )
     }
+    const [valVw, unitVw] = splitUnit(size)
+    const maxVal = (valMax / 100) * valVw
+    return `${maxVal}${unitMax}`
   }
 
   // Apply zoom variable to vw units if requested

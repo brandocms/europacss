@@ -55,7 +55,7 @@ module.exports.postcss = true
  * @param {String} prop - The CSS property being modified
  * @returns {Object} Object where keys are values and values are breakpoint groups
  */
-function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop) {
+function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop, sizeMightUseDifferentValueForLargestBp = false) {
   const valueGroups = {}
   const orderedBreakpointKeys = [...breakpointKeys].sort((a, b) => {
     // Sort breakpoints by value numerically (low to high)
@@ -67,8 +67,7 @@ function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop)
   // Special case: setMaxForVw setting
   // When this is true, we need to handle the largest breakpoint separately
   // as it will have px values instead of vw values
-  const hasMaxForVw = config && config.setMaxForVw === true
-  const largestBreakpoint = hasMaxForVw
+  const largestBreakpoint = sizeMightUseDifferentValueForLargestBp
     ? orderedBreakpointKeys[orderedBreakpointKeys.length - 1]
     : null
 
@@ -78,7 +77,7 @@ function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop)
   // Parse size for each breakpoint and group by value
   orderedBreakpointKeys.forEach(bp => {
     // Special case: When using setMaxForVw, always treat the largest breakpoint as a separate group
-    if (hasMaxForVw && bp === largestBreakpoint) {
+    if (sizeMightUseDifferentValueForLargestBp && bp === largestBreakpoint) {
       const parsedSize = parseSize(clonedRule, config, size, bp)
       const valueKey = String(parsedSize) + '_maxBreakpoint' // Ensure it's a unique key
       valueGroups[valueKey] = [bp]
@@ -270,13 +269,24 @@ function processRule(atRule, config, flagAsImportant) {
       // Get all breakpoint keys
       const breakpointKeys = _.keys(breakpoints)
 
+      // Check if size might use different values for largest breakpoint (for setMaxForVw optimization)
+      const hasMaxForVw = config && config.setMaxForVw === true
+      const sizeMightUseDifferentValueForLargestBp = hasMaxForVw && (
+        (typeof size === 'string' && (size.includes('vw') || size.includes('dpx'))) ||
+        (config.theme.spacing && config.theme.spacing[size] && Object.values(config.theme.spacing[size]).some(val => 
+          typeof val === 'string' && (val.includes('vw') || val.includes('dpx'))
+        ))
+      )
+
+
       // Group breakpoints with equal values
       const groupedBreakpoints = groupBreakpointsByValue(
         clonedRule,
         config,
         size,
         breakpointKeys,
-        prop
+        prop,
+        sizeMightUseDifferentValueForLargestBp
       )
 
       // if the last key in groupedBreakpoints ends with _maxBreakpoint,
@@ -299,9 +309,11 @@ function processRule(atRule, config, flagAsImportant) {
 
           // Special case: If we're targeting all breakpoints and there's only one value,
           // we don't need a media query at all - can add directly to parent
+          // However, when using setMaxForVw with dpx/vw units, we want separate media queries
+          // even if we have only one other key, because the values are actually different
           if (
             bps.length === breakpointKeys.length ||
-            (hasMaxBreakpoint && hasOnlyOneOtherKey && !isMaxBreakpoint)
+            (hasMaxBreakpoint && hasOnlyOneOtherKey && !isMaxBreakpoint && !sizeMightUseDifferentValueForLargestBp)
           ) {
             // This value applies to all breakpoints, so no media query needed
             parent.prepend(sizeDecls)

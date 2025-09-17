@@ -252,6 +252,57 @@ it('parses advanced @unpack', () => {
   })
 })
 
+it('processes dpx units in containerPadding and gridGutter', () => {
+  const cfgWithDpx = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        md: '1024px'
+      },
+      container: {
+        padding: {
+          xs: '75dpx',
+          md: '50dpx'
+        }
+      },
+      columns: {
+        gutters: {
+          xs: '25dpx',
+          md: '30dpx'
+        }
+      }
+    },
+    dpxViewportSize: 1440
+  }
+
+  const input = `
+    :root {
+      @unpack containerPadding;
+      @unpack gridGutter;
+    }
+  `
+
+  const output = `
+    @media (width <= 1023px) {
+      :root {
+        --container-padding: calc(5.20833vw * var(--ec-zoom));
+        --grid-gutter: calc(1.73611vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      :root {
+        --container-padding: calc(3.47222vw * var(--ec-zoom));
+        --grid-gutter: calc(2.08333vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, cfgWithDpx).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('fails without params', () => {
   const input = `
   @unpack;

@@ -30,6 +30,11 @@ export default function sizeNeedsBreakpoints(spacingMap, size) {
     return true
   }
 
+  // dpx units need breakpoints because they get converted to different values per breakpoint
+  if (size.endsWith('dpx')) {
+    return true
+  }
+
   // skip vw here due to maxPx
   const endingsToCheck = ['px', 'em', 'vh', 'vmin', 'vmax']
   let endsWithAny = endingsToCheck.some(ending => size.endsWith(ending))

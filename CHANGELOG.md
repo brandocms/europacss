@@ -1,7 +1,12 @@
 # Changelog
 
 
-### 1.0.0-beta.5 (Unreleased)
+### 1.0.0-beta.6 (unreleased)
+
+- Fix @space dpx units not applying setMaxForVw threshold limits like @fontsize does
+
+
+### 1.0.0-beta.5
 
 - Add `ease()` function
 - Allow more @space units

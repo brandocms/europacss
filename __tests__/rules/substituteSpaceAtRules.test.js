@@ -587,8 +587,10 @@ it('parses vw with maxPx', () => {
   `
 
   const output = `
-    body article .test {
-      padding-top: 5vw;
+    @media (width <= 1023px) {
+      body article .test {
+        padding-top: 5vw;
+      }
     }
     @media (width >= 1024px) {
       body article .test {
@@ -611,8 +613,10 @@ it('parses gutter with maxPx', () => {
   `
 
   const output = `
-    body article .test {
-      padding-top: 2vw;
+    @media (width <= 1023px) {
+      body article .test {
+        padding-top: 2vw;
+      }
     }
     @media (width >= 1024px) {
       body article .test {
@@ -1746,6 +1750,42 @@ it('parses @space with dpx units and setMaxForVw', () => {
   }
 
   const output = `
+    @media (width >= 1024px) {
+      article {
+        margin-top: 26.6667px;
+      }
+    }
+  `
+
+  return run(input, maxPxDpxConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space with dpx units and setMaxForVw across all breakpoints', () => {
+  const input = `
+    article {
+      @space margin-top 20dpx;
+    }
+  `
+
+  const maxPxDpxConfig = {
+    ...DPX_CFG,
+    setMaxForVw: true,
+    dpxViewportSizes: {
+      mobile: 1440,
+      tablet: 1440,
+      desktop: 1440
+    }
+  }
+
+  const output = `
+    @media (width <= 1023px) {
+      article {
+        margin-top: calc(1.38889vw * var(--ec-zoom));
+      }
+    }
     @media (width >= 1024px) {
       article {
         margin-top: 26.6667px;

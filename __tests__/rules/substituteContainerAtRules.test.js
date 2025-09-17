@@ -179,22 +179,24 @@ it('parses @space container with vws and setMax', () => {
   `
 
   const output = `
-    article{
-      padding-left: 4vw;
-      padding-right: 4vw;
-      max-width: 100%;
-      margin-left: auto;
-      margin-right: auto;
-      width: 100%
+    @media (width <= 1023px) {
+      article {
+        width: 100%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 4vw;
+        padding-right: 4vw;
+      }
     }
-    @media (min-width: 1024px){
-      article{
-        padding-left: 40.96px;
-        padding-right: 40.96px;
+    @media (width >= 1024px) {
+      article {
+        width: 100%;
         max-width: 1024px;
         margin-left: auto;
         margin-right: auto;
-        width: 100%
+        padding-left: 40.96px;
+        padding-right: 40.96px;
       }
     }
   `
