@@ -67,10 +67,23 @@ export default function buildDecl(p, value, important = false, config, bp) {
 
       const maxWidth = config.theme.container.maxWidth[bp]
 
-      // Handle special '*' value for dynamic padding
-      if (rawPaddingValue === '*') {
-        // Calculate dynamic padding: (100vw - maxWidth) / 2
-        paddingValue = `calc((100vw - ${maxWidth}) / 2)`
+      // Handle special '*' value for dynamic padding (with optional minimum)
+      if (rawPaddingValue && typeof rawPaddingValue === 'string' && rawPaddingValue.startsWith('*')) {
+        // Parse for minimum padding: '* 30px' or '* 30dpx'
+        const parts = rawPaddingValue.split(' ').filter(p => p)
+        const dynamicPadding = `calc((100vw - ${maxWidth}) / 2)`
+
+        if (parts.length > 1) {
+          // Has minimum padding specified
+          const minPadding = parts[1]
+          // Process the minimum padding value (handles dpx if present)
+          const processedMinPadding = parseSize({ error: () => {} }, config, minPadding, bp)
+          // Use max() to ensure padding never goes below minimum
+          paddingValue = `max(${processedMinPadding}, ${dynamicPadding})`
+        } else {
+          // No minimum, use pure dynamic padding
+          paddingValue = dynamicPadding
+        }
 
         // For '*' padding, span full viewport and let padding handle centering
         props.push({ prop: 'padding-left', value: paddingValue })

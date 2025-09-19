@@ -2669,6 +2669,58 @@ describe('Negative spacing values', () => {
   })
 })
 
+it('parses container references with "*" padding and minimum', () => {
+  const STAR_MIN_CFG = {
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px',
+        large: '1440px'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '740px',
+          desktop: '1024px',
+          large: '1372px'
+        },
+        padding: {
+          mobile: '20px',
+          tablet: '30px',
+          desktop: '50px',
+          large: '* 30px'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space padding-left container large;
+      @space margin-left -container large;
+      @space padding-right container/2 large;
+      @space margin-right -container/2 large;
+    }
+  `
+
+  const output = `
+    @media (width >= 1440px) {
+      article {
+        padding-left: max(30px, calc((100vw - 1372px) / 2));
+        margin-left: calc(-1 * max(30px, calc((100vw - 1372px) / 2)));
+        padding-right: calc(max(30px, calc((100vw - 1372px) / 2)) / 2);
+        margin-right: calc(-1 * (max(30px, calc((100vw - 1372px) / 2)) / 2));
+      }
+    }
+  `
+
+  return run(input, STAR_MIN_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('parses container references with "*" padding values', () => {
   const STAR_CONTAINER_CFG = {
     theme: {

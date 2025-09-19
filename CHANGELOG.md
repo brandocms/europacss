@@ -1,6 +1,23 @@
 # Changelog
 
 
+### 1.0.0-beta.8
+
+- Enhance dynamic container padding with minimum value support
+  - Use `'* 30px'` to set dynamic padding with a 30px minimum
+  - Use `'* 40dpx'` for design-pixel based minimum values
+  - Generated CSS uses `max()` function: `max(30px, calc((100vw - maxWidth) / 2))`
+  - Ensures padding never shrinks below the specified minimum while still growing dynamically
+  - Works with all container references: `container`, `container/2`, `-container`, `-container/2`
+  - Example configuration:
+    ```js
+    container: {
+      maxWidth: { desktop_lg: '1372px' },
+      padding: { desktop_lg: '* 30px' }  // Dynamic with 30px minimum
+    }
+    ```
+
+
 ### 1.0.0-beta.7
 
 - Add dynamic container padding using `'*'` value

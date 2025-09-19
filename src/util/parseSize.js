@@ -156,11 +156,35 @@ function processContainerSize(size, config, bp, node) {
   // Get the raw padding value
   const rawPaddingValue = config.theme.container.padding[bp]
 
-  // Handle special '*' value for dynamic padding
+  // Handle special '*' value for dynamic padding (with optional minimum)
   let paddingValue
-  if (rawPaddingValue === '*') {
+  if (rawPaddingValue && typeof rawPaddingValue === 'string' && rawPaddingValue.startsWith('*')) {
     const maxWidth = config.theme.container.maxWidth[bp]
-    paddingValue = `calc((100vw - ${maxWidth}) / 2)`
+    const dynamicPadding = `calc((100vw - ${maxWidth}) / 2)`
+
+    // Parse for minimum padding: '* 30px' or '* 30dpx'
+    const parts = rawPaddingValue.split(' ').filter(p => p)
+
+    if (parts.length > 1) {
+      // Has minimum padding specified
+      const minPadding = parts[1]
+
+      // Process the minimum padding value (handles dpx if present)
+      let processedMinPadding
+      const [val, unit] = splitUnit(minPadding)
+
+      if (unit === DPX_UNIT) {
+        processedMinPadding = processDpxValue(minPadding, config, bp, node)
+      } else {
+        processedMinPadding = minPadding
+      }
+
+      // Use max() to ensure padding never goes below minimum
+      paddingValue = `max(${processedMinPadding}, ${dynamicPadding})`
+    } else {
+      // No minimum, use pure dynamic padding
+      paddingValue = dynamicPadding
+    }
   } else {
     const [val, unit] = splitUnit(rawPaddingValue)
 
@@ -177,6 +201,10 @@ function processContainerSize(size, config, bp, node) {
       return paddingValue
 
     case CONTAINER_HALF: {
+      // For max() expressions, we need to handle them specially
+      if (paddingValue.startsWith('max(')) {
+        return `calc(${paddingValue} / 2)`
+      }
       // For calculated values like calc(...), we need to wrap in calc
       if (paddingValue.startsWith('calc(')) {
         // Extract the calculation inside calc() without adding extra parentheses
@@ -189,6 +217,10 @@ function processContainerSize(size, config, bp, node) {
     }
 
     case CONTAINER_NEGATIVE:
+      // For max() expressions, we need to handle them specially
+      if (paddingValue.startsWith('max(')) {
+        return `calc(-1 * ${paddingValue})`
+      }
       // If it's a calc, we need to negate the entire expression
       if (paddingValue.startsWith('calc(')) {
         const calcContent = paddingValue.substring(5, paddingValue.length - 1)
@@ -197,6 +229,10 @@ function processContainerSize(size, config, bp, node) {
       return '-' + paddingValue
 
     case CONTAINER_NEGATIVE_HALF: {
+      // For max() expressions, we need to handle them specially
+      if (paddingValue.startsWith('max(')) {
+        return `calc(-1 * (${paddingValue} / 2))`
+      }
       // For calculated values like calc(...), we need to wrap in calc
       if (paddingValue.startsWith('calc(')) {
         const calcContent = paddingValue.substring(5, paddingValue.length - 1)
