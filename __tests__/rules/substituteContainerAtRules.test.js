@@ -368,3 +368,53 @@ it('parses @container for specific breakpoints', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('parses @space container with "*" padding for dynamic viewport-edge padding', () => {
+  const STAR_CFG = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px',
+        lg: '1440px'
+      },
+      container: {
+        maxWidth: {
+          xs: '100%',
+          sm: '740px',
+          md: '1024px',
+          lg: '1372px'
+        },
+        padding: {
+          xs: '20px',
+          sm: '30px',
+          md: '50px',
+          lg: '*'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space container lg;
+    }
+  `
+
+  const output = `
+    @media (min-width: 1440px) {
+      article {
+        padding-left: calc((100vw - 1372px) / 2);
+        padding-right: calc((100vw - 1372px) / 2);
+        width: 100vw;
+        margin-left: 0;
+        margin-right: 0;
+      }
+    }
+  `
+
+  return run(input, STAR_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

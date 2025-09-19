@@ -2668,3 +2668,55 @@ describe('Negative spacing values', () => {
     })
   })
 })
+
+it('parses container references with "*" padding values', () => {
+  const STAR_CONTAINER_CFG = {
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px',
+        large: '1440px'
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '740px',
+          desktop: '1024px',
+          large: '1372px'
+        },
+        padding: {
+          mobile: '20px',
+          tablet: '30px',
+          desktop: '50px',
+          large: '*'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space padding-left container large;
+      @space margin-left -container large;
+      @space padding-right container/2 large;
+      @space margin-right -container/2 large;
+    }
+  `
+
+  const output = `
+    @media (width >= 1440px) {
+      article {
+        padding-left: calc((100vw - 1372px) / 2);
+        margin-left: calc(-1 * ((100vw - 1372px) / 2));
+        padding-right: calc(((100vw - 1372px) / 2) / 2);
+        margin-right: calc(-1 * (((100vw - 1372px) / 2) / 2));
+      }
+    }
+  `
+
+  return run(input, STAR_CONTAINER_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

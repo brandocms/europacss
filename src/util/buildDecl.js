@@ -63,16 +63,34 @@ export default function buildDecl(p, value, important = false, config, bp) {
     case 'container':
       // Process the container padding value, handling dpx units if present
       let rawPaddingValue = config.theme.container.padding[bp]
-      let paddingValue = parseSize({ error: () => {} }, config, rawPaddingValue, bp)
+      let paddingValue
 
       const maxWidth = config.theme.container.maxWidth[bp]
 
-      props.push({ prop: 'padding-left', value: paddingValue })
-      props.push({ prop: 'padding-right', value: paddingValue })
-      props.push({ prop: 'max-width', value: maxWidth })
-      props.push({ prop: 'margin-left', value: 'auto' })
-      props.push({ prop: 'margin-right', value: 'auto' })
-      props.push({ prop: 'width', value: '100%' })
+      // Handle special '*' value for dynamic padding
+      if (rawPaddingValue === '*') {
+        // Calculate dynamic padding: (100vw - maxWidth) / 2
+        paddingValue = `calc((100vw - ${maxWidth}) / 2)`
+
+        // For '*' padding, span full viewport and let padding handle centering
+        props.push({ prop: 'padding-left', value: paddingValue })
+        props.push({ prop: 'padding-right', value: paddingValue })
+        props.push({ prop: 'width', value: '100vw' })
+        props.push({ prop: 'margin-left', value: '0' })
+        props.push({ prop: 'margin-right', value: '0' })
+        // Don't set max-width when using '*' - padding handles the content width
+      } else {
+        // Regular padding behavior
+        paddingValue = parseSize({ error: () => {} }, config, rawPaddingValue, bp)
+
+        props.push({ prop: 'padding-left', value: paddingValue })
+        props.push({ prop: 'padding-right', value: paddingValue })
+        props.push({ prop: 'max-width', value: maxWidth })
+        props.push({ prop: 'margin-left', value: 'auto' })
+        props.push({ prop: 'margin-right', value: 'auto' })
+        props.push({ prop: 'width', value: '100%' })
+      }
+
       break
 
     default:

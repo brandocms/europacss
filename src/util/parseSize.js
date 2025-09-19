@@ -155,14 +155,21 @@ function processContainerSize(size, config, bp, node) {
 
   // Get the raw padding value
   const rawPaddingValue = config.theme.container.padding[bp]
-  const [val, unit] = splitUnit(rawPaddingValue)
 
-  // Check if the padding uses dpx units and process if needed
+  // Handle special '*' value for dynamic padding
   let paddingValue
-  if (unit === DPX_UNIT) {
-    paddingValue = processDpxValue(rawPaddingValue, config, bp, node)
+  if (rawPaddingValue === '*') {
+    const maxWidth = config.theme.container.maxWidth[bp]
+    paddingValue = `calc((100vw - ${maxWidth}) / 2)`
   } else {
-    paddingValue = rawPaddingValue
+    const [val, unit] = splitUnit(rawPaddingValue)
+
+    // Check if the padding uses dpx units and process if needed
+    if (unit === DPX_UNIT) {
+      paddingValue = processDpxValue(rawPaddingValue, config, bp, node)
+    } else {
+      paddingValue = rawPaddingValue
+    }
   }
 
   switch (size) {
@@ -174,7 +181,7 @@ function processContainerSize(size, config, bp, node) {
       if (paddingValue.startsWith('calc(')) {
         // Extract the calculation inside calc() without adding extra parentheses
         const calcContent = paddingValue.substring(5, paddingValue.length - 1)
-        return `calc(${calcContent} / 2)`
+        return `calc((${calcContent}) / 2)`
       }
       // For simple values, we can just divide the value
       const [paddingVal, paddingUnit] = splitUnit(paddingValue)
@@ -193,7 +200,7 @@ function processContainerSize(size, config, bp, node) {
       // For calculated values like calc(...), we need to wrap in calc
       if (paddingValue.startsWith('calc(')) {
         const calcContent = paddingValue.substring(5, paddingValue.length - 1)
-        return `calc(-1 * (${calcContent} / 2))`
+        return `calc(-1 * ((${calcContent}) / 2))`
       }
       // For simple values, we can just negate and divide the value
       const [paddingVal, paddingUnit] = splitUnit(paddingValue)

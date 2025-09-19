@@ -1,6 +1,29 @@
 # Changelog
 
 
+### 1.0.0-beta.7
+
+- Add dynamic container padding using `'*'` value
+  - Set container padding to `'*'` to automatically calculate padding as `calc((100vw - maxWidth) / 2)`
+  - Creates dynamic padding that extends from container edge to viewport edge
+  - When using `'*'` padding:
+    - Container spans full viewport width (`width: 100vw`)
+    - Auto margins are removed (padding handles centering)
+    - Max-width constraint is not applied (padding defines content width)
+  - Works with all container references:
+    - `@space padding-left container` - full dynamic padding
+    - `@space padding-right container/2` - half dynamic padding
+    - `@space margin-left -container` - negative dynamic padding
+    - `@space margin-right -container/2` - negative half dynamic padding
+  - Example configuration:
+    ```js
+    container: {
+      maxWidth: { desktop_lg: '1372px' },
+      padding: { desktop_lg: '*' }
+    }
+    ```
+
+
 ### 1.0.0-beta.6
 
 - Add support for hierarchical typography configuration using slash notation
