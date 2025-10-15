@@ -2491,3 +2491,284 @@ it('prioritizes literal string keys over path traversal for @fontsize', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('supports function callbacks in __base__ for font-family array', () => {
+  const functionConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        families: {
+          main: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['Georgia', 'Times', 'serif']
+        },
+        sizes: {
+          'body-text': {
+            __base__: {
+              'font-family': theme => theme.typography.families.main,
+              'letter-spacing': '0.01em'
+            },
+            xs: '14px',
+            sm: '15px',
+            md: '16px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    p {
+      @fontsize body-text;
+    }
+  `
+
+  const output = `
+    p {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+      letter-spacing: 0.01em;
+    }
+    @media (width <= 739px) {
+      p {
+        font-size: 14px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      p {
+        font-size: 15px;
+      }
+    }
+    @media (width >= 1024px) {
+      p {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input, functionConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('supports function callbacks with hierarchical font family references', () => {
+  const hierarchicalConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        families: {
+          'body/regular': ['Helvetica', 'Arial', 'sans-serif'],
+          'header/display': ['Georgia', 'Times', 'serif']
+        },
+        sizes: {
+          heading: {
+            __base__: {
+              'font-family': theme => theme.typography.families['header/display'],
+              'text-transform': 'uppercase'
+            },
+            xs: '24px',
+            sm: '28px',
+            md: '32px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h1 {
+      @fontsize heading;
+    }
+  `
+
+  const output = `
+    h1 {
+      font-family: Georgia, Times, serif;
+      text-transform: uppercase;
+    }
+    @media (width <= 739px) {
+      h1 {
+        font-size: 24px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h1 {
+        font-size: 28px;
+      }
+    }
+    @media (width >= 1024px) {
+      h1 {
+        font-size: 32px;
+      }
+    }
+  `
+
+  return run(input, hierarchicalConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('supports function callbacks with mixed static and function values', () => {
+  const mixedConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        families: {
+          main: ['Inter', 'sans-serif']
+        },
+        sizes: {
+          'body-mini': {
+            __base__: {
+              'font-family': theme => theme.typography.families.main,
+              'font-size': '15px',
+              'letter-spacing': '0.05em',
+              'line-height': '141.3%'
+            },
+            '*': {
+              'font-size': '15dpx'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    .small {
+      @fontsize body-mini;
+    }
+  `
+
+  const output = `
+    .small {
+      font-family: Inter, sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      line-height: 141.3%;
+    }
+    @media (width <= 739px) {
+      .small {
+        font-size: calc(1.04167vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      .small {
+        font-size: calc(1.04167vw * var(--ec-zoom));
+      }
+    }
+    @media (width >= 1024px) {
+      .small {
+        font-size: calc(1.04167vw * var(--ec-zoom));
+      }
+    }
+  `
+
+  return run(input, mixedConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('fails with clear error for unsupported array property in __base__', () => {
+  const invalidConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          test: {
+            __base__: {
+              color: theme => ['red', 'blue', 'green']
+            },
+            xs: '14px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    p {
+      @fontsize test;
+    }
+  `
+
+  expect.assertions(1)
+  return run(input, invalidConfig).catch(e => {
+    expect(e).toMatchObject({ name: 'CssSyntaxError' })
+  })
+})
+
+it('supports function returning string value in __base__', () => {
+  const stringFunctionConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        families: {
+          main: 'Inter, sans-serif'
+        },
+        sizes: {
+          test: {
+            __base__: {
+              'font-family': theme => theme.typography.families.main
+            },
+            xs: '14px',
+            sm: '16px',
+            md: '18px'
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    p {
+      @fontsize test;
+    }
+  `
+
+  const output = `
+    p {
+      font-family: Inter, sans-serif;
+    }
+    @media (width <= 739px) {
+      p {
+        font-size: 14px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      p {
+        font-size: 16px;
+      }
+    }
+    @media (width >= 1024px) {
+      p {
+        font-size: 18px;
+      }
+    }
+  `
+
+  return run(input, stringFunctionConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

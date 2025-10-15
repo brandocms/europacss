@@ -291,7 +291,47 @@ h2 {
 }
 ```
 
-This is particularly useful for typography styles where `line-height`, `letter-spacing`, or other properties remain consistent across breakpoints while only `font-size` changes.
+**Function Callbacks in `__base__`**:
+
+You can use function callbacks in `__base__` to reference other parts of your theme configuration. This is especially useful for referencing font families:
+
+```js
+typography: {
+  families: {
+    main: ['Inter', 'system-ui', 'sans-serif'],
+    'header/display': ['Playfair Display', 'Georgia', 'serif']
+  },
+  sizes: {
+    'body-text': {
+      __base__: {
+        // Function receives theme object and automatically joins arrays
+        'font-family': theme => theme.typography.families.main,
+        'letter-spacing': '0.01em'
+      },
+      xs: '14px',
+      sm: '16px',
+      md: '18px'
+    },
+    heading: {
+      __base__: {
+        // Works with hierarchical keys too
+        'font-family': theme => theme.typography.families['header/display'],
+        'text-transform': 'uppercase'
+      },
+      xs: '24px',
+      sm: '28px',
+      md: '32px'
+    }
+  }
+}
+```
+
+Functions can return:
+- **Arrays**: Automatically joined with appropriate separator (`, ` for `font-family`, space for `transform`, etc.)
+- **Strings**: Used directly
+- Supported array properties: `font-family`, `background-image`, `box-shadow`, `text-shadow`, `transition`, `animation`, `filter`, `transform`
+
+This is particularly useful for typography styles where `line-height`, `letter-spacing`, `font-family`, or other properties remain consistent across breakpoints while only `font-size` changes.
 
 
 ## AT-RULES

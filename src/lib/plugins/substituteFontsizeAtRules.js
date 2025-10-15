@@ -38,6 +38,50 @@ module.exports = getConfig => {
 
 module.exports.postcss = true
 
+// Map of CSS properties to their array join separators
+const ARRAY_JOIN_SEPARATORS = {
+  'font-family': ', ',
+  'background-image': ', ',
+  'box-shadow': ', ',
+  'text-shadow': ', ',
+  'transition': ', ',
+  'animation': ', ',
+  'filter': ' ',
+  'transform': ' '
+}
+
+/**
+ * Resolve a __base__ property value, handling functions and arrays
+ * @param {*} value - The property value (can be string, function, etc.)
+ * @param {string} prop - The CSS property name
+ * @param {object} theme - The theme configuration
+ * @param {object} atRule - PostCSS atRule for error reporting
+ * @returns {string} Resolved value
+ */
+function resolveBasePropertyValue(value, prop, theme, atRule) {
+  // If it's a function, call it with the theme
+  if (_.isFunction(value)) {
+    let resolved = value(theme)
+
+    // If the result is an array, join it appropriately
+    if (Array.isArray(resolved)) {
+      const separator = ARRAY_JOIN_SEPARATORS[prop]
+      if (!separator) {
+        throw atRule.error(
+          `FONTSIZE: Arrays not supported for '${prop}' in __base__. ` +
+            `Supported properties: ${Object.keys(ARRAY_JOIN_SEPARATORS).join(', ')}`
+        )
+      }
+      resolved = resolved.join(separator)
+    }
+
+    return resolved
+  }
+
+  // Return as-is for non-function values
+  return value
+}
+
 function processRule(atRule, config) {
   const { theme } = config
   const { breakpoints, breakpointCollections, spacing } = theme
@@ -77,7 +121,8 @@ function processRule(atRule, config) {
   // Apply __base__ properties to parent rule (outside media queries)
   if (baseProperties) {
     _.keys(baseProperties).forEach(prop => {
-      const decl = buildDecl(prop, baseProperties[prop])
+      const value = resolveBasePropertyValue(baseProperties[prop], prop, theme, atRule)
+      const decl = buildDecl(prop, value)
       decl.source = src
       parent.append(decl)
     })

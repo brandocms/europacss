@@ -7,12 +7,15 @@
   - Define common properties once that apply to all breakpoints
   - Base properties are applied to the parent rule (outside media queries)
   - Breakpoint-specific configs can override base properties
+  - Function callbacks supported: `'font-family': theme => theme.typography.families.main`
+  - Arrays automatically joined with context-aware separators (`, ` for `font-family`, space for `transform`, etc.)
   - Example configuration:
     ```js
     typography: {
       sizes: {
         'body-large': {
           __base__: {
+            'font-family': theme => theme.typography.families.main,
             'line-height': '135.2%',
             'letter-spacing': '-0.02em'
           },
