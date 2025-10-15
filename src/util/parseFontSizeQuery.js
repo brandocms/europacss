@@ -222,7 +222,7 @@ function processObjectFontSize(fontSizeObj, lineHeight, breakpoint, config, node
  * @param {object} config Configuration object
  * @param {string} fontSizeQuery The font size query to parse
  * @param {string} breakpoint Current breakpoint
- * @returns {object} Font properties object
+ * @returns {object} Font properties object with optional __base__ key
  */
 export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoint) {
   // First, check if the full query (before any line-height) exists as a config key

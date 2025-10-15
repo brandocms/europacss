@@ -58,6 +58,31 @@ function processRule(atRule, config) {
   let parent = atRule.parent
   let responsiveParent = findResponsiveParent(atRule)
 
+  // Check if the fontSizeQuery references a config with __base__ properties
+  const themePath = ['theme', 'typography', 'sizes']
+  let resolvedConfig = _.get(config, themePath.concat(fontSizeQuery.split('.')))
+
+  // Try hierarchical key lookup if not found
+  if (!resolvedConfig && fontSizeQuery.includes('/')) {
+    const pathParts = fontSizeQuery.split('/')
+    resolvedConfig = _.get(config, themePath.concat(pathParts))
+  }
+
+  // Extract __base__ properties if they exist
+  let baseProperties = null
+  if (resolvedConfig && _.isObject(resolvedConfig) && resolvedConfig.__base__) {
+    baseProperties = resolvedConfig.__base__
+  }
+
+  // Apply __base__ properties to parent rule (outside media queries)
+  if (baseProperties) {
+    _.keys(baseProperties).forEach(prop => {
+      const decl = buildDecl(prop, baseProperties[prop])
+      decl.source = src
+      parent.append(decl)
+    })
+  }
+
   // Check if we're nested under a @responsive rule.
   // If so, we don't create a media query, and we also won't
   // accept a query param for @fontsize

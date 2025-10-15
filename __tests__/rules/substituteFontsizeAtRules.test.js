@@ -2223,6 +2223,134 @@ it('parses hierarchical @fontsize with line-height', () => {
   })
 })
 
+it('applies __base__ properties to parent rule outside media queries', () => {
+  const baseConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          'body-large': {
+            __base__: {
+              'line-height': '135.2%',
+              'letter-spacing': '-0.02em'
+            },
+            xs: {
+              'font-size': '33px'
+            },
+            sm: {
+              'font-size': '33px'
+            },
+            md: {
+              'font-size': '33px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h2 {
+      @fontsize body-large;
+    }
+  `
+
+  const output = `
+    h2 {
+      line-height: 135.2%;
+      letter-spacing: -0.02em;
+    }
+    @media (width <= 739px) {
+      h2 {
+        font-size: 33px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h2 {
+        font-size: 33px;
+      }
+    }
+    @media (width >= 1024px) {
+      h2 {
+        font-size: 33px;
+      }
+    }
+  `
+
+  return run(input, baseConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('__base__ properties can be overridden in breakpoint-specific configs', () => {
+  const baseConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          'my-example': {
+            __base__: {
+              'line-height': '135%'
+            },
+            xs: {
+              'font-size': '20px'
+            },
+            sm: {
+              'font-size': '25px',
+              'line-height': '140%'
+            },
+            md: {
+              'font-size': '30px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    h2 {
+      @fontsize my-example;
+    }
+  `
+
+  const output = `
+    h2 {
+      line-height: 135%;
+    }
+    @media (width <= 739px) {
+      h2 {
+        font-size: 20px;
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px) {
+      h2 {
+        font-size: 25px;
+        line-height: 140%;
+      }
+    }
+    @media (width >= 1024px) {
+      h2 {
+        font-size: 30px;
+      }
+    }
+  `
+
+  return run(input, baseConfig).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('supports slash notation path traversal for @fontsize', () => {
   const pathTraversalConfig = {
     theme: {

@@ -239,6 +239,60 @@ This allows for more intuitive usage that matches design tools like Figma:
 
 **Priority**: Literal string keys are checked first, then path traversal is attempted if no literal key is found.
 
+**Reduce Repetition with `__base__` (New in beta.9)**:
+
+Use the special `__base__` key to define common properties that apply to all breakpoints, reducing configuration repetition:
+
+```js
+typography: {
+  sizes: {
+    'body-large': {
+      // Common properties applied to parent rule (outside media queries)
+      __base__: {
+        'line-height': '135.2%',
+        'letter-spacing': '-0.02em'
+      },
+      // Breakpoint-specific properties (in media queries)
+      xs: { 'font-size': '20px' },
+      sm: { 'font-size': '25px' },
+      md: {
+        'font-size': '30px',
+        'line-height': '140%'  // Overrides __base__ line-height for md
+      }
+    }
+  }
+}
+```
+
+Usage:
+```css
+h2 {
+  @fontsize body-large;
+}
+```
+
+Generated CSS:
+```css
+h2 {
+  line-height: 135.2%;
+  letter-spacing: -0.02em;
+}
+@media (width <= 739px) {
+  h2 { font-size: 20px; }
+}
+@media (width >= 740px) and (width <= 1023px) {
+  h2 { font-size: 25px; }
+}
+@media (width >= 1024px) {
+  h2 {
+    font-size: 30px;
+    line-height: 140%;  /* Overrides base */
+  }
+}
+```
+
+This is particularly useful for typography styles where `line-height`, `letter-spacing`, or other properties remain consistent across breakpoints while only `font-size` changes.
+
 
 ## AT-RULES
 

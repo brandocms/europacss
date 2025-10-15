@@ -1,6 +1,32 @@
 # Changelog
 
 
+### 1.0.0-beta.9
+
+- Add `__base__` key support for typography sizes to reduce configuration repetition
+  - Define common properties once that apply to all breakpoints
+  - Base properties are applied to the parent rule (outside media queries)
+  - Breakpoint-specific configs can override base properties
+  - Example configuration:
+    ```js
+    typography: {
+      sizes: {
+        'body-large': {
+          __base__: {
+            'line-height': '135.2%',
+            'letter-spacing': '-0.02em'
+          },
+          xs: { 'font-size': '20px' },
+          sm: {
+            'font-size': '25px',
+            'line-height': '140%'  // Overrides __base__
+          }
+        }
+      }
+    }
+    ```
+
+
 ### 1.0.0-beta.8
 
 - Enhance dynamic container padding with minimum value support
