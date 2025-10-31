@@ -63,6 +63,14 @@ function resolveBasePropertyValue(value, prop, theme, atRule) {
   if (_.isFunction(value)) {
     let resolved = value(theme)
 
+    // Check if the function returned undefined or null
+    if (resolved === undefined || resolved === null) {
+      throw atRule.error(
+        `FONTSIZE: Function in __base__ for '${prop}' returned ${resolved}. ` +
+          `Check that the configuration path exists in your theme.`
+      )
+    }
+
     // If the result is an array, join it appropriately
     if (Array.isArray(resolved)) {
       const separator = ARRAY_JOIN_SEPARATORS[prop]

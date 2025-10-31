@@ -2772,3 +2772,45 @@ it('supports function returning string value in __base__', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('fails with clear error when function returns undefined in __base__', () => {
+  const undefinedConfig = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        families: {
+          main: ['Inter', 'sans-serif']
+        },
+        sizes: {
+          'body-mini': {
+            __base__: {
+              'font-family': theme => theme.typography.families.flare, // 'flare' doesn't exist
+              'font-size': '15px',
+              'letter-spacing': '0.05em',
+              'line-height': '141.3%'
+            },
+            '*': {
+              'font-size': '15dpx'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    p {
+      @fontsize body-mini;
+    }
+  `
+
+  expect.assertions(2)
+  return run(input, undefinedConfig).catch(e => {
+    expect(e).toMatchObject({ name: 'CssSyntaxError' })
+    expect(e.message).toMatch(/FONTSIZE: Function in __base__ for 'font-family' returned undefined/)
+  })
+})

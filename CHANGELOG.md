@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.0-beta.10
+
+- Improve error message for failing __base__ function callbacks.
+
 
 ### 1.0.0-beta.9
 
