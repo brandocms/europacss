@@ -2,6 +2,11 @@
 
 ### 1.0.0-beta.10
 
+- Fix @space container with breakpoint collections and range operators
+  - Previously, when using `@space container $collection` or `@space container >=breakpoint`, all matching breakpoints would incorrectly use the first breakpoint's container settings (maxWidth and padding)
+  - Now correctly groups breakpoints by their actual container property values
+  - Each unique combination of padding and maxWidth gets its own media query with the correct values
+  - Example: `@space container >=ipad_portrait` now correctly applies each breakpoint's specific maxWidth instead of using ipad_portrait's maxWidth for all
 - Improve error message for failing __base__ function callbacks.
 
 

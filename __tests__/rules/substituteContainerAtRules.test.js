@@ -519,3 +519,227 @@ it('parses @space container with "*" padding for dynamic viewport-edge padding',
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('parses @space container with >= operator correctly', () => {
+  const MULTI_BP_CFG = {
+    theme: {
+      breakpoints: {
+        iphone: '0',
+        mobile: '480px',
+        ipad_portrait: '768px',
+        ipad_landscape: '1024px',
+        desktop_md: '1200px',
+        desktop_lg: '1560px',
+        desktop_xl: '1920px'
+      },
+      container: {
+        maxWidth: {
+          iphone: '100%',
+          mobile: '560px',
+          ipad_portrait: '810px',
+          ipad_landscape: '100%',
+          desktop_md: '100%',
+          desktop_lg: '1860px',
+          desktop_xl: '1920px'
+        },
+        padding: {
+          iphone: '15px',
+          mobile: '15px',
+          ipad_portrait: '50px',
+          ipad_landscape: '30px',
+          desktop_md: '30px',
+          desktop_lg: '30px',
+          desktop_xl: '30px'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space container >=ipad_portrait;
+    }
+  `
+
+  const output = `
+    @media (width >= 768px) and (width <= 1023px) {
+      article {
+        padding-left: 50px;
+        padding-right: 50px;
+        max-width: 810px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+    @media (width >= 1024px) and (width <= 1559px) {
+      article {
+        padding-left: 30px;
+        padding-right: 30px;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+    @media (width >= 1560px) and (width <= 1919px) {
+      article {
+        padding-left: 30px;
+        padding-right: 30px;
+        max-width: 1860px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+    @media (width >= 1920px) {
+      article {
+        padding-left: 30px;
+        padding-right: 30px;
+        max-width: 1920px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+  `
+
+  return run(input, MULTI_BP_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space container with breakpoint collection correctly', () => {
+  const COLLECTION_CFG = {
+    theme: {
+      breakpoints: {
+        iphone: '0',
+        mobile: '480px',
+        ipad_portrait: '768px',
+        ipad_landscape: '1024px',
+        desktop_md: '1200px',
+        desktop_lg: '1560px',
+        desktop_xl: '1920px'
+      },
+      breakpointCollections: {
+        $lg: 'desktop_lg/desktop_xl'
+      },
+      container: {
+        maxWidth: {
+          iphone: '100%',
+          mobile: '560px',
+          ipad_portrait: '810px',
+          ipad_landscape: '100%',
+          desktop_md: '100%',
+          desktop_lg: '1860px',
+          desktop_xl: '1920px'
+        },
+        padding: {
+          iphone: '15px',
+          mobile: '15px',
+          ipad_portrait: '50px',
+          ipad_landscape: '30px',
+          desktop_md: '30px',
+          desktop_lg: '30px',
+          desktop_xl: '30px'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space container $lg;
+    }
+  `
+
+  const output = `
+    @media (width >= 1560px) and (width <= 1919px) {
+      article {
+        padding-left: 30px;
+        padding-right: 30px;
+        max-width: 1860px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+    @media (width >= 1920px) {
+      article {
+        padding-left: 30px;
+        padding-right: 30px;
+        max-width: 1920px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+  `
+
+  return run(input, COLLECTION_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('optimizes @space container when multiple breakpoints have identical settings', () => {
+  const OPTIMIZED_CFG = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px',
+        lg: '1440px'
+      },
+      container: {
+        maxWidth: {
+          xs: '100%',
+          sm: '100%',
+          md: '100%',
+          lg: '1440px'
+        },
+        padding: {
+          xs: '20px',
+          sm: '20px',
+          md: '20px',
+          lg: '50px'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space container >=xs;
+    }
+  `
+
+  const output = `
+    @media (width <= 1439px) {
+      article {
+        padding-left: 20px;
+        padding-right: 20px;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+    @media (width >= 1440px) {
+      article {
+        padding-left: 50px;
+        padding-right: 50px;
+        max-width: 1440px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+      }
+    }
+  `
+
+  return run(input, OPTIMIZED_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
