@@ -1,5 +1,16 @@
 # Changelog
 
+### 1.0.0-beta.11
+
+- Add breakpoint support to `@color` rule
+  - Now supports all breakpoint query types: single breakpoints, collections, ranges, and multiple breakpoints
+  - Example: `@color fg dark $lg` - apply color to large breakpoint collection
+  - Example: `@color bg light >=tablet` - apply background color from tablet and up
+  - Example: `@color fg dark mobile/desktop` - apply color to specific breakpoints
+  - Works with `@color!` for `!important` declarations
+  - Cannot be combined with `@responsive` nesting (will throw error)
+
+
 ### 1.0.0-beta.10
 
 - Fix @space container with breakpoint collections and range operators
