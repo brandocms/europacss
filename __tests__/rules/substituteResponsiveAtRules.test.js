@@ -428,6 +428,108 @@ it('parses multiple space tags inside nesting', () => {
   })
 })
 
+it('parses @mq alias for @responsive', () => {
+  const input = `
+    article {
+      @mq xs {
+        font-size: 14px;
+      }
+
+      @mq 400px->800px {
+        font-size: 16px;
+      }
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article {
+        font-size: 14px;
+      }
+    }
+
+    @media (width >= 400px) and (width <= 800px) {
+      article {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses custom arrow range with min and max', () => {
+  const input = `
+    article {
+      @responsive 359px->740px {
+        font-size: 16px;
+      }
+    }
+  `
+
+  const output = `
+    @media (width >= 359px) and (width <= 740px) {
+      article {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses custom arrow range with only min (open-ended)', () => {
+  const input = `
+    article {
+      @responsive 500px-> {
+        font-size: 16px;
+      }
+    }
+  `
+
+  const output = `
+    @media (width >= 500px) {
+      article {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses custom arrow range with only max (open-ended)', () => {
+  const input = `
+    article {
+      @responsive ->800px {
+        font-size: 16px;
+      }
+    }
+  `
+
+  const output = `
+    @media (width <= 800px) {
+      article {
+        font-size: 16px;
+      }
+    }
+  `
+
+  return run(input).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('parses multiple breakpoints slashed', () => {
   const DEFAULT_CFG = {
     theme: {

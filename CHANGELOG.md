@@ -2,6 +2,12 @@
 
 ### 1.0.0-beta.11
 
+- Add `@mq` as a short alias for `@responsive`
+- Add custom arrow range syntax for ad-hoc media queries
+  - `@mq 359px->740px` - custom min and max range
+  - `@mq 500px->` - open-ended min (no max)
+  - `@mq ->800px` - open-ended max (no min)
+  - Works with both `@responsive` and `@mq`
 - Add breakpoint support to `@color` rule
   - Now supports all breakpoint query types: single breakpoints, collections, ranges, and multiple breakpoints
   - Example: `@color fg dark $lg` - apply color to large breakpoint collection

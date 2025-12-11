@@ -33,26 +33,31 @@ function processQ({ breakpoints, breakpointCollections }, q) {
   const firstChar = q[0]
   const secondChar = q[1]
 
+  // Handle custom arrow range syntax (e.g., 359px->740px, 359px->, ->740px)
+  if (q.includes('->')) {
+    return processArrowRange(q)
+  }
+
   // Handle breakpoint collection references ($collection)
   if (firstChar === '$') {
     return processBreakpointCollection({ breakpoints, breakpointCollections }, q)
   }
-  
+
   // Handle less-than queries (< or <=)
   if (firstChar === '<') {
     return processLessThanQuery({ breakpoints }, q, secondChar)
   }
-  
+
   // Handle greater-than queries (> or >=)
   if (firstChar === '>') {
     return processGreaterThanQuery({ breakpoints }, q, secondChar)
   }
-  
+
   // Handle equals queries (=)
   if (firstChar === '=') {
     throw new Error('parseQ: Mediaqueries should not start with =')
   }
-  
+
   // Handle default case (direct breakpoint reference)
   return processDirectBreakpoint({ breakpoints }, q)
 }
@@ -130,4 +135,28 @@ function processDirectBreakpoint({ breakpoints }, key) {
   const min = breakpoints[key]
   const max = calcMaxFromBreakpoint(breakpoints, key)
   return { min, ...(max && { max }) }
+}
+
+/**
+ * Process an arrow range syntax (e.g., 359px->740px, 359px->, ->740px)
+ * @param {String} q - Query string with arrow syntax
+ * @returns {Object} Media query constraints
+ */
+function processArrowRange(q) {
+  const [minPart, maxPart] = q.split('->')
+  const result = {}
+
+  if (minPart && minPart.trim()) {
+    result.min = minPart.trim()
+  }
+
+  if (maxPart && maxPart.trim()) {
+    result.max = maxPart.trim()
+  }
+
+  if (!result.min && !result.max) {
+    throw new Error(`parseQ: Invalid arrow range syntax "${q}" - must specify at least min or max value`)
+  }
+
+  return result
 }

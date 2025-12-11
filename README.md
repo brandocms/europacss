@@ -338,17 +338,46 @@ This is particularly useful for typography styles where `line-height`, `letter-s
 
 todo
 
-### `@responsive {breakpointQuery} {block}`
+### `@responsive {breakpointQuery} {block}` (alias: `@mq`)
 
 **EXAMPLE**:
 
-```
+```postcss
 @responsive desktop_md {
   display: none;
 }
 
 @responsive <=ipad_portrait {
   color: red;
+}
+```
+
+You can also use `@mq` as a shorter alias:
+
+```postcss
+@mq desktop_md {
+  display: none;
+}
+```
+
+**Custom ranges with arrow syntax**:
+
+For ad-hoc media queries that don't match your defined breakpoints, use the arrow syntax:
+
+```postcss
+/* Custom min and max */
+@mq 359px->740px {
+  font-size: 14px;
+}
+
+/* Open-ended min (no max) */
+@mq 500px-> {
+  display: flex;
+}
+
+/* Open-ended max (no min) */
+@mq ->800px {
+  padding: 10px;
 }
 ```
 

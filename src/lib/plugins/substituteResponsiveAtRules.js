@@ -12,6 +12,9 @@ module.exports = getConfig => {
         AtRule: {
           responsive: atRule => {
             processRule(atRule, config, finalRules)
+          },
+          mq: atRule => {
+            processRule(atRule, config, finalRules)
           }
         }
       }
