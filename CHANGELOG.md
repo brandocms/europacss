@@ -1,5 +1,31 @@
 # Changelog
 
+### 1.0.0-beta.12
+
+- Add config token references (design token aliasing) using `{path.to.value}` syntax
+  - Define semantic tokens that reference other theme values: `primary: '{colors.red}'`
+  - Full references preserve the original type (objects, arrays, strings)
+  - Partial string interpolation: `'1px solid {colors.red}'`
+  - Chained references supported (A -> B -> C)
+  - Circular references detected with descriptive errors
+  - Missing references throw descriptive errors
+- Add `negate()` function to `@space` for overriding flex column gaps on individual children
+  - Syntax: `@space negate(currentGap, desiredGap);`
+  - Always outputs `margin-top` with `calc(-resolvedCurrentGap + resolvedDesiredGap)`
+  - First argument: the gap to negate (spacing key like `block`)
+  - Second argument: the desired gap — absolute value (`25px`, `20dpx`), spacing key (`xs`),
+    or expression with arithmetic (`block+xs`, `block-2vw`)
+  - Supports breakpoint queries: `@space negate(block, 25px) desktop;`
+  - Supports advanced queries: `@space negate(block, 25px) >=tablet;`
+  - Supports breakpoint collections: `@space negate(block, 25px) $test;`
+  - Works with `@space!` for `!important` declarations
+- Add CSS `var()` support to `@color` rule
+  - Use CSS custom properties directly: `@color fg var(--baseColor3);`
+  - Use with fallback values: `@color fg var(--baseColor3, #edae70);`
+  - Works with breakpoint queries: `@color fg var(--textColor) desktop;`
+  - Works with `@color!` for `!important` declarations
+
+
 ### 1.0.0-beta.11
 
 - Add `@mq` as a short alias for `@responsive`

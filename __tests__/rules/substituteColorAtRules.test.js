@@ -330,3 +330,85 @@ it('throws error when @color has breakpoint query inside @responsive', () => {
     )
   })
 })
+
+it('parses @color with var() without fallback', () => {
+  const input = `
+    article {
+      @color fg var(--baseColor3);
+      @color bg var(--bgColor);
+    }
+  `
+
+  const output = `
+    article {
+      color: var(--baseColor3);
+      background-color: var(--bgColor);
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @color with var() with fallback', () => {
+  const input = `
+    article {
+      @color fg var(--baseColor3, #edae70);
+      @color bg var(--bgColor, rgba(255, 255, 255, 0.5));
+    }
+  `
+
+  const output = `
+    article {
+      color: var(--baseColor3, #edae70);
+      background-color: var(--bgColor, rgba(255, 255, 255, 0.5));
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @color with var() and breakpoint query', () => {
+  const input = `
+    article {
+      @color fg var(--baseColor3, #edae70) desktop;
+    }
+  `
+
+  const output = `
+    @media (width >= 1024px) {
+      article {
+        color: var(--baseColor3, #edae70);
+      }
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @color! with var() as !important', () => {
+  const input = `
+    article {
+      @color! fg var(--baseColor3, #edae70);
+    }
+  `
+
+  const output = `
+    article {
+      color: var(--baseColor3, #edae70) !important;
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

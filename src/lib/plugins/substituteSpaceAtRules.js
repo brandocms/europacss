@@ -127,6 +127,152 @@ function groupBreakpointsByValue(clonedRule, config, size, breakpointKeys, prop,
   return valueGroups
 }
 
+/**
+ * Parse the arguments from a negate() expression
+ * @param {String} expr - The full negate expression, e.g. "negate(block, 25px)"
+ * @returns {Array} [currentGap, desiredGap]
+ */
+function parseNegateArgs(expr) {
+  const inner = expr.match(/^negate\((.*)\)$/)[1]
+  const commaIdx = inner.indexOf(',')
+  const currentGap = inner.substring(0, commaIdx).trim()
+  const desiredGap = inner.substring(commaIdx + 1).trim()
+  return [currentGap, desiredGap]
+}
+
+/**
+ * Resolve a negate desired gap expression, handling +/- operators
+ * @param {Object} node - PostCSS node for error reporting
+ * @param {Object} config - Configuration object
+ * @param {String} expr - The desired gap expression (e.g. "25px", "block+xs", "block-2vw")
+ * @param {String} bp - Current breakpoint
+ * @returns {String} Resolved CSS expression (without calc wrapper)
+ */
+function resolveNegateArg(node, config, expr, bp) {
+  if (expr.includes('+')) {
+    const parts = expr.split('+').map(s => s.trim())
+    const resolved = parts.map(p => {
+      let val = parseSize(node, config, p, bp)
+      if (val.startsWith('calc(') && val.endsWith(')')) {
+        val = val.substring(5, val.length - 1)
+      }
+      return val
+    })
+    return resolved.join(' + ')
+  }
+
+  const dashIdx = expr.indexOf('-', 1)
+  if (dashIdx > 0) {
+    const left = expr.substring(0, dashIdx).trim()
+    const right = expr.substring(dashIdx + 1).trim()
+    let leftVal = parseSize(node, config, left, bp)
+    let rightVal = parseSize(node, config, right, bp)
+    if (leftVal.startsWith('calc(') && leftVal.endsWith(')')) {
+      leftVal = leftVal.substring(5, leftVal.length - 1)
+    }
+    if (rightVal.startsWith('calc(') && rightVal.endsWith(')')) {
+      rightVal = rightVal.substring(5, rightVal.length - 1)
+    }
+    return `${leftVal} - ${rightVal}`
+  }
+
+  let val = parseSize(node, config, expr, bp)
+  if (val.startsWith('calc(') && val.endsWith(')')) {
+    val = val.substring(5, val.length - 1)
+  }
+  return val
+}
+
+/**
+ * Build the calc expression for negate: calc(-resolvedFirst + resolvedSecond)
+ * @param {Object} node - PostCSS node for error reporting
+ * @param {Object} config - Configuration object
+ * @param {String} currentGap - The gap to negate (spacing key)
+ * @param {String} desiredGap - The desired gap expression
+ * @param {String} bp - Current breakpoint
+ * @returns {String} CSS calc expression
+ */
+function buildNegateValue(node, config, currentGap, desiredGap, bp) {
+  let resolvedCurrent = parseSize(node, config, currentGap, bp)
+  if (resolvedCurrent.startsWith('calc(') && resolvedCurrent.endsWith(')')) {
+    resolvedCurrent = resolvedCurrent.substring(5, resolvedCurrent.length - 1)
+  }
+
+  const resolvedDesired = resolveNegateArg(node, config, desiredGap, bp)
+  return `calc(-${resolvedCurrent} + ${resolvedDesired})`
+}
+
+/**
+ * Process a negate() rule, handling all breakpoint paths
+ * Always outputs margin-top with calc(-currentGap + desiredGap)
+ */
+function processNegateRule(atRule, config, flagAsImportant, clonedRule, currentGap, desiredGap, bpQuery) {
+  const { theme: { breakpoints, breakpointCollections } } = config
+  const parent = atRule.parent
+  const src = atRule.source
+  let parsedBreakpoints
+
+  const responsiveParent = findResponsiveParent(atRule)
+  if (responsiveParent) {
+    if (bpQuery) {
+      throw clonedRule.error(
+        `SPACING: @space negate() cannot be nested under @responsive and have a breakpoint query.`,
+        { name: bpQuery }
+      )
+    }
+    bpQuery = responsiveParent.__mediaQuery
+    if (advancedBreakpointQuery(responsiveParent.__mediaQuery)) {
+      parsedBreakpoints = extractBreakpointKeys(
+        { breakpoints, breakpointCollections },
+        responsiveParent.__mediaQuery
+      )
+    }
+  }
+
+  if (!parsedBreakpoints && bpQuery && advancedBreakpointQuery(bpQuery)) {
+    parsedBreakpoints = extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
+  }
+
+  if (bpQuery) {
+    const affectedBreakpoints =
+      parsedBreakpoints || extractBreakpointKeys({ breakpoints, breakpointCollections }, bpQuery)
+
+    _.each(affectedBreakpoints, bp => {
+      const value = buildNegateValue(clonedRule, config, currentGap, desiredGap, bp)
+      const decl = postcss.decl({ prop: 'margin-top', value, important: flagAsImportant })
+
+      const mediaRule = clonedRule.clone({
+        name: 'media',
+        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
+      })
+
+      mediaRule.append(decl)
+      mediaRule.source = src
+      atRule.before(mediaRule)
+    })
+  } else {
+    const breakpointKeys = _.keys(breakpoints)
+    breakpointKeys.forEach(bp => {
+      const value = buildNegateValue(clonedRule, config, currentGap, desiredGap, bp)
+      const decl = postcss.decl({ prop: 'margin-top', value, important: flagAsImportant })
+
+      const mediaRule = clonedRule.clone({
+        name: 'media',
+        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bp)
+      })
+
+      mediaRule.append(decl)
+      mediaRule.source = src
+      atRule.before(mediaRule)
+    })
+  }
+
+  atRule.remove()
+  if (parent && !parent.nodes.length) {
+    parent.remove()
+  }
+}
+
 function processRule(atRule, config, flagAsImportant) {
   // Validate rule context
   if (atRule.parent.type === 'root') {
@@ -155,6 +301,13 @@ function processRule(atRule, config, flagAsImportant) {
   if (prop === 'container') {
     bpQuery = size
     size = null
+  }
+
+  // Special case for negate()
+  if (prop && prop.startsWith('negate(')) {
+    const [currentGap, desiredGap] = parseNegateArgs(prop)
+    processNegateRule(atRule, config, flagAsImportant, clonedRule, currentGap, desiredGap, size)
+    return
   }
 
   // Check if we're nested under a @responsive rule.

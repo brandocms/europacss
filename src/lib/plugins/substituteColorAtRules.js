@@ -27,6 +27,54 @@ module.exports = getConfig => {
 
 module.exports.postcss = true
 
+/**
+ * Parse @color parameters, handling CSS functions like var() that may contain spaces
+ * @param {string} params - The at-rule parameters string
+ * @returns {Array} [target, color, bpQuery]
+ */
+function parseColorParams(params) {
+  const trimmed = params.trim()
+
+  // Find the first space to get the target
+  const firstSpaceIdx = trimmed.indexOf(' ')
+  if (firstSpaceIdx === -1) {
+    return [trimmed, undefined, undefined]
+  }
+
+  const target = trimmed.slice(0, firstSpaceIdx)
+  const rest = trimmed.slice(firstSpaceIdx + 1).trim()
+
+  // Check if the color value starts with a CSS function (e.g., var(), rgb(), hsl())
+  const funcMatch = rest.match(/^([a-zA-Z-]+)\(/)
+  if (funcMatch) {
+    // Find the matching closing parenthesis
+    let depth = 0
+    let endIdx = -1
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i] === '(') {
+        depth++
+      } else if (rest[i] === ')') {
+        depth--
+        if (depth === 0) {
+          endIdx = i
+          break
+        }
+      }
+    }
+
+    if (endIdx !== -1) {
+      const color = rest.slice(0, endIdx + 1)
+      const remainder = rest.slice(endIdx + 1).trim()
+      const bpQuery = remainder || undefined
+      return [target, color, bpQuery]
+    }
+  }
+
+  // No CSS function detected, use simple space splitting
+  const parts = postcss.list.space(rest)
+  return [target, parts[0], parts[1]]
+}
+
 function processRule(atRule, config, flagAsImportant) {
   const parent = atRule.parent
 
@@ -39,7 +87,7 @@ function processRule(atRule, config, flagAsImportant) {
   } = config
 
   // Parse the rule parameters: target, color, and optional breakpoint query
-  let [target, color, bpQuery] = postcss.list.space(atRule.params)
+  let [target, color, bpQuery] = parseColorParams(atRule.params)
 
   if (!target || !color) {
     throw atRule.error(`COLOR: Must include target (fg/bg) and color property`, { word: 'color' })

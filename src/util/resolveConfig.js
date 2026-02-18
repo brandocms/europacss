@@ -3,6 +3,7 @@ import isFunction from 'lodash/isFunction'
 import defaults from 'lodash/defaults'
 import map from 'lodash/map'
 import toPath from 'lodash/toPath'
+import resolveTokenReferences from './resolveTokenReferences'
 
 /**
  * Configuration utility functions available to theme resolvers
@@ -107,8 +108,10 @@ export default function resolveConfig(configs) {
   // Extract and process all theme configs
   const mergedTheme = defaults({}, ...map(configs, 'theme'))
   
-  // Resolve extensions and function values in the theme
-  const resolvedTheme = resolveFunctionKeys(mergeExtensions(mergedTheme))
+  // Resolve extensions, function values, and token references in the theme
+  const resolvedTheme = resolveTokenReferences(
+    resolveFunctionKeys(mergeExtensions(mergedTheme))
+  )
   
   // Merge resolved theme with other config properties
   return defaults(

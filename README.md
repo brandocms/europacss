@@ -150,6 +150,52 @@ This makes it easy to maintain the exact sizing from design files while keeping
 the responsive behavior of viewport units across different device sizes.
 
 
+### Token References (Design Token Aliasing)
+
+You can reference other theme values from within the config using `{path.to.value}` syntax.
+This is useful for creating semantic tokens that reference primitive tokens, aligning with
+design token systems like Style Dictionary and Figma Tokens.
+
+```js
+module.exports = {
+  theme: {
+    colors: {
+      red: '#f00',
+      blue: '#00f'
+    },
+
+    button: {
+      // Full reference — resolves to '#f00'
+      primary: '{colors.red}',
+      secondary: '{colors.blue}'
+    },
+
+    spacing: {
+      xs: { xs: '10px', sm: '15px', md: '15px', lg: '15px', xl: '15px' },
+      // Object reference — copies the entire breakpoint object
+      block: '{spacing.xs}'
+    },
+
+    border: {
+      // Partial interpolation — resolves to '1px solid #f00'
+      default: '1px solid {colors.red}'
+    }
+  }
+}
+```
+
+**Full references** (`'{colors.red}'`): When the entire string is a single `{ref}`, the resolved
+value preserves its original type (string, object, array).
+
+**Partial interpolation** (`'1px solid {colors.red}'`): Each `{ref}` is string-replaced. Only
+works when the referenced value is a string or number.
+
+**Chained references** are supported — a token can reference another token that itself is a
+reference.
+
+Circular references and missing paths throw descriptive errors.
+
+
 ### Typography
 #### Sizes
 
@@ -489,6 +535,9 @@ article {
   - `calc(100vw - var[container] + var[1])` > Switches out `var[container]` and `var[1]` with correct values for
     container padding and 1 gutter unit per breakpoint.
   - `20dpx` > Design pixel units that scale with viewport width based on the `dpxViewportSize` setting (defaults to 1440px).
+  - `negate(currentGap, desiredGap)` > Negates the current gap and adds the desired gap.
+    Used to override flex column gaps on individual children. Always outputs `margin-top`.
+    The desired gap can include arithmetic: `negate(block, block+xs)`, `negate(block, block-2vw)`.
 
 **EXAMPLES**:
 
@@ -508,6 +557,12 @@ article {
 .overlap {
   /* Use negative named spacing to create overlaps */
   @space margin-top -block;
+}
+
+.flex-column-child {
+  /* Override flex column gap: negate the parent gap and add desired gap */
+  @space negate(block, 25px);
+  /* Or use expressions: negate(block, block+xs) */
 }
 
 .powerful-stuff {

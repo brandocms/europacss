@@ -2772,3 +2772,223 @@ it('parses container references with "*" padding values', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+describe('negate()', () => {
+  it('resolves absolute value per breakpoint', () => {
+    const input = `
+      article {
+        @space negate(block, 25px);
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(-20px + 25px);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 25px);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 25px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('resolves named spacing as desired gap', () => {
+    const input = `
+      article {
+        @space negate(block, xs);
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(-20px + 10px);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 20px);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 30px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('resolves addition expression', () => {
+    const input = `
+      article {
+        @space negate(block, block+xs);
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(-20px + 20px + 10px);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 30px + 20px);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 40px + 30px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('resolves subtraction expression', () => {
+    const input = `
+      article {
+        @space negate(block, block-2vw);
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(-20px + 20px - 2vw);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 30px - 2vw);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 40px - 2vw);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('handles single breakpoint query', () => {
+    const input = `
+      article {
+        @space negate(block, 25px) desktop;
+      }
+    `
+
+    const output = `
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 25px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('handles advanced breakpoint query', () => {
+    const input = `
+      article {
+        @space negate(block, 25px) >=tablet;
+      }
+    `
+
+    const output = `
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 25px);
+        }
+      }
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 25px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('handles breakpoint collection', () => {
+    const input = `
+      article {
+        @space negate(block, 25px) $test;
+      }
+    `
+
+    const output = `
+      @media (width <= 739px) {
+        article {
+          margin-top: calc(-20px + 25px);
+        }
+      }
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          margin-top: calc(-30px + 25px);
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+
+  it('handles important flag', () => {
+    const input = `
+      article {
+        @space! negate(block, 25px) desktop;
+      }
+    `
+
+    const output = `
+      @media (width >= 1024px) {
+        article {
+          margin-top: calc(-40px + 25px) !important;
+        }
+      }
+    `
+
+    return run(input, DEFAULT_CFG).then(result => {
+      expect(result.css).toMatchCSS(output)
+      expect(result.warnings().length).toBe(0)
+    })
+  })
+})
