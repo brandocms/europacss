@@ -37,4 +37,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
       - run: npm run build --if-present
-      - run: npm publish --access=public
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if echo "$VERSION" | grep -q "-"; then
+            TAG=$(echo "$VERSION" | sed 's/.*-\([a-zA-Z]*\).*/\1/')
+            npm publish --access=public --tag "$TAG"
+          else
+            npm publish --access=public
+          fi
