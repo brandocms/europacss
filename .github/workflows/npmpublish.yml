@@ -43,7 +43,7 @@ jobs:
           PACKAGE=$(node -p "require('./package.json').name")
           if echo "$VERSION" | grep -q "-"; then
             TAG=$(echo "$VERSION" | sed 's/.*-\([a-zA-Z]*\).*/\1/')
-            npm publish --access=public --tag "$TAG"
+            npm publish --access=public --tag "$TAG" || true
             npm dist-tag add "$PACKAGE@$VERSION" latest
           else
             npm publish --access=public
