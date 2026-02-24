@@ -2814,3 +2814,27 @@ it('fails with clear error when function returns undefined in __base__', () => {
     expect(e.message).toMatch(/FONTSIZE: Function in __base__ for 'font-family' returned undefined/)
   })
 })
+
+it('outputs literal px value inline when nested under @responsive', () => {
+  const input = `
+    @responsive >=tablet {
+      h1 {
+        @fontsize 13px/1.3;
+      }
+    }
+  `
+
+  const output = `
+    @media (width >= 740px) {
+      h1 {
+        font-size: 13px;
+        line-height: 1.3;
+      }
+    }
+  `
+
+  return run(input, MAX_PX_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

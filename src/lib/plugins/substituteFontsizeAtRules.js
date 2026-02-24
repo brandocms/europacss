@@ -150,7 +150,28 @@ function processRule(atRule, config) {
     bpQuery = responsiveParent.__mediaQuery
   }
 
-  if (bpQuery) {
+  // Check if the font size is a literal value (not a config reference)
+  // If so and we're under a @responsive parent, just output declarations
+  // inline without wrapping in additional media queries
+  const fontSizeName = fontSizeQuery.split('/')[0]
+  const isLiteralValue = _.isString(fontSizeQuery) &&
+    !_.get(config, themePath.concat(fontSizeName.split('.')))
+
+  if (responsiveParent && isLiteralValue) {
+    // Literal value under @responsive — output inline, no media query needed
+    const firstBp = extractBreakpointKeys(
+      { breakpoints, breakpointCollections },
+      bpQuery
+    )[0]
+    let parsedFontSizeQuery = parseFontSizeQuery(clonedRule, config, fontSizeQuery, firstBp)
+    const fontDecls = _.keys(parsedFontSizeQuery).map(prop =>
+      buildDecl(prop, parsedFontSizeQuery[prop])
+    )
+    fontDecls.forEach(decl => {
+      decl.source = src
+      atRule.before(decl)
+    })
+  } else if (bpQuery) {
     // We have a q, like '>=sm'. Extract all breakpoints we need media queries for
     const affectedBreakpoints = extractBreakpointKeys(
       { breakpoints, breakpointCollections },
