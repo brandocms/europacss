@@ -1,11 +1,14 @@
 # Changelog
 
-### 1.0.0-beta.12
+### 1.0.0-beta.13
 
 - Fix `@fontsize` with literal px values nested under `@responsive`
   - Previously, literal values like `@fontsize 13px/1.3` inside a `@responsive` block
     would fail or produce incorrect output
   - Now correctly outputs inline declarations without wrapping in additional media queries
+
+### 1.0.0-beta.12
+
 - Add config token references (design token aliasing) using `{path.to.value}` syntax
   - Define semantic tokens that reference other theme values: `primary: '{colors.red}'`
   - Full references preserve the original type (objects, arrays, strings)
