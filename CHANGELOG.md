@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.0-beta.14
+
+- Simplify CI publish workflow (npm dist-tag fix)
+
 ### 1.0.0-beta.13
 
 - Fix `@fontsize` with literal px values nested under `@responsive`
