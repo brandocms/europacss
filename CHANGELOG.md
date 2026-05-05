@@ -1,5 +1,14 @@
 # Changelog
 
+### 1.0.0-beta.15
+
+- Add `@space breakout` for breaking out of a container to full viewport width
+  - Outputs `width: 100vw; margin-left: calc(50% - 50vw)`
+  - Supports breakpoint queries: `@space breakout mobile;`, `@space breakout >=tablet;`
+  - Supports `@space!` for `!important` declarations
+  - Can be nested inside `@responsive` blocks
+- Remove unused `baseline-browser-mapping` devDependency
+
 ### 1.0.0-beta.14
 
 - Simplify CI publish workflow (npm dist-tag fix)

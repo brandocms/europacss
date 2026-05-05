@@ -770,6 +770,37 @@ results in
 ```
 
 
+## LOCAL DEVELOPMENT
+
+To test a local development version of EuropaCSS in a real project without publishing,
+use pnpm's `file:` protocol. Do **not** use `pnpm link` — it creates a symlink that
+causes the plugin to resolve its own `postcss` instance instead of sharing the project's,
+which leads to silent processing failures.
+
+In the consuming project's `package.json`:
+
+```json
+{
+  "devDependencies": {
+    "@brandocms/europacss": "file:/path/to/europacss"
+  }
+}
+```
+
+Then run `pnpm install`. After making changes to the plugin source, rebuild
+(`yarn build`) and run `pnpm install` in the consuming project to pick up the changes.
+
+When done, switch back to the registry version:
+
+```json
+{
+  "devDependencies": {
+    "@brandocms/europacss": "1.0.0-beta.14"
+  }
+}
+```
+
+
 ## POSTCSS PLUGINS IN USE
 
 This would not be possible without the following great plugins:

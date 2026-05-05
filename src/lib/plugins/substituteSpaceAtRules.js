@@ -303,6 +303,12 @@ function processRule(atRule, config, flagAsImportant) {
     size = null
   }
 
+  // Special case for breakout
+  if (prop === 'breakout') {
+    bpQuery = size
+    size = null
+  }
+
   // Special case for negate()
   if (prop && prop.startsWith('negate(')) {
     const [currentGap, desiredGap] = parseNegateArgs(prop)
@@ -337,6 +343,25 @@ function processRule(atRule, config, flagAsImportant) {
   }
 
   const src = atRule.source
+
+  // Early return for breakout — output is constant, no per-breakpoint iteration needed
+  if (prop === 'breakout') {
+    const sizeDecls = buildDecl('breakout', null, flagAsImportant)
+    if (bpQuery) {
+      const mediaRule = clonedRule.clone({
+        name: 'media',
+        params: buildMediaQueryQ({ breakpoints, breakpointCollections }, bpQuery)
+      })
+      mediaRule.append(sizeDecls)
+      mediaRule.source = src
+      atRule.before(mediaRule)
+    } else {
+      parent.prepend(sizeDecls)
+    }
+    atRule.remove()
+    if (parent && !parent.nodes.length) parent.remove()
+    return
+  }
 
   // Parse breakpoints from advanced query if not already processed
   if (!parsedBreakpoints && bpQuery && advancedBreakpointQuery(bpQuery)) {

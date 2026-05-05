@@ -60,6 +60,11 @@ export default function buildDecl(p, value, important = false, config, bp) {
       props.push({ prop: 'left', value: '0' })
       break
 
+    case 'breakout':
+      props.push({ prop: 'width', value: '100vw' })
+      props.push({ prop: 'margin-left', value: 'calc(50% - 50vw)' })
+      break
+
     case 'container':
       // Process the container padding value, handling dpx units if present
       let rawPaddingValue = config.theme.container.padding[bp]

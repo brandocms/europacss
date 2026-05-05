@@ -2992,3 +2992,115 @@ describe('negate()', () => {
     })
   })
 })
+
+// --- @space breakout ---
+
+it('parses @space breakout without media query', () => {
+  const input = `
+    article {
+      @space breakout;
+    }
+  `
+
+  const output = `
+    article {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space breakout with single breakpoint', () => {
+  const input = `
+    article {
+      @space breakout mobile;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px) {
+      article {
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+      }
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space breakout with range query', () => {
+  const input = `
+    article {
+      @space breakout >=tablet;
+    }
+  `
+
+  const output = `
+    @media (width >= 740px) {
+      article {
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+      }
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space! breakout with important flag', () => {
+  const input = `
+    article {
+      @space! breakout;
+    }
+  `
+
+  const output = `
+    article {
+      width: 100vw !important;
+      margin-left: calc(50% - 50vw) !important;
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @space breakout nested in @responsive', () => {
+  const input = `
+    article {
+      @responsive tablet {
+        @space breakout;
+      }
+    }
+  `
+
+  const output = `
+    @media (width >= 740px) and (width <= 1023px) {
+      @media (width >= 740px) and (width <= 1023px) {
+        article {
+          width: 100vw;
+          margin-left: calc(50% - 50vw);
+        }
+      }
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
