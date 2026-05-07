@@ -4,6 +4,7 @@ import buildDecl from '../../util/buildDecl'
 import buildMediaQueryQ from '../../util/buildMediaQueryQ'
 import findResponsiveParent from '../../util/findResponsiveParent'
 import extractBreakpointKeys from '../../util/extractBreakpointKeys'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 module.exports = getConfig => {
   const config = getConfig()
@@ -115,8 +116,7 @@ function processRule(atRule, config, flagAsImportant) {
   function createColorDecl(target, color, flagAsImportant) {
     // Get the wanted object
     const theme = ['theme', 'colors']
-    const path = color.split('.')
-    const resolvedColor = _.get(config, theme.concat(path))
+    const resolvedColor = resolveConfigKey(config, theme, color)
 
     let decl
 

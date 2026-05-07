@@ -3104,3 +3104,72 @@ it('parses @space breakout nested in @responsive', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('parses @space with slash notation for nested spacing config', () => {
+  const cfg = {
+    theme: {
+      breakpoints: {
+        mobile: '0',
+        tablet: '740px',
+        desktop: '1024px'
+      },
+      spacing: {
+        block: {
+          sm: {
+            mobile: '10px',
+            tablet: '20px',
+            desktop: '30px'
+          }
+        }
+      },
+      columns: {
+        gutters: {
+          mobile: '16px',
+          tablet: '24px',
+          desktop: '32px'
+        }
+      },
+      container: {
+        maxWidth: {
+          mobile: '100%',
+          tablet: '100%',
+          desktop: '100%'
+        },
+        padding: {
+          mobile: '15px',
+          tablet: '35px',
+          desktop: '50px'
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @space margin-top block/sm;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px){
+      article{
+        margin-top: 10px
+      }
+    }
+    @media (width >= 740px) and (width <= 1023px){
+      article{
+        margin-top: 20px
+      }
+    }
+    @media (width >= 1024px){
+      article{
+        margin-top: 30px
+      }
+    }
+  `
+
+  return run(input, cfg).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

@@ -6,6 +6,7 @@ import extractBreakpointKeys from '../../util/extractBreakpointKeys'
 import buildDecl from '../../util/buildDecl'
 import parseFontSizeQuery from '../../util/parseFontSizeQuery'
 import findResponsiveParent from '../../util/findResponsiveParent'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 /**
  * FONTSIZE
@@ -112,13 +113,7 @@ function processRule(atRule, config) {
 
   // Check if the fontSizeQuery references a config with __base__ properties
   const themePath = ['theme', 'typography', 'sizes']
-  let resolvedConfig = _.get(config, themePath.concat(fontSizeQuery.split('.')))
-
-  // Try hierarchical key lookup if not found
-  if (!resolvedConfig && fontSizeQuery.includes('/')) {
-    const pathParts = fontSizeQuery.split('/')
-    resolvedConfig = _.get(config, themePath.concat(pathParts))
-  }
+  let resolvedConfig = resolveConfigKey(config, themePath, fontSizeQuery)
 
   // Extract __base__ properties if they exist
   let baseProperties = null
@@ -155,7 +150,7 @@ function processRule(atRule, config) {
   // inline without wrapping in additional media queries
   const fontSizeName = fontSizeQuery.split('/')[0]
   const isLiteralValue = _.isString(fontSizeQuery) &&
-    !_.get(config, themePath.concat(fontSizeName.split('.')))
+    !resolveConfigKey(config, themePath, fontSizeName)
 
   if (responsiveParent && isLiteralValue) {
     // Literal value under @responsive — output inline, no media query needed

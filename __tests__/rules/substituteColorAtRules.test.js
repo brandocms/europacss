@@ -394,6 +394,69 @@ it('parses @color with var() and breakpoint query', () => {
   })
 })
 
+it('parses @color with slash notation', () => {
+  const input = `
+    article {
+      @color fg green/dark;
+      @color bg green/light;
+    }
+  `
+
+  const output = `
+    article {
+      color: #22AA22;
+      background-color: #AAFFAA;
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @color with slash notation for deep keys', () => {
+  const input = `
+    article {
+      @color fg green/test/one;
+      @color bg green/test/two;
+    }
+  `
+
+  const output = `
+    article {
+      color: #ffffff;
+      background-color: #000000;
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
+it('parses @color with slash notation for number keys', () => {
+  const input = `
+    article {
+      @color fg gray/100;
+      @color bg gray/200;
+    }
+  `
+
+  const output = `
+    article {
+      color: #111111;
+      background-color: #222222;
+    }
+  `
+
+  return run(input, DEFAULT_CFG).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})
+
 it('parses @color! with var() as !important', () => {
   const input = `
     article {

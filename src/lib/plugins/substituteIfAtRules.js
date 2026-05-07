@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import cloneNodes from '../../util/cloneNodes'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 module.exports = getConfig => {
   const config = getConfig()
@@ -32,9 +33,7 @@ function processRule(atRule, config) {
   }
 
   // get the key
-  const path = params.split('.')
-
-  const obj = _.get(config, path)
+  const obj = resolveConfigKey(config, [], params)
   if (obj === undefined) {
     throw atRule.error(`IF: not found: \`${params}\``, { word: params })
   }

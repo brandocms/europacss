@@ -3,6 +3,7 @@ import splitUnit from './splitUnit'
 import parseRFSQuery from './parseRFSQuery'
 import parseVWQuery from './parseVWQuery'
 import replaceWildcards from './replaceWildcards'
+import resolveConfigKey from './resolveConfigKey'
 
 // Constants
 const BETWEEN_EXPRESSION = 'between('
@@ -276,11 +277,9 @@ export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoi
       ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
 
       // Try to resolve again after extracting line-height
-      const fontSize = fontSizeQuery
-      const path = fontSize.split('.')
-      resolvedFontsize = _.get(config, themePath.concat(path))
+      resolvedFontsize = resolveConfigKey(config, themePath, fontSizeQuery)
       if (!resolvedFontsize) {
-        resolvedFontsize = fontSize
+        resolvedFontsize = fontSizeQuery
       }
     } else {
       // Extract modifier if present for the found key
@@ -291,11 +290,9 @@ export default function parseFontSizeQuery(node, config, fontSizeQuery, breakpoi
     ;[fontSizeQuery, lineHeight] = extractLineHeight(fontSizeQuery)
     ;[fontSizeQuery, modifier] = extractModifier(fontSizeQuery)
 
-    const fontSize = fontSizeQuery
-    const path = fontSize.split('.')
-    resolvedFontsize = _.get(config, themePath.concat(path))
+    resolvedFontsize = resolveConfigKey(config, themePath, fontSizeQuery)
     if (!resolvedFontsize) {
-      resolvedFontsize = fontSize
+      resolvedFontsize = fontSizeQuery
     }
   }
 

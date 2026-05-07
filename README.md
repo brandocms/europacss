@@ -430,13 +430,15 @@ For ad-hoc media queries that don't match your defined breakpoints, use the arro
 
 ### `@color {fg/bg/stroke/fill/border/border-[top|bottom|left|right]} {colorName/hex}`
 
-Tries to get `colorName` from `theme.colors`, otherwise passes the color through
+Tries to get `colorName` from `theme.colors`, otherwise passes the color through.
+Nested colors can be accessed with dot or slash notation (`headings.h2` or `headings/h2`).
 
 **EXAMPLE**:
 
 ```
 h2 {
   @color fg headings.h2;
+  @color fg headings/h2;  /* equivalent */
   @color bg transparent;
 }
 ```
@@ -585,8 +587,8 @@ Selects a font family. Can also be passed a font size query.
 
 `{fontFamily}`
   - picks `fontFamily` from `typography.families`
-  - **Hierarchical keys**: Use slash notation for organized typography (e.g., `body/regular`, `header/display`)
-  - **Path traversal**: Slash notation also supports path traversal like dots (e.g., `body/regular` works for both `'body/regular': [...]` and `body: { regular: [...] }`)
+  - **Hierarchical keys**: Use slash or dot notation for organized typography (e.g., `body/regular` or `body.regular`, `header/display` or `header.display`)
+  - Both notations support path traversal (e.g., `body/regular` and `body.regular` both work for `'body/regular': [...]` and `body: { regular: [...] }`)
 
 `[fsQuery]`
   - can also be passed. Will then create a `@fontsize` rule with `fsQuery` as params
@@ -607,10 +609,10 @@ Selects a font family. Can also be passed a font size query.
   - `lg/2.0` > Also sets `line-height` to `2.0`
   - `lg(2.0)/2.0` > Adds a modifier `(2.0)` that gets used as a multiplier in a calc() for the final font-size.
   - `between(18px-22px)` > Responsive font sizing, from 18px to 22px. Needs a breakpoint to function properly.
-  - `product.size` > Traverses the keypath `product.size` within `theme.typography.sizes`
+  - `product.size` or `product/size` > Traverses the keypath `product.size` within `theme.typography.sizes`
   - `20dpx` > Design pixel units that scale with viewport width based on the `dpxViewportSize` setting (defaults to 1440px)
-  - **Hierarchical keys**: Use slash notation for organized sizes (e.g., `header/large`, `body/small`)
-  - **Path traversal**: Slash notation also supports path traversal like dots (e.g., `header/large` works for both `'header/large': {...}` and `header: { large: {...} }`)
+  - **Hierarchical keys**: Use slash or dot notation for organized sizes (e.g., `header/large` or `header.large`)
+  - Both notations support path traversal (e.g., `header/large` and `header.large` both work for `'header/large': {...}` and `header: { large: {...} }`)
 
 `[breakpointQuery]`
   - `xs` > Only for the `xs` breakpoint

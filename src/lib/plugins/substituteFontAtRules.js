@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import postcss from 'postcss'
 import buildDecl from '../../util/buildDecl'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 /**
  * Aliases and shortcuts to other at-rules
@@ -38,14 +39,8 @@ function processRule(atRule, config) {
 
   const fsParams = fsQuery ? fsQuery + (bpQuery ? ' ' + bpQuery : '') : null
 
-  // Try to resolve the family as-is (which may include slashes for hierarchical keys)
-  let ff = config.theme.typography.families[family]
-
-  // If not found and contains slash, try path traversal
-  if (!ff && family.includes('/')) {
-    const pathParts = family.split('/')
-    ff = _.get(config.theme.typography.families, pathParts)
-  }
+  // Resolve family using dot or slash notation for hierarchy access
+  let ff = resolveConfigKey(config, ['theme', 'typography', 'families'], family)
 
   if (!ff) {
     throw atRule.error(`FONT: Could not find \`${family}\` in typography.families config`)

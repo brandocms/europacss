@@ -2,6 +2,7 @@ import _ from 'lodash'
 import postcss from 'postcss'
 import buildDecl from '../../util/buildDecl'
 import parseSize from '../../util/parseSize'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 module.exports = getConfig => {
   const config = getConfig()
@@ -100,8 +101,7 @@ function processRule(atRule, config) {
   }
 
   // get the wanted object
-  const path = params.split('.')
-  const obj = _.get(config, path)
+  const obj = resolveConfigKey(config, [], params)
   if (!obj) {
     throw atRule.error(`UNPACK: iterable not found: \`${params}\``, { word: params })
   }

@@ -39,17 +39,19 @@ h1 {
 
 ## Nested Color Paths
 
-Access nested colors with dot notation:
+Access nested colors with dot or slash notation:
 
 ```css
 /* Config: colors.headings.h1 = '#1a1a1a' */
 h1 {
   @color fg headings.h1;
+  @color fg headings/h1;  /* equivalent */
 }
 
 /* Config: colors.button.primary = '#3ecf8e' */
 .btn {
   @color bg button.primary;
+  @color bg button/primary;  /* equivalent */
 }
 ```
 
@@ -98,7 +100,7 @@ colors: {
   transparent: 'transparent',
   primary: '#3ecf8e',
 
-  // Nested (accessed via dot notation)
+  // Nested (accessed via dot or slash notation)
   headings: {
     h1: '#1a1a1a',
     h2: '#333333'

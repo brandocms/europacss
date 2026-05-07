@@ -83,6 +83,17 @@ Reference spacing values from your config:
 @space gap block;
 ```
 
+### Nested Spacing Keys
+
+Access nested spacing with dot or slash notation:
+
+```css
+/* Config: spacing.block.sm = { mobile: '10px', tablet: '20px', desktop: '30px' } */
+
+@space margin-top block/sm;
+@space margin-top block.sm;  /* equivalent */
+```
+
 ## Container as Size
 
 Use the container padding value on any property (without the full container behavior):

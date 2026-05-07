@@ -1,5 +1,17 @@
 # Changelog
 
+### 1.0.0-beta.16
+
+- Unify config path notation: both dot (`.`) and slash (`/`) now work interchangeably
+  for hierarchy access across all at-rules
+  - `@color fg green.dark` and `@color fg green/dark` are equivalent
+  - `@fontsize product.name` and `@fontsize product/name` are equivalent
+  - `@space margin-top block.sm` and `@space margin-top block/sm` are equivalent
+  - Also applies to `@font`, `@if`, `@iterate`, and `@unpack`
+  - Slash notation in `@space` still works for fractions (`6/12`) and division (`xs/2`)
+    — config path is tried first, falls back to math expressions
+- Add shared `resolveConfigKey` utility for consistent config path resolution
+
 ### 1.0.0-beta.15
 
 - Add `@space breakout` for breaking out of a container to full viewport width

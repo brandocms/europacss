@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import resolveConfigKey from '../../util/resolveConfigKey'
 
 module.exports = getConfig => {
   const config = getConfig()
@@ -37,15 +38,14 @@ function processRule(atRule, config) {
     throw atRule.error(`ITERATE: Must include iterable parameter`, { word: 'iterate' })
   }
 
-  if (params.indexOf('.') === -1) {
-    throw atRule.error(`ITERATE: Can't iterate theme object. Supply a path: \`spacing.md\``, {
+  if (params.indexOf('.') === -1 && params.indexOf('/') === -1) {
+    throw atRule.error(`ITERATE: Can't iterate theme object. Supply a path: \`spacing.md\` or \`spacing/md\``, {
       word: 'iterate'
     })
   }
 
   // get the wanted object
-  const path = params.split('.')
-  const obj = _.get(config, path)
+  const obj = resolveConfigKey(config, [], params)
   if (!obj) {
     throw atRule.error(`ITERATE: iterable not found: \`${params}\``, { word: params })
   }

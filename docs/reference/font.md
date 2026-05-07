@@ -24,17 +24,19 @@ body {
 
 ## Hierarchical Keys
 
-Use slash notation for nested family definitions:
+Use slash or dot notation for nested family definitions:
 
 ```css
-/* Config: families['header/display'] = ['Playfair Display', 'serif'] */
+/* Config: families.header.display = ['Playfair Display', 'serif'] */
 h1 {
   @font header/display;
+  @font header.display;  /* equivalent */
 }
 
 /* Config: families.body.regular = ['Inter', 'sans-serif'] */
 p {
   @font body/regular;
+  @font body.regular;  /* equivalent */
 }
 ```
 

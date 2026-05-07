@@ -8,6 +8,7 @@ import stripNestedCalcs from './stripNestedCalcs'
 import isLargestBreakpoint from './isLargestBreakpoint'
 import getLargestContainer from './getLargestContainer'
 import replaceWildcards from './replaceWildcards'
+import resolveConfigKey from './resolveConfigKey'
 
 // Constants for commonly used strings
 const SPECIAL_VALUES = {
@@ -103,7 +104,7 @@ function processVerticalRhythm(size, config, bp, node) {
   const [key, lineHeight = config.theme.typography.lineHeight[bp]] = params
     .split(',')
     .map(p => p.trim())
-  const obj = _.get(config, key.split('.'))
+  const obj = resolveConfigKey(config, [], key)
 
   // does it exist?
   if (!obj) {
@@ -720,10 +721,11 @@ export default function parseSize(node, config, size, bp) {
     size = size.substring(1)
   }
 
-  // Check if size is a named spacing value in config
+  // Check if size is a named spacing value in config (flat key or nested path)
   let sizeMap
-  if (_.has(config.theme.spacing, size)) {
-    sizeMap = replaceWildcards(config.theme.spacing[size], config)
+  const resolvedSpacing = resolveConfigKey(config, ['theme', 'spacing'], size)
+  if (resolvedSpacing !== undefined) {
+    sizeMap = replaceWildcards(resolvedSpacing, config)
     size = sizeMap[bp]
 
     // Apply multiplier if needed
@@ -767,7 +769,7 @@ export default function parseSize(node, config, size, bp) {
         return processCalcExpression(size, config, bp, node)
       }
 
-      // Fraction expression (e.g., "3/12")
+      // Fraction expression (e.g., "3/12") or division (e.g., "xs/2")
       if (size.indexOf('/') !== -1) {
         return processFractionExpression(size, config, bp, node)
       }

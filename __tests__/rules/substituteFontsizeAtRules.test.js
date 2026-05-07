@@ -2838,3 +2838,44 @@ it('outputs literal px value inline when nested under @responsive', () => {
     expect(result.warnings().length).toBe(0)
   })
 })
+
+it('parses @fontsize with slash notation for nested config path', () => {
+  const cfg = {
+    theme: {
+      breakpoints: {
+        xs: '0',
+        sm: '740px',
+        md: '1024px'
+      },
+      typography: {
+        sizes: {
+          product: {
+            name: {
+              xs: '14px',
+              sm: '16px'
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const input = `
+    article {
+      @fontsize product/name xs;
+    }
+  `
+
+  const output = `
+    @media (width <= 739px){
+      article{
+        font-size: 14px
+      }
+    }
+  `
+
+  return run(input, cfg).then(result => {
+    expect(result.css).toMatchCSS(output)
+    expect(result.warnings().length).toBe(0)
+  })
+})

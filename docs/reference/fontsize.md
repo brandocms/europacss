@@ -43,12 +43,12 @@ Scale a size value with parentheses:
 
 ## Hierarchical Keys
 
-Use slash notation for nested size definitions:
+Use slash or dot notation for nested size definitions:
 
 ```css
-/* Config: sizes['header/large'] = { xs: '32px', ... } */
+/* Config: sizes.header.large = { xs: '32px', ... } */
 @fontsize header/large;
-@fontsize body/small;
+@fontsize header.large;  /* equivalent */
 
 /* With line-height (appended after the key) */
 @fontsize body/small/1.5;
