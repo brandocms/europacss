@@ -24,6 +24,22 @@ The terminal output uses color automatically on interactive terminals. Errors an
 
 The numbers above illustrate the display, not benchmark results.
 
+## Native preview archives
+
+`python3 scripts/package-rust.py` builds a release executable for the host, creates
+an archive plus SHA-256 checksum under `dist/native/`, extracts it, and compiles the
+included example with an empty `PATH`. Python is packaging tooling only. The archive
+contains the binary, examples, manifest, dependency inventory, and available license
+notices. `--target <triple>` can package another installed Rust target; it still needs
+a suitable linker and a matching machine for the runtime smoke test.
+
+The [Rust CI workflow](../../.github/workflows/rust.yml) runs formatting, Clippy,
+tests, packaging, and the runtime smoke test on Linux, macOS, and Windows runners.
+It uploads preview artifacts only and does not publish npm packages or GitHub releases.
+The local macOS ARM64 preview has been verified; the other runners have not been run
+in this worktree. Public releases still need completed upstream notices, a supported
+platform policy, and signing/notarization decisions. See [binary notes](BINARY-README.md).
+
 ## Watch mode
 
 ```sh
@@ -125,7 +141,7 @@ A clean report covers only the checks listed in its JSON. It does not prove unch
 
 ## Remaining work before migrating a site
 
-A read-only integration run now compiles the current eight-file Site A entry with a temporary JSON5 config. This is a compilation check, not visual or behavioral parity, and does not replace the published package. Release packaging remains to be added. Full case-by-case parity and further output-size optimization of the legacy spacing/typography suites remain ongoing. Nested responsive blocks retain their outer conditions; responsive values are selected by the innermost query. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
+A read-only integration run now compiles the current eight-file Site A entry with a temporary JSON5 config. This is a compilation check, not visual or behavioral parity, and does not replace the published package. Native preview packaging and a three-OS CI workflow are included; only the local macOS ARM64 archive has been executed so far. Full case-by-case parity and further output-size optimization of the legacy spacing/typography suites remain ongoing. Nested responsive blocks retain their outer conditions; responsive values are selected by the innermost query. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
 
 Migration coverage beyond the checks above, the JavaScript config exporter, and rendered-page comparisons remain work in progress. `&__suffix` and `@nest` still fail compilation until migrated. Recognized unported directives and sizing expressions fail explicitly. Unknown CSS at-rules are passed to Lightning, which can issue warnings. This structural parser is not yet a complete CSS Syntax conformance implementation.
 
