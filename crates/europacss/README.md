@@ -24,6 +24,12 @@ The terminal output uses color automatically on interactive terminals. Errors an
 
 The numbers above illustrate the display, not benchmark results.
 
+[Measured CSS builds on Site A and Site B](../../research/parser-feasibility/native-benchmark.md)
+took 45.6 ms and 56.8 ms respectively on an M1 Max: about 18.5× faster than fresh
+legacy processes, or 9–11× faster than a warmed legacy process. These use matched
+sources, browser targets and external source maps; they are compiler timings,
+not full Vite/HMR measurements or a guarantee for other projects.
+
 ## Native preview archives
 
 `python3 scripts/package-rust.py` builds a release executable for the host, creates
