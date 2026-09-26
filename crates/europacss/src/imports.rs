@@ -206,7 +206,7 @@ struct Import {
 impl Import {
     fn parse(params: &str, offset: usize) -> Result<Self, Error> {
         let args =
-            parser::arguments(params).map_err(|e| Error::new("EU_IMPORT", e.message, offset))?;
+            parser::components(params).map_err(|e| Error::new("EU_IMPORT", e.message, offset))?;
         let Some(first) = args.first() else {
             return Err(Error::new(
                 "EU_IMPORT",
@@ -216,13 +216,8 @@ impl Import {
         };
         let url = if first.starts_with(['\'', '"']) {
             parser::decode_string(first, offset)?
-        } else if first.len() >= 5
-            && first
-                .get(..4)
-                .is_some_and(|s| s.eq_ignore_ascii_case("url("))
-            && first.ends_with(')')
-        {
-            parser::decode_string(&first[4..first.len() - 1], offset)?
+        } else if let Some(value) = function(first, "url") {
+            parser::decode_string(value, offset)?
         } else {
             return Err(Error::new(
                 "EU_IMPORT",
@@ -236,15 +231,11 @@ impl Import {
         let mut at = 1;
         let mut wrappers = Vec::new();
         if let Some(layer) = args.get(at) {
-            if layer.eq_ignore_ascii_case("layer") {
+            if keyword(layer, "layer") {
                 wrappers.push("@layer".into());
                 at += 1;
-            } else if layer
-                .get(..6)
-                .is_some_and(|s| s.eq_ignore_ascii_case("layer("))
-                && layer.ends_with(')')
-            {
-                let name = layer[6..layer.len() - 1].trim();
+            } else if let Some(name) = function(layer, "layer") {
+                let name = name.trim();
                 if name.is_empty() {
                     return Err(Error::new(
                         "EU_IMPORT",
@@ -257,12 +248,8 @@ impl Import {
             }
         }
         if let Some(supports) = args.get(at) {
-            if supports
-                .get(..9)
-                .is_some_and(|s| s.eq_ignore_ascii_case("supports("))
-                && supports.ends_with(')')
-            {
-                let condition = supports[9..supports.len() - 1].trim();
+            if let Some(condition) = function(supports, "supports") {
+                let condition = condition.trim();
                 if condition.is_empty() {
                     return Err(Error::new(
                         "EU_IMPORT",
@@ -284,6 +271,17 @@ impl Import {
         }
         Ok(Self { url, wrappers })
     }
+}
+
+fn keyword(value: &str, expected: &str) -> bool {
+    parser::decode_string(value, 0).is_ok_and(|name| name.eq_ignore_ascii_case(expected))
+}
+
+fn function<'a>(value: &'a str, expected: &str) -> Option<&'a str> {
+    let (name, rest) = value.split_once('(')?;
+    keyword(name, expected)
+        .then(|| rest.strip_suffix(')'))
+        .flatten()
 }
 
 pub(crate) fn external_import(params: &str, offset: usize) -> Result<bool, Error> {

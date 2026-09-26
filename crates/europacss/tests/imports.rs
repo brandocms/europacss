@@ -84,6 +84,23 @@ fn import_conditions_wrap_layers_and_keep_europa_rules_scoped() {
 }
 
 #[test]
+fn import_tokens_do_not_require_whitespace_between_strings_and_functions() {
+    let p = Project::new();
+    p.write("one.css", ".card{@color fg red;}");
+    for params in [
+        "'one.css'layer(ui)supports(display:grid)screen and (min-width:800px)",
+        "url(one.css)layer(ui)supports(display:grid)screen and (min-width:800px)",
+        r"u\72l(one.css)l\61yer(ui)s\75pports(display:grid)screen and (min-width:800px)",
+        "'one.css'/**/layer(ui)/**/supports(display:grid)/**/screen and (min-width:800px)",
+    ] {
+        p.write("app.css", &format!("@import {params};"));
+        p.css("@media screen and (min-width:800px){@supports (display:grid){@layer ui{.card{color:red}}}}");
+    }
+    p.write("app.css", "@import 'one.css'layer supports(display:grid);");
+    p.css("@supports (display:grid){@layer{.card{color:red}}}");
+}
+
+#[test]
 fn urls_are_rebased_from_each_origin_to_the_output_directory() {
     let p = Project::new();
     p.write(

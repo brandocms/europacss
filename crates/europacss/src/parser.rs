@@ -70,6 +70,41 @@ pub fn arguments(source: &str) -> Result<Vec<&str>, Error> {
     Ok(args)
 }
 
+/// CSS components have lexical boundaries even without spaces, for example
+/// `'file.css'layer(ui)supports(display:grid)`. Europa arguments intentionally
+/// use whitespace boundaries instead, so `heading/large(2)/1.4` stays together.
+pub(crate) fn components(source: &str) -> Result<Vec<&str>, Error> {
+    let mut scanner = Scanner { source, pos: 0 };
+    let mut values = Vec::new();
+    while let Some(c) = scanner.byte() {
+        if space(c) {
+            scanner.pos += 1;
+            continue;
+        }
+        if scanner.rest().starts_with("/*") {
+            scanner.opaque(0)?;
+            continue;
+        }
+        let start = scanner.pos;
+        if let Some(name) = scanner.name()? {
+            if scanner.byte() == Some(b'(') {
+                if is_url(name) {
+                    scanner.url_component(0)?;
+                } else {
+                    scanner.component(0)?;
+                }
+            }
+        } else if !scanner.opaque(0)? {
+            if matches!(c, b';' | b'{' | b'}' | b')' | b']') {
+                return Err(scanner.error("Unexpected delimiter in CSS components"));
+            }
+            scanner.advance();
+        }
+        values.push(&source[start..scanner.pos]);
+    }
+    Ok(values)
+}
+
 /// Split only at the current component-value level, retaining nested CSS intact.
 pub fn split_top_level(source: &str, separator: char) -> Result<Vec<&str>, Error> {
     let mut scanner = Scanner { source, pos: 0 };
