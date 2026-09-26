@@ -127,3 +127,56 @@ fn invalid_font_queries_fail_at_the_directive() {
         "EU_RESPONSIVE"
     );
 }
+
+#[test]
+fn font_families_cover_defaults_hierarchical_paths_and_literal_key_precedence() {
+    assert_css(
+        "article{@font serif;}",
+        "article{font-family:Georgia,Cambria,'Times New Roman',Times,serif}",
+        config(),
+    );
+    assert_css("article{@responsive mobile{@font serif;}}", "article{@media (width <= 739px){font-family:Georgia,Cambria,'Times New Roman',Times,serif}}", config());
+    let mut cfg = font_config();
+    cfg["theme"]["typography"]["families"] = json!({"body":{"regular":["Helvetica","Arial","sans-serif"],"strong":["Helvetica Neue","Arial","sans-serif"]},"header/display":["Georgia","Times","serif"]});
+    assert_css("article{@font body/regular;} strong{@font body/strong;} h1{@font header/display;}", "article{font-family:Helvetica,Arial,sans-serif} strong{font-family:Helvetica Neue,Arial,sans-serif} h1{font-family:Georgia,Times,serif}", cfg.clone());
+    cfg["theme"]["typography"]["families"]["body/regular"] = json!(["Inter", "sans-serif"]);
+    assert_css(
+        "article{@font body/regular;}",
+        "article{font-family:Inter,sans-serif}",
+        cfg,
+    );
+}
+
+#[test]
+fn font_combines_family_sizes_modifiers_and_queries_in_source_order() {
+    assert_css("article{@font sans body;}", "article{font-family:Inter,sans-serif;@media (width <= 739px){font-size:20px;line-height:1.5}@media (width >= 740px) and (width <= 1023px){font-size:20px;line-height:1.5}@media (width >= 1024px){font-size:24px;line-height:1.4}}", font_config());
+    assert_css("article{@font sans body/1.53 desktop;@font sans body(1.2)/1.53 <=tablet;}", "article{font-family:Inter,sans-serif;@media (width >= 1024px){font-size:24px;line-height:1.53}font-family:Inter,sans-serif;@media (width <= 739px){font-size:24px;line-height:1.53}@media (width >= 740px) and (width <= 1023px){font-size:24px;line-height:1.53}}", font_config());
+    assert_css("article{@font sans 18px/1.25 >=desktop;}", "article{font-family:Inter,sans-serif;@media (width >= 1024px){font-size:18px;line-height:1.25}}", font_config());
+    assert_css(
+        "article{@font sans nested/small mobile;}",
+        "article{font-family:Inter,sans-serif;@media (width <= 739px){font-size:12px}}",
+        font_config(),
+    );
+}
+
+#[test]
+fn font_rejects_missing_family_bad_config_types_and_conflicting_queries() {
+    for source in [
+        "@font sans;",
+        ".x{@font;}",
+        ".x{@font missing;}",
+        ".x{@font sans body desktop extra;}",
+        ".x{@responsive mobile{@font sans body tablet;}}",
+    ] {
+        assert!(
+            compile(&request(source, font_config())).is_err(),
+            "{source}"
+        );
+    }
+    let mut cfg = font_config();
+    cfg["theme"]["typography"]["families"]["sans"] = json!({"bad":"Inter"});
+    assert_eq!(
+        compile(&request(".x{@font sans;}", cfg)).unwrap_err().code,
+        "EU_CONFIG"
+    );
+}

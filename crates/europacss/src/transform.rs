@@ -62,6 +62,9 @@ fn validate_values(nodes: &mut [Node], config: &Value) -> Result<(), Error> {
                         .map_err(|e| error(node, "EU_FUNCTION", e.message))?;
                     node.text = text;
                 }
+                validate_interpolation(&node.text, false).map_err(|_| {
+                    error(node, "EU_DECLARATION", "Expected one CSS declaration; a value must not introduce extra declarations or rules")
+                })?;
             }
             if let Some((_, name)) =
                 unsupported_function(&node.text).map_err(|e| error(node, &e.code, e.message))?

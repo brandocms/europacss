@@ -15,6 +15,12 @@ The original JS suite remains the behavior reference, with intentional native ne
 
 These 22 legacy cases are represented by Rust assertions, sometimes grouped in one test or expanded into several. They are not the original Jest tests running against Rust. The pre-existing compiler/backend/config/CLI suites cover the earlier milestone; their legacy suites still need systematic case-by-case porting.
 
+## Basic directive audit
+
+[basic_rules.rs](basic_rules.rs) represents the legacy color (19 cases), display (8), order (4), and conditional (4) suites through grouped/table-driven assertions. It also covers every color target, nested native functions, hierarchy/literal-key precedence, malformed contexts, source-order overrides, and config values that try to introduce extra declarations. The font-family cases (9 legacy cases) are covered in [typography.rs](typography.rs), including family paths, responsive sizes, modifiers, and explicit query behavior.
+
+Expected CSS follows the agreed in-place expansion and native nesting semantics. This is a source-case audit, not a claim of byte-for-byte equivalence with old globally packed output. Color queries now use the same query construction as other directives: a contiguous named collection is one range. The old color plugin emitted separate per-breakpoint ranges, leaving fractional-width gaps between integer endpoints; migration analysis should report that difference where it matters. Standalone `@responsive` already constructs contiguous ranges. Media compaction retains the exact conditions it receives.
+
 ## Intentional behavior choices
 
 - `@iterate` and `@unpack` expand in place. The old implementations appended output to the parent; migration analysis must report meaningful cascade changes.
