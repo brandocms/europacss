@@ -8,16 +8,16 @@ use std::{
 
 const HELP: &str = "EuropaCSS experimental Rust compiler
 
-Usage: europa <input.css|-> [-o output.css] [--config europa.toml]
+Usage: europa <input.css|-> [-o output.css] [--config europa.json5]
               [--targets 'defaults'] [--minify] [--source-map]
 
 With no -o option, CSS is written to stdout. Use - for stdin.
 --source-map requires -o and writes an adjacent .map file.
 --targets accepts a Browserslist query; the default is 'defaults'.
-Configuration is TOML (or JSON for interchange); JavaScript is not executed.
+Configuration is JSON5 (or JSON for interchange); JavaScript is not executed.
 
 Convert previously exported config data:
-  europa migrate-config resolved.json -o europa.toml
+  europa migrate-config resolved.json -o europa.json5
 ";
 
 fn run() -> Result<(), String> {
@@ -28,20 +28,21 @@ fn run() -> Result<(), String> {
             .next()
             .ok_or("migrate-config requires exported JSON input")?;
         if args.next().as_deref() != Some("-o") {
-            return Err("Usage: europa migrate-config resolved.json -o europa.toml".into());
+            return Err("Usage: europa migrate-config resolved.json -o europa.json5".into());
         }
         let output = args.next().ok_or("-o requires a path")?;
         if args.next().is_some() {
             return Err("Unexpected argument after config output path".into());
         }
         let source = fs::read_to_string(&input).map_err(|e| format!("{input}: {e}"))?;
-        let toml = europacss::json_to_toml(&source)?;
+        let json5 = europacss::json_to_json5(&source).map_err(|e| format!("{input}: {e}"))?;
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&output)
             .map_err(|e| format!("{output}: {e}"))?;
-        file.write_all(toml.as_bytes()).map_err(|e| e.to_string())?;
+        file.write_all(json5.as_bytes())
+            .map_err(|e| e.to_string())?;
         return Ok(());
     }
     let mut input = None;

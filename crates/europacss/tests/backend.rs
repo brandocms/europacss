@@ -151,8 +151,8 @@ fn browser_targets_are_validated() {
 }
 
 #[test]
-fn advanced_toml_typography_matches_explicit_css() {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/europa.toml");
+fn advanced_json5_typography_matches_explicit_css() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/europa.json5");
     let config = europacss::load_config(&path).unwrap();
     assert_eq!(
         config["theme"]["typography"]["sizes"]["heading/4xl"]["__base__"]["font-family"],

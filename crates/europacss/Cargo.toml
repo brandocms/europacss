@@ -10,7 +10,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = ["sourcemap", "browserslist"] }
 parcel_sourcemap = { version = "2", features = ["json"] }
-toml = { version = "0.9", features = ["preserve_order"] }
+json5 = "1.3"
 pathdiff = "0.2"
 
 [[bin]]

@@ -1,4 +1,4 @@
-use europacss::{json_to_toml, resolve_config};
+use europacss::{json_to_json5, resolve_config};
 use serde_json::{json, Value};
 
 #[test]
@@ -44,24 +44,37 @@ fn cyclic_missing_and_non_scalar_interpolations_are_errors() {
 }
 
 #[test]
-fn toml_comments_quoted_keys_and_migration_round_trip() {
-    let input: Value = toml::from_str(
+fn json5_comments_quoted_keys_and_migration_round_trip() {
+    let input: Value = json5::from_str(
         r##"
-# Theme data can have comments.
-[theme.colors]
-ink = "#123456" # Brand foreground
-text = "{colors.ink}"
-[theme.breakpointCollections]
-"$desktop" = "md/lg/xl"
-[theme.typography.sizes."heading/4xl"]
-xs = "24px"
-md = "48px"
+{
+  // Theme data can have comments, single quotes, and trailing commas.
+  theme: {
+    colors: { ink: '#123456', text: '{colors.ink}' },
+    breakpointCollections: { $desktop: 'md/lg/xl' },
+    typography: {
+      sizes: { 'heading/4xl': { xs: '24px', md: '48px' } },
+    },
+  },
+}
 "##,
     )
     .unwrap();
-    let toml = json_to_toml(&input.to_string()).unwrap();
-    let round_trip: Value = toml::from_str(&toml).unwrap();
+    let json5 = json_to_json5(&input.to_string()).unwrap();
+    let round_trip: Value = json5::from_str(&json5).unwrap();
     assert_eq!(round_trip, input);
+    assert_eq!(
+        round_trip["theme"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .collect::<Vec<_>>(),
+        input["theme"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .collect::<Vec<_>>()
+    );
     assert_eq!(
         resolve_config(input).unwrap()["theme"]["colors"]["text"],
         "#123456"
@@ -69,6 +82,27 @@ md = "48px"
 }
 
 #[test]
-fn migration_does_not_silently_drop_json_nulls() {
-    assert!(json_to_toml(r#"{"nullable":null}"#).is_err());
+fn migration_preserves_json_data_and_references() {
+    let input = json!({
+        "nullable": null,
+        "enabled": false,
+        "numbers": [0, -1, 1.25, u64::MAX],
+        "theme": {"colors": {"ink": "red", "text": "{colors.ink}"}},
+    });
+    let output = json_to_json5(&input.to_string()).unwrap();
+    let round_trip: Value = json5::from_str(&output).unwrap();
+    assert_eq!(round_trip, input);
+    assert!(output.ends_with('\n'));
+}
+
+#[test]
+fn migration_rejects_invalid_config_before_serializing() {
+    for input in [
+        "[]",
+        r#"{"theme":{"a":"{missing}"}}"#,
+        r#"{"enabled":true,"enabled":false}"#,
+        "{enabled: true}", // Export input remains strict JSON.
+    ] {
+        assert!(json_to_json5(input).is_err(), "{input}");
+    }
 }

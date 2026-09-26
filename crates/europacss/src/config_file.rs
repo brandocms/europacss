@@ -2,28 +2,105 @@ use crate::{
     config::{lookup, scalar},
     Error,
 };
-use serde_json::{Map, Value};
+use serde::{
+    de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor},
+    Deserialize, Deserializer,
+};
+use serde_json::{Map, Number, Value};
 use std::{collections::HashMap, fs, path::Path};
 
 pub fn load_config(path: &Path) -> Result<Value, String> {
     let source = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let value = match path.extension().and_then(|s| s.to_str()) {
-        Some("toml") => toml::from_str::<Value>(&source).map_err(|e| e.to_string()),
-        Some("json") => serde_json::from_str(&source).map_err(|e| e.to_string()),
+        Some("json5") => json5::from_str::<ConfigValue>(&source).map_err(|e| e.to_string()),
+        Some("json") => serde_json::from_str::<ConfigValue>(&source).map_err(|e| e.to_string()),
         _ => Err(
-            "Expected .toml or .json config; JavaScript configuration must be migrated first"
+            "Expected .json5 or .json config; JavaScript configuration must be migrated first"
                 .into(),
         ),
     }
     .map_err(|e| format!("{}: {e}", path.display()))?;
-    resolve_config(value).map_err(|e| format!("{}: {}", path.display(), e.message))
+    resolve_config(value.0).map_err(|e| format!("{}: {}", path.display(), e.message))
 }
 
-/// Convert already exported data to TOML. This does not evaluate JavaScript callbacks.
-pub fn json_to_toml(source: &str) -> Result<String, String> {
-    let value: Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
+/// Convert already exported data to JSON5. This does not evaluate JavaScript callbacks.
+pub fn json_to_json5(source: &str) -> Result<String, String> {
+    let value = serde_json::from_str::<ConfigValue>(source)
+        .map_err(|e| e.to_string())?
+        .0;
     resolve_config(value.clone()).map_err(|e| e.message)?;
-    toml::to_string_pretty(&value).map_err(|e| format!("Cannot represent this config in TOML: {e}"))
+    json5::to_string(&value)
+        .map(|output| format!("{output}\n"))
+        .map_err(|e| e.to_string())
+}
+
+// serde_json::Value silently converts non-finite floats to null and overwrites
+// duplicate keys. Reject both at the config boundary, preserving insertion order.
+struct ConfigValue(Value);
+impl<'de> Deserialize<'de> for ConfigValue {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        ConfigSeed(0).deserialize(deserializer).map(Self)
+    }
+}
+
+struct ConfigSeed(usize);
+impl<'de> DeserializeSeed<'de> for ConfigSeed {
+    type Value = Value;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Value, D::Error> {
+        if self.0 > 128 {
+            return Err(de::Error::custom("Config nesting limit exceeded"));
+        }
+        deserializer.deserialize_any(self)
+    }
+}
+
+impl<'de> Visitor<'de> for ConfigSeed {
+    type Value = Value;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("configuration data")
+    }
+    fn visit_unit<E: de::Error>(self) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_bool<E: de::Error>(self, value: bool) -> Result<Value, E> {
+        Ok(Value::Bool(value))
+    }
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<Value, E> {
+        Ok(value.into())
+    }
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<Value, E> {
+        Ok(value.into())
+    }
+    fn visit_f64<E: de::Error>(self, value: f64) -> Result<Value, E> {
+        Number::from_f64(value).map(Value::Number).ok_or_else(|| {
+            E::custom("Config numbers must be finite; NaN and Infinity are unsupported")
+        })
+    }
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Value, E> {
+        Ok(value.into())
+    }
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Value, E> {
+        Ok(Value::String(value))
+    }
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Value, A::Error> {
+        let mut values = Vec::new();
+        while let Some(value) = seq.next_element_seed(ConfigSeed(self.0 + 1))? {
+            values.push(value);
+        }
+        Ok(Value::Array(values))
+    }
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Value, A::Error> {
+        let mut values = Map::new();
+        while let Some(key) = map.next_key::<String>()? {
+            if values.contains_key(&key) {
+                return Err(de::Error::custom(format!("Duplicate config key `{key}`")));
+            }
+            values.insert(key, map.next_value_seed(ConfigSeed(self.0 + 1))?);
+        }
+        Ok(Value::Object(values))
+    }
 }
 
 /// Preserve existing defaults and theme-section replacement, then apply theme.extend.

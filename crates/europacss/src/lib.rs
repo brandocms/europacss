@@ -4,7 +4,7 @@ mod config_file;
 mod emit;
 pub mod parser;
 mod transform;
-pub use config_file::{json_to_toml, load_config, resolve_config};
+pub use config_file::{json_to_json5, load_config, resolve_config};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
