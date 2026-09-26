@@ -1,0 +1,138 @@
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+
+const normalize = (file) => path.resolve(file).replaceAll('\\', '/');
+
+// One subprocess per compilation. argv/stdin transport never invokes a shell.
+function compile(binary, request, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, ['bridge'], { cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    const chunks = [];
+    let size = 0;
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('EuropaCSS compilation timed out after 30 seconds'));
+    }, 30_000);
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      reject(new Error(`Cannot start EuropaCSS executable ${JSON.stringify(binary)}: ${error.message}`));
+    });
+    child.stdout.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > 64 * 1024 * 1024) {
+        child.kill();
+        reject(new Error('EuropaCSS response exceeds 64 MiB'));
+      } else chunks.push(chunk);
+    });
+    child.stderr.on('data', (chunk) => { stderr = (stderr + chunk).slice(-8192); });
+    // EPIPE accompanies early exits; the close handler reports the actual result.
+    child.stdin.on('error', () => {});
+    child.on('close', (status) => {
+      clearTimeout(timer);
+      try {
+        const response = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if (response.version !== 1 || !Array.isArray(response.watchFiles)) {
+          throw new Error('Unsupported EuropaCSS bridge response');
+        }
+        if (status !== 0 && !response.error) throw new Error(`EuropaCSS exited with status ${status}`);
+        if (!response.error && typeof response.css !== 'string') throw new Error('Missing compiled CSS');
+        resolve(response);
+      } catch (error) {
+        reject(new Error(`${error.message}${stderr ? `\n${stderr}` : ''}`));
+      }
+    });
+    child.stdin.end(JSON.stringify(request));
+  });
+}
+
+/** Compile selected physical CSS entries before Vite's CSS pipeline. */
+export default function europa(options = {}) {
+  let root;
+  let binary;
+  let config;
+  let server;
+  const entries = new Map();
+  const pending = new Map();
+
+  const affectedModules = (file, graph) => {
+    const modules = new Set();
+    for (const [id, watched] of entries) {
+      if (watched.has(normalize(file))) {
+        const module = graph.getModuleById(id);
+        if (module) modules.add(module);
+      }
+    }
+    return modules;
+  };
+
+  return {
+    name: 'vite-plugin-europacss-native',
+    enforce: 'pre',
+    configResolved(resolved) {
+      root = resolved.root;
+      binary = options.binary ?? 'europa';
+      if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
+      config = options.config === false ? null : path.resolve(root, options.config ?? 'europa.json5');
+    },
+    configureServer(devServer) {
+      server = devServer;
+      // Vite's handleHotUpdate is only called for changes. Missing imports/configs
+      // need add/unlink events too, including recovery from the initial build.
+      const recover = (file) => {
+        const modules = affectedModules(file, server.moduleGraph);
+        if (!modules.size) return;
+        for (const module of modules) server.moduleGraph.invalidateModule(module);
+        server.ws.send({ type: 'full-reload', path: '*' });
+      };
+      server.watcher.on('add', recover);
+      server.watcher.on('unlink', recover);
+      server.httpServer?.once('close', () => {
+        server.watcher.off('add', recover);
+        server.watcher.off('unlink', recover);
+      });
+    },
+    async transform(source, id) {
+      const [filename, query = ''] = id.split('?', 2);
+      const params = new URLSearchParams(query);
+      if (id.startsWith('\0') || !path.isAbsolute(filename) || !filename.endsWith('.css') ||
+          params.has('raw') || params.has('url') || params.has('vue') || params.has('svelte') ||
+          (options.include && !options.include(filename))) return null;
+
+      const promise = compile(binary, { version: 1, filename, source, config, browsers: options.targets ?? [] }, root);
+      pending.set(id, promise);
+      let response;
+      try { response = await promise; }
+      catch (error) { this.error(error); }
+      finally { if (pending.get(id) === promise) pending.delete(id); }
+      const watched = new Set(response.watchFiles.map(normalize));
+      // Keep the last complete graph on failure, so edits to later imports can
+      // also recover a broken entry. Successful builds discard obsolete paths.
+      if (response.error) for (const file of entries.get(id) ?? []) watched.add(file);
+      entries.set(id, watched);
+      // Vite already watches the entry. Adding it as its own dependency creates
+      // an import cycle in Vite's CSS graph and forces full reloads.
+      for (const file of watched) {
+        // Vite treats non-CSS dependencies of CSS as full-reload boundaries.
+        // In dev our own graph handles those; Rollup still needs them in builds.
+        if (file !== normalize(filename) && (!server || file.endsWith('.css'))) this.addWatchFile(file);
+      }
+      server?.watcher.add([...watched]);
+      const diagnostic = (error) => ({
+        message: `[${error.code}] ${error.message}`,
+        id: error.filename ?? filename,
+        ...(error.line > 0 ? { loc: { file: error.filename ?? filename, line: error.line, column: Math.max(0, error.column - 1) } } : {}),
+      });
+      for (const warning of response.warnings ?? []) this.warn(diagnostic(warning));
+      if (response.error) this.error(diagnostic(response.error));
+      return { code: response.css, map: response.map };
+    },
+    async handleHotUpdate(ctx) {
+      // Include an in-flight compilation's newly discovered dependencies.
+      await Promise.allSettled(pending.values());
+      const affected = affectedModules(ctx.file, ctx.server.moduleGraph);
+      for (const module of affected) ctx.server.moduleGraph.invalidateModule(module);
+      return [...new Set([...ctx.modules, ...affected])];
+    },
+  };
+}

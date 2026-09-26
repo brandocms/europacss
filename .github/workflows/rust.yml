@@ -3,9 +3,9 @@ name: Native Rust compiler
 on:
   push:
     branches: ['**']
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/vite/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
   pull_request:
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/vite/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
   workflow_dispatch:
 
 permissions:
@@ -37,3 +37,19 @@ jobs:
           name: europa-native-${{ matrix.os }}
           path: dist/native/*
           if-no-files-found: error
+
+  vite:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build native compiler
+        run: cargo build --locked -p europacss
+      - name: Install optional adapter test dependencies
+        working-directory: packages/vite
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test Vite build and HMR integration
+        working-directory: packages/vite
+        run: npm test

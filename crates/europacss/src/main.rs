@@ -253,6 +253,30 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    if args.first().map(String::as_str) == Some("bridge") {
+        let response = (|| {
+            if args.len() != 1 {
+                return Err("bridge takes one JSON request on stdin".to_string());
+            }
+            let mut input = String::new();
+            io::stdin()
+                .take(16 * 1024 * 1024 + 1)
+                .read_to_string(&mut input)
+                .map_err(|e| e.to_string())?;
+            if input.len() > 16 * 1024 * 1024 {
+                return Err("Bridge request exceeds 16 MiB".into());
+            }
+            let request = serde_json::from_str(&input).map_err(|e| e.to_string())?;
+            Ok(europacss::bridge::compile(request))
+        })()
+        .unwrap_or_else(europacss::bridge::Response::invalid);
+        println!("{}", serde_json::to_string(&response).unwrap());
+        return if response.error.is_some() {
+            ExitCode::FAILURE
+        } else {
+            ExitCode::SUCCESS
+        };
+    }
     let ui = Ui::stderr(color, quiet);
     match run(args, &ui, color) {
         Ok(_) => ExitCode::SUCCESS,

@@ -779,3 +779,67 @@ fn help_and_migration_share_the_terminal_style() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("✓ config converted"));
     assert!(result.stderr.contains(&0x1b));
 }
+
+#[test]
+fn bridge_uses_transform_source_and_returns_maps_dependencies_and_structured_errors() {
+    let dir = Temp::new();
+    let file = |name| dir.0.join(name).canonicalize().unwrap();
+    fs::write(dir.0.join("app.css"), ".disk{color:red}").unwrap();
+    fs::write(
+        dir.0.join("child.css"),
+        ".child{@space left negate(1/4) mobile}",
+    )
+    .unwrap();
+    fs::write(
+        dir.0.join("europa.json5"),
+        "{theme:{breakpoints:{mobile:0},columns:{gutters:{'*':'20px'}}}}",
+    )
+    .unwrap();
+    let run = |input: serde_json::Value| {
+        let mut child = dir
+            .command()
+            .arg("bridge")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(input.to_string().as_bytes())
+            .unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.stderr.is_empty());
+        let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        (output.status.success(), response)
+    };
+    let request = serde_json::json!({"version":1,"filename":file("app.css"),"source":"@import 'child.css'; .memory{color:blue}","config":file("europa.json5"),"browsers":["chrome 100"]});
+    let (ok, response) = run(request.clone());
+    assert!(ok, "{response}");
+    let css = response["css"].as_str().unwrap();
+    assert!(css.contains(".memory") && css.contains(".child") && !css.contains(".disk"));
+    assert_eq!(response["map"]["sources"].as_array().unwrap().len(), 2);
+    assert_eq!(response["dependencies"].as_array().unwrap().len(), 2);
+    assert_eq!(response["watchFiles"].as_array().unwrap().len(), 3);
+    assert_eq!(response["map"]["sourcesContent"][0], request["source"]);
+    fs::write(file("child.css"), "@import 'missing.css';").unwrap();
+    let (ok, response) = run(request.clone());
+    assert!(!ok);
+    assert_eq!(response["error"]["code"], "EU_IMPORT");
+    assert_eq!(
+        response["error"]["filename"],
+        file("child.css").to_string_lossy().as_ref()
+    );
+    assert!(response["watchFiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|p| p.as_str().unwrap().ends_with("missing.css")));
+    let mut invalid = request;
+    invalid["version"] = 2.into();
+    let (ok, response) = run(invalid);
+    assert!(!ok);
+    assert_eq!(response["error"]["code"], "EU_BRIDGE");
+}

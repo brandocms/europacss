@@ -1,4 +1,5 @@
 mod backend;
+pub mod bridge;
 mod config;
 mod config_file;
 mod config_migration;
@@ -131,6 +132,10 @@ pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Resu
         ));
     }
     let loaded = imports::load(std::path::Path::new(&request.filename), output)?;
+    compile_loaded(request, loaded)
+}
+
+fn compile_loaded(request: &Request, loaded: imports::Loaded) -> Result<Output, Error> {
     let result = (|| {
         let config = config::Config::new(&request.config)?;
         let mut nodes = transform::transform(loaded.nodes, &config)?;

@@ -19,6 +19,16 @@ pub(crate) struct Loaded {
 }
 
 pub(crate) fn load(entry: &Path, output: Option<&Path>) -> Result<Loaded, Error> {
+    load_tracked(entry, output, None, &mut Vec::new())
+}
+
+pub(crate) fn load_tracked(
+    entry: &Path,
+    output: Option<&Path>,
+    source: Option<&str>,
+    watched: &mut Vec<PathBuf>,
+) -> Result<Loaded, Error> {
+    watched.push(entry.to_path_buf());
     let entry_path = entry.to_path_buf();
     let entry = fs::canonicalize(entry)
         .map_err(|e| Error::new("EU_IMPORT", format!("{}: {e}", entry.display()), 0))?;
@@ -32,6 +42,8 @@ pub(crate) fn load(entry: &Path, output: Option<&Path>) -> Result<Loaded, Error>
         None => entry.parent().unwrap().to_path_buf(),
     };
     let mut loader = Loader {
+        watched,
+        entry_source: source.map(|source| (entry.clone(), source.to_string())),
         sources: Sources::default(),
         cache: HashMap::new(),
         stack: Vec::new(),
@@ -78,15 +90,18 @@ pub(crate) fn load(entry: &Path, output: Option<&Path>) -> Result<Loaded, Error>
     })
 }
 
-struct Loader {
+struct Loader<'a> {
+    watched: &'a mut Vec<PathBuf>,
+    entry_source: Option<(PathBuf, String)>,
     sources: Sources,
     cache: HashMap<PathBuf, Vec<Node>>,
     stack: Vec<PathBuf>,
     nodes: usize,
     aliases: BTreeSet<(PathBuf, PathBuf)>,
 }
-impl Loader {
+impl Loader<'_> {
     fn file(&mut self, path: &Path, origin: usize) -> Result<Vec<Node>, Error> {
+        self.watched.push(path.to_path_buf());
         if self.stack.iter().any(|item| item == path) {
             let chain = self
                 .stack
@@ -111,8 +126,12 @@ impl Loader {
         let nodes = if let Some(nodes) = self.cache.get(path) {
             nodes.clone()
         } else {
-            let source = fs::read_to_string(path)
-                .map_err(|e| Error::new("EU_IMPORT", format!("{}: {e}", path.display()), origin))?;
+            let source = match &self.entry_source {
+                Some((entry, source)) if entry == path => source.clone(),
+                _ => fs::read_to_string(path).map_err(|e| {
+                    Error::new("EU_IMPORT", format!("{}: {e}", path.display()), origin)
+                })?,
+            };
             if self.sources.text.len() + source.len() > 16 * 1024 * 1024 {
                 return Err(Error::new(
                     "EU_LIMIT",
@@ -199,6 +218,7 @@ impl Loader {
                     }
                     let filename = percent_decode(filename, node.offset)?;
                     let logical_path = path.parent().unwrap().join(filename);
+                    self.watched.push(logical_path.clone());
                     let resolved = fs::canonicalize(&logical_path).map_err(|e| {
                         Error::new(
                             "EU_IMPORT",

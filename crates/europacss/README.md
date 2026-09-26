@@ -172,3 +172,23 @@ Use `compile_file(&request, output_path)` for local import resolution. Set `requ
 Imports require exact relative file paths, including extensions. Package resolution, globs, and stylesheet-local `@namespace` bundling are not implemented. Remote/root-relative imports are retained without fetching; a remote import that would land after bundled style rules or inside a conditional/layer wrapper fails explicitly instead of being moved. Imported files must be UTF-8. Import conditions wrap the imported layer, following the [CSS import rules](https://drafts.csswg.org/css-cascade-5/#at-import). The bundler rebases assets but does not copy them. Symlinks resolve to canonical file locations.
 
 `compile_frontend` exposes the intermediate standard CSS before media compaction for transform development. `compile` also performs native nesting lowering, target transforms, optional compact printing, and source-map composition using [Lightning's Rust API](https://docs.rs/lightningcss/1.0.0-alpha.72/lightningcss/stylesheet/struct.StyleSheet.html).
+
+### Vite adapter
+
+The experimental [Vite adapter](../../packages/vite/README.md) calls the standalone
+binary and preserves normal CSS imports, asset handling, maps and HMR. It needs
+JavaScript only because Vite does; the compiler has no Node bindings or runtime
+dependency. The adapter is currently local-only and tested with Vite 6.4.3.
+
+Build-tool authors can invoke `europa bridge` with one JSON request on stdin:
+
+```json
+{"version":1,"filename":"/absolute/path/app.css","config":"/absolute/path/europa.json5","source":".card{@space left negate(1/4)}","browsers":["defaults"]}
+```
+
+`source` is optional; when provided it replaces only the entry's disk content.
+Imported files are still read relative to the entry. `config` can be omitted for
+defaults. The response contains `version`, `css`, a parsed `map`, `warnings`,
+`dependencies`, `watchFiles`, and `error`. Exit status is nonzero on error, with a
+JSON diagnostic on stdout. `watchFiles` includes attempted missing dependencies
+and logical symlink paths. This command writes no files.
