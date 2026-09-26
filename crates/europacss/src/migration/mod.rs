@@ -1,6 +1,7 @@
 //! Versioned, read-only migration analysis and explicitly classified source edits.
 //! A clean report is not a computed-style or rendered-page equivalence proof.
 mod fixes;
+pub(crate) mod legacy11;
 pub(crate) mod legacy6;
 mod order;
 mod review;
@@ -20,7 +21,8 @@ use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
-pub const REPORT_VERSION: u32 = 6;
+pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
+pub const REPORT_VERSION: u32 = 7;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -69,8 +71,8 @@ pub struct Report {
 }
 
 fn version(from: &str) -> Result<(), Error> {
-    if !matches!(from, LEGACY_VERSION | LEGACY_BETA6) {
-        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {LEGACY_BETA6} and {LEGACY_VERSION}; received `{from}`. No assumptions were made about another version."), 0));
+    if !matches!(from, LEGACY_VERSION | LEGACY_BETA6 | LEGACY_BETA11) {
+        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {LEGACY_BETA6}, {LEGACY_BETA11} and {LEGACY_VERSION}; received `{from}`. No assumptions were made about another version."), 0));
     }
     Ok(())
 }
@@ -107,6 +109,7 @@ fn report(
     let mut config = Config::new(&request.config)?;
     config.migration_warnings = Some(std::cell::RefCell::new(Vec::new()));
     config.migration_beta6 = from == LEGACY_BETA6;
+    config.migration_beta11 = from == LEGACY_BETA11;
     let mut audit = Audit {
         sources: &sources,
         findings: Vec::new(),
@@ -116,6 +119,7 @@ fn report(
         fix_bytes: 0,
         order_fixes: std::collections::HashMap::new(),
     };
+    bundle_placement(&nodes, false, &mut audit);
     // Collect authored syntax fixes before expansion, so edits never target generated text.
     for index in 0..sources.files.len() {
         let mut file_nodes =
@@ -130,7 +134,7 @@ fn report(
         }
         shift(&mut file_nodes, sources.files[index].start);
         fixes::collect(&file_nodes, false, &mut audit)?;
-        if !config.migration_beta6 {
+        if from == LEGACY_VERSION {
             fixes::order_candidates(&file_nodes, &mut audit)?;
         }
     }
@@ -148,6 +152,11 @@ fn report(
         }
     }
     for warning in config.migration_warnings.unwrap().into_inner() {
+        if warning.code == "EU_MIGRATION_LEGACY11" {
+            audit.add(&warning.code, warning.message, warning.offset,
+                "Review this beta.11-specific change against the old output. Keep the new behavior intentionally, or use explicit CSS/config values preserving the old result. No automatic appearance edit is proposed for beta.11.", None);
+            continue;
+        }
         if warning.code == "EU_MIGRATION_LEGACY6" {
             audit.add(&warning.code, warning.message, warning.offset,
                 "Review this beta.6-specific change against the old output. Keep the new behavior intentionally, or replace it with explicit CSS/config values preserving the old result. No automatic appearance edit is proposed for beta.6.", None);
@@ -184,6 +193,7 @@ fn report(
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
         checks: vec![
             "suffix-syntax".into(),
+            "bundle-placement".into(),
             "nesting-specificity".into(),
             "nested-pseudo-elements".into(),
             "repeated-nesting-combinators".into(),
@@ -192,7 +202,7 @@ fn report(
             "overlapping-width-media-order".into(),
             "resolved-sizing-corrections".into(),
             "signed-column-intent".into(),
-            if from == LEGACY_BETA6 { "beta6-feature-and-sizing-changes" } else { "beta16-profile" }.into(),
+            match from { LEGACY_BETA6 => "beta6-feature-and-sizing-changes", LEGACY_BETA11 => "beta11-feature-and-sizing-changes", _ => "beta16-profile" }.into(),
         ],
         analysis_complete: audit.complete,
         limitations: vec![
@@ -200,10 +210,40 @@ fn report(
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
             "Other sizing differences (including calculation grouping and color query gaps) and backend/browser-target changes require separate review".into(),
-            "Configuration must represent the resolved legacy values; beta.6 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
+            "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],
         findings: audit.findings,
     })
+}
+
+fn bundle_placement(nodes: &[Node], nested: bool, audit: &mut Audit<'_>) {
+    let mut preceding = false;
+    for node in nodes {
+        if node.at_rule().is_some_and(|(name, params)| {
+            name == "europa" && matches!(params.trim(), "base" | "arrows")
+        }) && (nested || preceding)
+        {
+            audit.add("EU_MIGRATION_BUNDLE_ORDER", "Legacy @europa bundles were prepended to the stylesheet root; native bundles expand at their authored position and retain enclosing conditions/layers", node.offset,
+                "Review reset/arrow precedence. To preserve legacy placement, put the bundles before authored style rules, in reverse of their old encounter order (normally base then arrows). Keep leading external imports first. Do not move a conditional bundle without reviewing its newly retained condition.", None);
+        }
+        if node.at_rule().is_some_and(|(name, _)| {
+            matches!(
+                name,
+                "media" | "supports" | "layer" | "container" | "scope" | "document"
+            )
+        }) {
+            if let Some(children) = &node.children {
+                bundle_placement(children, true, audit);
+            }
+        }
+        if !node.text.starts_with("/*")
+            && !node
+                .at_rule()
+                .is_some_and(|(name, _)| matches!(name, "charset" | "import"))
+        {
+            preceding = true;
+        }
+    }
 }
 
 struct Audit<'a> {

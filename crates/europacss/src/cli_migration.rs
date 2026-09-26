@@ -29,7 +29,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             "--check" => check = true,
             "--json" => json = true,
             "--help" | "-h" => {
-                println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.16");
+                println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
                 println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json] [--accept review.json | --apply-fixes review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply-fixes applies only proposals marked apply_fix:true in a saved report, then reruns analysis.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(());
             }

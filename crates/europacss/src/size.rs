@@ -209,6 +209,7 @@ impl Sizes<'_, '_> {
         depth: usize,
     ) -> Result<String, Error> {
         self.config.beta6_warning(self.offset, || "negate() sizing was added after beta.6; review its newly generated margin or size calculation".into());
+        self.config.beta11_warning(self.offset, || "negate() sizing was added after beta.11; review its newly generated margin or size calculation".into());
         let params = split_top_level(args, ',').map_err(|e| self.error(e.message))?;
         if !(1..=2).contains(&params.len()) || params.iter().any(|s| s.is_empty()) {
             return Err(self.error("negate() expects a value and an optional desired gap"));
@@ -287,6 +288,16 @@ impl Sizes<'_, '_> {
                 if padding.starts_with("calc(") {
                     self.config.beta6_warning(self.offset, || format!("`{value}` now divides the whole container padding `{padding}` by two; beta.6 divided only the final term of the outer calc() expression"));
                 }
+            }
+        }
+        if self.config.migration_beta11 {
+            let old = self
+                .config
+                .value
+                .pointer("/theme/spacing")
+                .and_then(|v| v.get(value));
+            if old != self.config.get("/theme/spacing", value) {
+                self.config.beta11_warning(self.offset, || format!("Spacing token `{value}` resolves differently from beta.11's direct spacing-key lookup; review nested or dotted token names"));
             }
         }
         if let Some(token) = self.config.get("/theme/spacing", value) {

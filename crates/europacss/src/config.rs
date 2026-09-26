@@ -7,6 +7,7 @@ pub struct Config<'a> {
     pub breakpoints: Vec<(String, f64)>,
     pub migration_warnings: Option<RefCell<Vec<Error>>>,
     pub migration_beta6: bool,
+    pub migration_beta11: bool,
 }
 
 pub fn lookup<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
@@ -62,6 +63,7 @@ impl<'a> Config<'a> {
             breakpoints,
             migration_warnings: None,
             migration_beta6: false,
+            migration_beta11: false,
         })
     }
     /// Record resolved sizing behavior only while running explicit migration analysis.
@@ -71,6 +73,11 @@ impl<'a> Config<'a> {
     pub fn beta6_warning(&self, offset: usize, message: impl FnOnce() -> String) {
         if self.migration_beta6 {
             self.migration_notice("EU_MIGRATION_LEGACY6", offset, message);
+        }
+    }
+    pub fn beta11_warning(&self, offset: usize, message: impl FnOnce() -> String) {
+        if self.migration_beta11 {
+            self.migration_notice("EU_MIGRATION_LEGACY11", offset, message);
         }
     }
     pub fn migration_notice(&self, code: &str, offset: usize, message: impl FnOnce() -> String) {

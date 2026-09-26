@@ -8,6 +8,112 @@ fn analyze(source: &str) -> migration::Report {
 }
 
 #[test]
+fn beta11_profile_distinguishes_its_changes_from_beta6_and_beta16() {
+    let mut cfg = config();
+    cfg["theme"]["colors"] = json!({"brand":{"dark":"red"}});
+    cfg["theme"]["spacing"] = json!({"nested":{"small":{"*":"10px"}}});
+    cfg["theme"]["typography"] = json!({"families":{"main":{"body":"serif"}},"sizes":{"body":{"__base__":{"font-weight":700},"*":"20px"}}});
+    for (source, message) in [
+        (".x{@color fg brand/dark tablet}", "dot-path"),
+        (".x{@font main.body}", "literal/slash"),
+        (".x{@space margin-top nested.small}", "direct spacing-key"),
+        (".x{@responsive $sm{@fontsize 20px}}", "Literal font sizes"),
+        (".x{@space breakout}", "breakout"),
+        (".x{@space margin-left negate(20px)}", "negate()"),
+    ] {
+        let req = request(source, cfg.clone());
+        let report = migration::analyze(&req, migration::LEGACY_BETA11).unwrap();
+        assert!(report.analysis_complete, "{report:?}");
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.code == "EU_MIGRATION_LEGACY11"
+                    && f.diagnostic.message.contains(message)),
+            "{source}: {report:?}"
+        );
+        assert!(report.findings.iter().all(|f| f.fix.is_none()));
+        assert!(migration::analyze(&req, LEGACY_VERSION)
+            .unwrap()
+            .findings
+            .iter()
+            .all(|f| f.diagnostic.code != "EU_MIGRATION_LEGACY11"));
+        assert!(europacss::compile(&req).unwrap().warnings.is_empty());
+    }
+    // These already worked in beta.11, despite changing after beta.6.
+    let source = ".x{@mq tablet{color:red}@color fg red tablet;@fontsize body;@responsive 300px->600px{color:blue}@color fg rgb(1, 2, 3)}";
+    let report =
+        migration::analyze(&request(source, cfg.clone()), migration::LEGACY_BETA11).unwrap();
+    assert!(
+        report
+            .findings
+            .iter()
+            .all(|f| !f.diagnostic.code.starts_with("EU_MIGRATION_LEGACY")),
+        "{report:?}"
+    );
+    let unused = "%unused{@color fg brand/dark tablet}";
+    assert!(
+        migration::analyze(&request(unused, cfg), migration::LEGACY_BETA11)
+            .unwrap()
+            .findings
+            .is_empty()
+    );
+}
+
+#[test]
+fn beta11_reviews_are_bound_to_the_source_version() {
+    let req = request(".x{@responsive $sm{@fontsize 20px}}", config());
+    let report = migration::analyze(&req, migration::LEGACY_BETA11).unwrap();
+    let mut review = serde_json::to_value(&report).unwrap();
+    for finding in review["findings"].as_array_mut().unwrap() {
+        finding["accepted"] = true.into();
+    }
+    for from in [migration::LEGACY_BETA6, LEGACY_VERSION] {
+        let mut other = migration::analyze(&req, from).unwrap();
+        assert!(migration::apply_acceptances(&mut other, &review.to_string()).is_err());
+    }
+}
+
+#[test]
+fn bundles_warn_about_legacy_prepending_and_retained_scopes() {
+    for version in [
+        LEGACY_VERSION,
+        migration::LEGACY_BETA6,
+        migration::LEGACY_BETA11,
+    ] {
+        for source in [
+            ".x{color:red}@europa arrows;",
+            "@layer ui{@europa arrows;}",
+            "@europa arrows; @europa base;",
+        ] {
+            let report = migration::analyze(&request(source, config()), version).unwrap();
+            assert!(
+                report
+                    .findings
+                    .iter()
+                    .any(|f| f.diagnostic.code == "EU_MIGRATION_BUNDLE_ORDER" && f.fix.is_none()),
+                "{report:?}"
+            );
+        }
+        let report = migration::analyze(
+            &request(
+                "/* leading comment */ @europa arrows; .x{color:red}",
+                config(),
+            ),
+            version,
+        )
+        .unwrap();
+        assert!(report
+            .findings
+            .iter()
+            .all(|f| f.diagnostic.code != "EU_MIGRATION_BUNDLE_ORDER"));
+        let unused =
+            migration::analyze(&request("%unused{@europa arrows}", config()), version).unwrap();
+        assert!(unused.findings.is_empty());
+    }
+}
+
+#[test]
 fn pseudo_element_parent_diagnostics_show_the_explicit_legacy_selector() {
     let source = "@layer components { .swiper { .bullet { &::before { .paused & { animation-play-state:paused } } } } }";
     let report = migration::analyze(&request(source, config()), migration::LEGACY_BETA6).unwrap();
