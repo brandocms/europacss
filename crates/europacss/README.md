@@ -1,4 +1,6 @@
-# EuropaCSS in Rust — first compiler milestone
+# EuropaCSS native compiler — implementation notes
+
+For the user-facing workflow, start with [getting started](../../docs/guide/getting-started.md), [Vite](../../docs/guide/vite.md), [builds](../../docs/guide/build.md), [lint and migration](../../docs/guide/lint-and-migration.md), or [Studio](../../docs/guide/studio.md).
 
 This is an experimental standalone Rust library and `europa` executable. Building, testing, and running it require no Node, npm, PostCSS, or Node bindings. Europa source is parsed by our own Rust structural parser, expanded into standard CSS in source order, and passed directly to the Lightning CSS Rust crate. The published JavaScript implementation remains in the repository as the migration reference.
 
@@ -183,7 +185,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > r
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes review.json
 ```
 
-This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 7 invalidates earlier saved reviews, and review snapshots include the source version.
+This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 8 invalidates earlier saved reviews, and review snapshots include the source version.
 
 A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
 

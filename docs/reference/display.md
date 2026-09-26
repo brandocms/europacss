@@ -64,7 +64,7 @@ Shorthand for setting up flexbox display with direction and wrap.
 }
 
 /* Output */
-@media (width <= 739px) {
+@media (width < 740px) {
   .stack {
     display: flex;
     flex-direction: column;

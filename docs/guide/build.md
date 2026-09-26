@@ -1,0 +1,79 @@
+# Build and watch
+
+These commands compile your site's CSS with the native executable. To build or test Europa itself, see [development](./development).
+
+## Production CSS
+
+From your project directory, with `europa` on `PATH`:
+
+```sh
+mkdir -p public
+europa css/app.css --config europa.json5 \
+  --targets 'defaults' --minify --source-map -o public/app.css
+```
+
+The compiler expands Europa directives, bundles local imports and transforms CSS for the selected browsers. `--minify` requests compact output. Source maps go to `public/app.css.map`, with a reference added to the CSS. Output directories must already exist.
+
+## Browser targets
+
+`--targets` accepts a Browserslist query; the default is `defaults`. Queries run inside the Rust backend. Set them explicitly when comparing a legacy build or requiring a particular support policy:
+
+```sh
+europa css/app.css --config europa.json5 \
+  --targets 'chrome 100, firefox 100, safari 15' -o public/app.css
+```
+
+The native CLI uses its `--targets` argument, not the old plugin's `presetEnv` options. Modern targets may retain CSS nesting; older targets receive lowered selectors. Both use native CSS nesting specificity and source order. The default output is not a promise of byte-for-byte equivalence with PostCSS.
+
+## Watch mode
+
+```sh
+europa css/app.css --config europa.json5 \
+  --source-map -o public/app.css --watch
+```
+
+Watch mode builds immediately, then polls source/config contents every 250 ms. It follows the current local import graph, picks up newly added imports and recovers after errors. Compiler errors keep the previous successful output. Output files do not trigger another build. Asset contents and remote URLs are not watched.
+
+`--watch` requires a file input and `-o`; it cannot use stdin. In a Vite application, use the [adapter's HMR](./vite) instead of running a second watch compiler for the same entry.
+
+## Imports and assets
+
+```css
+@import './fonts.css';
+@import './components/card.css';
+@europa base;
+
+.page {
+  @space container;
+}
+```
+
+Local imports need exact file paths, including extensions. CSS imports can carry media, `supports()` and layer conditions. Relative asset URLs are rebased for the output CSS location; assets are not copied. Package imports, Vite aliases and globs are not resolved by the native bundler. Remote and root-relative imports remain browser imports where CSS ordering permits them; the compiler does not fetch them.
+
+## Standard input and output
+
+Omit `-o` to send CSS to stdout:
+
+```sh
+europa css/app.css --config europa.json5 --minify > public/app.css
+printf '.example { @space padding 12px; }' | europa - --config europa.json5
+```
+
+Stdin does not resolve local imports. Diagnostics and build summaries go to stderr, so they do not contaminate CSS on stdout. Shell redirection can truncate its destination before a failed build; use `-o` when retaining the last successful output matters.
+
+## CLI options
+
+| Option | Behavior |
+| --- | --- |
+| `--config <file>` | Load `.json5` or strict `.json`; omitted means built-in defaults. |
+| `-o`, `--output <file>` | Write CSS to an existing directory; default is stdout. |
+| `--targets <query>` | Browser targets; default `defaults`. |
+| `--minify` | Compact generated CSS. |
+| `--source-map` | Write an adjacent external map; requires `-o`. |
+| `--watch` | Rebuild file input and config changes; requires `-o`. |
+| `--color auto\|always\|never` | Control terminal colors. Auto respects `NO_COLOR`. |
+| `-q`, `--quiet` | Hide success summaries; keep warnings and errors. |
+| `-h`, `--help` | Show usage. |
+| `-V`, `--version` | Show the native compiler version. |
+
+A compilation failure exits with status 1. Diagnostics include a source file, line, column and error code. Source maps currently locate originating rules/directives, rather than every generated character. For migration-specific checks, use [the migration command](./lint-and-migration).

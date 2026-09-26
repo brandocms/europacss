@@ -1,14 +1,8 @@
 # @grid
 
-Sets up a CSS Grid layout using your configured column counts and gutters.
+Creates a CSS Grid with a 12-track template and the configured column gutter.
 
 ## Syntax
-
-```css
-@grid;
-```
-
-## Usage
 
 ```css
 .container {
@@ -16,39 +10,32 @@ Sets up a CSS Grid layout using your configured column counts and gutters.
 }
 ```
 
-## Output
+The current implementation emits `display: grid`, `grid-template-columns: repeat(12, 1fr)` and a responsive `grid-column-gap` from one gutter unit. Browser transforms may print that last property as `column-gap`. It does not set the row gap or use `theme.columns.count` to change the number of tracks.
 
-Based on your `theme.columns` config:
+## Choose your own tracks
 
-```js
-columns: {
-  count: { xs: 2, sm: 4, md: 12 },
-  gutters: { xs: '20px', sm: '30px', md: '50px' }
-}
-```
-
-Outputs per breakpoint:
+Override the template after the directive:
 
 ```css
-@media (width <= 739px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-}
-@media (min-width: 740px) and (max-width: 1023px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 30px;
-  }
-}
-@media (width >= 1024px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 50px;
+.cards {
+  @grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  @space row-gap md;
+
+  @responsive xs {
+    grid-template-columns: 1fr;
   }
 }
 ```
+
+Alternatively, write the grid properties directly and use Europa only for the spacing:
+
+```css
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  @space gap 1; /* One configured gutter in both directions. */
+}
+```
+
+`@grid` takes no arguments. Put it inside `@responsive` to constrain its output. For flex-based fractions with gutter arithmetic, use [@column](./column).

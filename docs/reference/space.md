@@ -149,13 +149,13 @@ Size elements as a fraction of the grid, accounting for column gutters from `the
 Adjust the gutter offset using the `columns:gutterMultiplier/totalColumns` syntax:
 
 ```css
-/* 6 of 12 columns, subtract 1 extra gutter unit */
+/* 6 of 12 columns, add 1 gutter to the usual width */
 @space width 6:1/12;
 ```
 
 ## Between (Fluid Scaling)
 
-Linearly interpolate between two values across the viewport:
+Linearly interpolate within each selected breakpoint interval (see [the interpolation anchors](./fontsize#between-fluid-scaling)):
 
 ```css
 @space padding between(20px-50px);
@@ -217,8 +217,8 @@ Outputs: `margin-top: calc(-{spacingToCancel} + {desiredGap})` per breakpoint.
 Given `block = { xs: '20px', sm: '30px', md: '40px' }`, outputs:
 
 ```css
-@media (width <= 739px)  { margin-top: calc(-20px + 25px); }
-@media (...tablet...)    { margin-top: calc(-30px + 25px); }
+@media (width < 740px)  { margin-top: calc(-20px + 25px); }
+@media (width >= 740px) and (width < 1024px)    { margin-top: calc(-30px + 25px); }
 @media (width >= 1024px) { margin-top: calc(-40px + 25px); }
 ```
 
@@ -311,9 +311,9 @@ Use `@space!` for `!important`:
 }
 ```
 
-## Native compiler: reusable negation
+## Reusable negation
 
-The experimental Rust compiler also accepts `negate(value)` in sizing expressions:
+The native compiler also accepts `negate(value)` in sizing expressions:
 
 ```css
 @column-offset negate(1/4);

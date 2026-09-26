@@ -64,7 +64,7 @@ h1 {
 
 Font families can be defined in multiple ways:
 
-```js
+```json5
 families: {
   // Array (recommended)
   main: ['Inter', 'Helvetica', 'sans-serif'],
@@ -84,3 +84,5 @@ families: {
   }
 }
 ```
+
+For a literal key such as `'header/display'`, use that exact slash name. Dot paths traverse nested objects. A literal slash key takes precedence over the corresponding nested path.

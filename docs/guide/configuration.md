@@ -1,11 +1,17 @@
 # Configuration
 
-EuropaCSS is driven entirely by configuration. Your `europa.config.js` defines breakpoints, spacing, typography, colors, and container sizing. All at-rules reference these values.
+EuropaCSS is driven entirely by configuration. Your `europa.json5` defines breakpoints, spacing, typography, colors, and container sizing. All at-rules reference these values.
+
+Pass `--config europa.json5` explicitly to the CLI. Without it, the compiler uses its built-in defaults. The Vite adapter defaults to `europa.json5` relative to Vite's root.
+
+JSON5 permits comments, trailing commas, unquoted identifier keys and single quotes. It is data: functions, imports and JavaScript expressions are not evaluated. Duplicate keys, non-finite numbers and invalid references are rejected. Strict `.json` files are also supported.
+
+Except for complete `{ … }` examples, the snippets below are fragments to place under `theme` or the named section. Start with the [complete getting-started config](./getting-started#create-a-project-configuration).
 
 ## Config Structure
 
-```js
-module.exports = {
+```json5
+{
   // Global options
   setMaxForVw: true,
   dpxViewportSize: 1440,
@@ -25,9 +31,9 @@ module.exports = {
 
 ## Breakpoints
 
-Breakpoints define your responsive ranges. Each key maps to a minimum width (except the first, which starts at 0):
+Breakpoints define your responsive ranges. Each key maps to a minimum width:
 
-```js
+```json5
 breakpoints: {
   xs: '0',
   sm: '740px',
@@ -37,13 +43,13 @@ breakpoints: {
 }
 ```
 
-The order matters — breakpoints are processed sequentially. Each breakpoint's range extends from its value to just before the next breakpoint's value.
+Breakpoints are sorted by numeric width, regardless of key order. Widths must be distinct, non-negative pixel values; include a zero breakpoint to cover the smallest screens. Each named range includes its starting width and excludes the next: `sm` above means `width >= 740px` and `width < 1024px`. Fractional widths stay covered.
 
 ## Breakpoint Collections
 
 Group breakpoints under a `$`-prefixed name for convenient shorthand:
 
-```js
+```json5
 breakpointCollections: {
   $mobile: 'xs',
   $tablet: 'sm',
@@ -62,7 +68,7 @@ Use in CSS:
 
 Defines the responsive container's max-width and horizontal padding per breakpoint:
 
-```js
+```json5
 container: {
   maxWidth: {
     xs: '100%',
@@ -87,7 +93,7 @@ Used by `@space container;` which outputs padding-left/right, max-width, margin 
 
 A named spacing scale, responsive per breakpoint:
 
-```js
+```json5
 spacing: {
   xs: { xs: '10px', sm: '15px', md: '15px', lg: '20px', xl: '20px' },
   sm: { xs: '20px', sm: '25px', md: '30px', lg: '35px', xl: '40px' },
@@ -104,17 +110,19 @@ Referenced in CSS via `@space margin-y xl;`, `@space padding block;`, etc.
 
 ### Base
 
-```js
+```json5
 typography: {
   base: '18px'
 }
 ```
 
+`typography.base` sets the root font size used by the bundled base stylesheet and Studio. It is separate from a token named `typography.sizes.base`, which is applied with `@fontsize base`. Set both deliberately when using `rem`.
+
 ### Font Families
 
 Flat or hierarchical:
 
-```js
+```json5
 families: {
   // Flat
   main: ['Inter', 'sans-serif'],
@@ -133,13 +141,13 @@ families: {
 }
 ```
 
-Used via `@font main;` or `@font header/display;`
+Used via `@font main;` or `@font header/display;`. If you replace the typography section and use `@europa base`, include `base` and the `main` and `mono` families that the bundle reads.
 
 ### Font Sizes
 
 Responsive per breakpoint:
 
-```js
+```json5
 sizes: {
   xs: { xs: '12px', sm: '12px', md: '14px', lg: '14px', xl: '14px' },
   base: { xs: '16px', sm: '17px', md: '18px', lg: '18px', xl: '18px' },
@@ -155,13 +163,13 @@ sizes: {
 
 Use `__base__` to attach properties that apply across all breakpoints:
 
-```js
+```json5
 sizes: {
   'body-large': {
     __base__: {
       'line-height': '135%',
       'letter-spacing': '-0.02em',
-      'font-family': theme => theme.typography.families.main
+      'font-family': '{typography.families.main}'
     },
     xs: { 'font-size': '20px' },
     sm: { 'font-size': '25px' },
@@ -178,7 +186,7 @@ The `__base__` properties are output outside of any media query. Breakpoint valu
 
 Each breakpoint value can be an object with multiple CSS properties:
 
-```js
+```json5
 sizes: {
   h1: {
     xs: { 'font-size': '32px', 'line-height': '120%', 'letter-spacing': '-0.02em' },
@@ -188,11 +196,23 @@ sizes: {
 }
 ```
 
+### Fallback breakpoint values
+
+For spacing and type tokens, `'*'` supplies a value where no explicit breakpoint entry is selected:
+
+```json5
+sizes: {
+  body: { xs: '16px', sm: '17px', '*': '18dpx' },
+}
+```
+
+This keeps fixed small-screen text and fluid sizing for the remaining configured breakpoints. `__base__` properties apply outside media queries, then breakpoint properties can override them. A later authored CSS declaration can override generated properties according to normal source order.
+
 ## Colors
 
 Flat or nested:
 
-```js
+```json5
 colors: {
   black: '#000',
   white: '#fff',
@@ -213,14 +233,18 @@ Used via `@color fg black;`, `@color bg headings.h1;`, etc.
 
 ## Columns
 
-Grid column count and gutters:
+Column configuration, including responsive gutters:
 
-```js
+```json5
 columns: {
   count: { xs: 2, sm: 4, md: 6, lg: 12, xl: 12 },
   gutters: { xs: '20px', sm: '25px', md: '30px', lg: '40px', xl: '50px' }
 }
 ```
+
+The base bundle uses `columns.count` for its grid-overlay helpers. If you replace the `columns` section and use `@europa base`, include both `count` and `gutters`.
+
+`@column` uses the fraction written in CSS and these gutters. `@grid` currently emits a 12-column template and the configured **column gap**; it does not read `columns.count` to choose a track count. Set `grid-template-columns` explicitly for another layout. See [@grid](../reference/grid).
 
 ## Global Options
 
@@ -228,7 +252,7 @@ columns: {
 
 When `true`, if your largest breakpoint uses `vw` units, EuropaCSS converts them to fixed pixel values based on the container max-width. This prevents elements from scaling beyond the container.
 
-```js
+```json5
 setMaxForVw: true
 ```
 
@@ -236,15 +260,15 @@ setMaxForVw: true
 
 Reference viewport width for design pixel (`dpx`) unit conversion. Default: `1440`.
 
-```js
+```json5
 dpxViewportSize: 1440
 ```
 
 ### `dpxViewportSizes`
 
-Per-breakpoint reference widths for `dpx` conversion:
+Per-breakpoint reference widths for `dpx` conversion (collection names are also supported):
 
-```js
+```json5
 dpxViewportSizes: {
   xs: 375,
   sm: 768,
@@ -254,11 +278,13 @@ dpxViewportSizes: {
 }
 ```
 
+A direct breakpoint mapping takes precedence over a matching collection, then `dpxViewportSize`, then the 1440px default. Viewport-based text can use `--ec-zoom`; the base bundle initializes it to `1`, while runtime compensation is supplied by your application (for example Jupiter). See [Studio](./studio#accessibility-settings) for the explicit zoom-model settings.
+
 ## Token References
 
 Reference other config values using `{path.notation}`:
 
-```js
+```json5
 colors: {
   primary: '#3ecf8e',
   button: {
@@ -272,12 +298,16 @@ colors: {
 
 Full references (standalone `{path}`) preserve the original type. Partial references (embedded in a string) do string interpolation.
 
-## Extending Config
+## Defaults and extensions
 
-Use `extend` to merge additional values into the theme without replacing existing ones:
+Omitted theme sections retain their defaults. Providing `theme.spacing` **replaces that section**, including its default token names. The same applies to `typography`, `container` and other theme sections. If you replace the breakpoint names, update every responsive section you use to match them.
 
-```js
-module.exports = {
+`theme.extend` merges one level into the selected theme section. It adds or replaces direct keys; it does not recursively merge every nested object. For example, `extend.spacing.md` replaces the whole `md` token, and `extend.typography.sizes` replaces the entire sizes map. References are resolved after replacement and extension.
+
+Use an extension to keep the rest of a section:
+
+```json5
+{
   theme: {
     spacing: { /* base spacing */ },
     extend: {

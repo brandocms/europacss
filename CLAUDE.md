@@ -1,33 +1,36 @@
-# CLAUDE.md - EuropaCSS Project Guidelines
+# EuropaCSS project guidelines
 
-## Build & Test Commands
-- Build: `yarn build` (transpiles src to lib)
-- Clean & Build: `yarn prebuild && yarn build`
-- Test all: `yarn test`
-- Test coverage: `yarn coverage`
-- Test single file: `yarn test __tests__/path/to/file.test.js`
-- Test specific test: `yarn test -t "test name pattern"`
+## Native compiler (active development)
 
-## Code Style Guidelines
-- **Indentation**: 2 spaces
-- **Imports**: Group external dependencies first, then internal imports
-- **Functions**: Arrow functions for simple cases, named functions for complex ones
-- **Naming**: camelCase for variables/functions, PascalCase for classes
-- **Exports**: Uses `module.exports = ...` and `export default ...`
-- **Comments**: JSDoc for functions with param descriptions
-- **Error handling**: Explicit error messages with descriptive text
-- **Testing**: Jest with custom CSS matchers (`toMatchCSS`, `toMatchFormattedCSS`)
-- **PostCSS Structure**: Plugins in lib/plugins, utilities in util/
+The Rust compiler is in `crates/europacss`. Its CLI and Studio use JSON5 data and need no Node runtime or native Node bindings. From the repository root:
 
-No ESLint configuration exists, but maintain consistent code formatting with Prettier.
+- Build: `cargo build --locked --release -p europacss`
+- Format check: `cargo fmt --all -- --check`
+- Format: `cargo fmt --all`
+- Lint: `cargo clippy --locked -p europacss --all-targets -- -D warnings`
+- Tests: `cargo test --locked -p europacss`
+- One suite: `cargo test --locked -p europacss --test responsive`
+- Package preview: `python3 scripts/package-rust.py`
 
-## Testing notes
-There is sometimes an error like:
-node:internal/child_process/serialization:159
-    const string = JSONStringify(message) + '\n';
-                   ^
+Follow nearby Rust style. Diagnostics should retain authored source locations. Meaningful regression cases live in `crates/europacss/tests`; frozen legacy expectations record intentional differences. Do not regenerate expectations blindly from compiler output.
 
-TypeError: Converting circular structure to JSON
+## Optional tooling
 
-This is not the actual error in the test, but just a side effect of the test setup. Look other places in the
-test results for the actual errors!
+- Vite adapter: `packages/vite` (`npm ci`, then `npm test`; tests use Node 22).
+- HTML docs: `docs` (`yarn install --frozen-lockfile`, then `yarn dev` or `yarn build`).
+- CodeMirror assets: `tools/studio-editor` (`npm ci`, then `npm run build`). Commit generated assets/notices. Ordinary Cargo builds use the checked-in bundle.
+
+See [development docs](docs/guide/development.md) and [release notes](RELEASE.md). Local builds do not authorize publication.
+
+## Legacy JavaScript implementation
+
+Root `package.json`, `src`, `lib` and `__tests__` remain the PostCSS migration reference:
+
+- Build: `yarn build` (transpiles `src` to `lib`)
+- Tests: `yarn test`
+- Coverage: `yarn coverage`
+- One suite: `yarn test __tests__/path/to/file.test.js`
+
+These commands do not build or lint Rust. No root lint script exists. Keep the established two-space indentation, camelCase functions, PascalCase classes and Jest CSS matchers when editing legacy code.
+
+Jest occasionally reports a circular-structure serialization error after an underlying assertion failure; inspect the earlier test output for the actual failure.

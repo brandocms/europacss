@@ -4,9 +4,15 @@ Experimental, local-only package. Tested with Vite 6.4.3. The compiler remains a
 standalone Rust executable; this optional JavaScript adapter only connects it to
 Vite. There are no N-API bindings or JavaScript config evaluation.
 
-Build the binary with `cargo build --release -p europacss`. In your application's
+Build the binary with `cargo build --locked --release -p europacss`. In your application's
 `vite.config.js`, import this package's `index.js` by local path, or add this
-package as a local `file:` development dependency:
+package as a local dependency. From your application's directory (replace the path):
+
+```sh
+npm install --save-dev /absolute/path/to/europacss/packages/vite
+```
+
+The [HTML docs source](../../docs/guide/vite.md) has the complete application workflow.
 
 ```js
 import { defineConfig } from 'vite';
@@ -17,7 +23,7 @@ export default defineConfig({
     binary: '/absolute/path/to/europacss/target/release/europa',
     config: './europa.json5',
     // Optional: only compile your own stylesheet entry points.
-    include: (filename) => filename.endsWith('/css/app.css'),
+    include: (filename) => filename.replaceAll('\\', '/').endsWith('/css/app.css'),
   })],
   css: {
     devSourcemap: true,

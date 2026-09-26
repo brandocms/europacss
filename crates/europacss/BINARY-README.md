@@ -22,7 +22,7 @@ previews. It can load project fonts from a sibling `css/includes/fonts.css` and
 `public` directory, or explicit `--fonts` / `--public-dir` paths. Export downloads
 your edits with comments intact; it does not overwrite the source config.
 
-Native CSS nesting and source order intentionally differ from EuropaCSS beta.16.
+Native CSS nesting, source order and contiguous named breakpoint ranges intentionally differ from legacy EuropaCSS.
 Before migrating an existing site, run:
 
 ```sh
@@ -31,7 +31,7 @@ Before migrating an existing site, run:
 
 Review findings and compare rendered pages. `--fix` rewrites supported suffix
 selectors; it never chooses a different appearance for you. Versioned migration
-analysis supports beta.6 and beta.16, is bounded, and does not prove complete visual equivalence.
+analysis supports beta.6, beta.11 and beta.16, is bounded, and does not prove complete visual equivalence.
 
 These archives are preview build artifacts. They are unsigned and not notarized.
 `manifest.json` records target/toolchain details and file checksums. `Cargo.lock`,
@@ -40,3 +40,9 @@ Some crate tarballs omit license files; completing those notices is still requir
 before public distribution. No automated package publication is configured.
 
 Source and compiler documentation: https://github.com/brandocms/europacss
+
+
+There is no standalone `europa lint` command. Compile to validate current CSS/config,
+or use `migrate --check` for versioned legacy checks. The optional Vite adapter is
+in the source checkout and runs this executable; it is not bundled as a Node binding.
+The source repository's `docs/` directory contains the HTML documentation site.

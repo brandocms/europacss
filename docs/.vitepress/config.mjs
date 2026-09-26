@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'EuropaCSS',
-  description: 'A PostCSS-based responsive design system framework',
+  description: 'Responsive CSS with a native Rust compiler, JSON5 tokens and Config Studio',
   base: '/europacss/',
 
   head: [
@@ -16,18 +16,24 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Reference', link: '/reference/responsive' },
       {
-        text: 'npm',
-        link: 'https://www.npmjs.com/package/@brandocms/europacss'
+        text: 'Vite',
+        link: '/guide/vite'
       }
     ],
 
     sidebar: {
       '/guide/': [
         {
-          text: 'Introduction',
+          text: 'Native compiler guide',
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
-            { text: 'Configuration', link: '/guide/configuration' }
+            { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Vite', link: '/guide/vite' },
+            { text: 'Build & watch', link: '/guide/build' },
+            { text: 'Lint & migration', link: '/guide/lint-and-migration' },
+            { text: 'Config Studio', link: '/guide/studio' },
+            { text: 'Development', link: '/guide/development' },
+            { text: 'Legacy PostCSS', link: '/guide/legacy-postcss' }
           ]
         }
       ],
@@ -35,6 +41,8 @@ export default defineConfig({
         {
           text: 'Layout',
           items: [
+            { text: 'Nesting & reuse', link: '/reference/nesting' },
+            { text: 'Bundles & helpers', link: '/reference/bundles' },
             { text: '@responsive', link: '/reference/responsive' },
             { text: '@space', link: '/reference/space' },
             { text: '@display', link: '/reference/display' },
@@ -68,7 +76,8 @@ export default defineConfig({
         {
           text: 'Functions',
           items: [
-            { text: 'ease()', link: '/reference/ease' }
+            { text: 'ease()', link: '/reference/ease' },
+            { text: 'theme()', link: '/reference/theme' }
           ]
         }
       ]

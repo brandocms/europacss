@@ -1,0 +1,36 @@
+{
+  // Values in dpx use this design viewport as their reference.
+  dpxViewportSize: 1440,
+  theme: {
+    breakpoints: { xs: '0', sm: '740px', md: '1024px' },
+    breakpointCollections: { $mobile: 'xs', $tablet: 'sm', $desktop: 'md' },
+    container: {
+      maxWidth: { xs: '100%', sm: '100%', md: '1200px' },
+      padding: { xs: '20px', sm: '32px', md: '48px' },
+    },
+    columns: {
+      count: { xs: 2, sm: 4, md: 12 },
+      gutters: { xs: '16px', sm: '24px', md: '32px' },
+    },
+    spacing: {
+      sm: { xs: '12px', sm: '16px', md: '20px' },
+      md: { xs: '24px', sm: '32px', md: '48px' },
+      block: '{spacing.md}',
+    },
+    typography: {
+      base: '16px',
+      families: {
+        main: ['system-ui', 'sans-serif'],
+        mono: ['ui-monospace', 'monospace'],
+      },
+      sizes: {
+        body: { __base__: { 'line-height': 1.5 }, xs: '16px', '*': '18px' },
+        heading: {
+          __base__: { 'font-weight': 600, 'line-height': 1.1 },
+          xs: '32px', sm: '40px', md: '48px',
+        },
+      },
+    },
+    colors: { ink: '#263344', paper: '#ffffff', accent: '#6554cf' },
+  },
+}

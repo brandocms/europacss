@@ -10,10 +10,10 @@ Unpacks a responsive config object into media queries with CSS declarations.
 
 ## Shortcuts
 
-| Shortcut | Equivalent Path |
-|----------|----------------|
-| `containerPadding` | `theme.container.padding` |
-| `gridGutter` | `theme.columns.gutters` |
+| Shortcut | Source | Generated custom property |
+| --- | --- | --- |
+| `containerPadding` | `theme.container.padding` | `--container-padding` |
+| `gridGutter` | `theme.columns.gutters` | `--grid-gutter` |
 
 ## Usage
 
@@ -25,13 +25,13 @@ Unpacks a responsive config object into media queries with CSS declarations.
 }
 ```
 
-Outputs the container padding value as `padding-left` and `padding-right` for each breakpoint.
+Outputs `--container-padding` for each configured query. It does not set padding by itself. Use `@space padding-x container;` for horizontal padding, or consume `var(--container-padding)` in authored CSS. The `gridGutter` shortcut similarly outputs `--grid-gutter`.
 
 ### Custom Paths
 
 Given a config like:
 
-```js
+```json5
 typography: {
   sections: {
     navigation: {
@@ -49,17 +49,17 @@ typography: {
 }
 ```
 
-Outputs each breakpoint's properties inside the corresponding media query:
+Outputs each breakpoint's properties inside the corresponding media query. Custom property bags contain ordinary CSS values; Europa sizing expressions such as `dpx` and `var[...]` are not evaluated inside these bags:
 
 ```css
-@media (width <= 739px) {
+@media (width < 740px) {
   .nav-link {
     font-size: 14px;
     line-height: 1.4;
     letter-spacing: 0.05em;
   }
 }
-@media (min-width: 740px) and (max-width: 1023px) {
+@media (width >= 740px) and (width < 1024px) {
   .nav-link {
     font-size: 15px;
     line-height: 1.4;
@@ -77,7 +77,7 @@ Outputs each breakpoint's properties inside the corresponding media query:
 
 ## Header Padding Example
 
-```js
+```json5
 // Config
 header: {
   padding: {

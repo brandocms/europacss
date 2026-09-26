@@ -1,0 +1,105 @@
+# Lint and migration
+
+There is no separate `europa lint` command yet. The current tools cover three different jobs:
+
+| Job | Command |
+| --- | --- |
+| Validate today's Europa CSS and config | Compile the stylesheet. |
+| Check changes from legacy EuropaCSS | `europa migrate … --from … --check` |
+| Lint the Rust implementation | `cargo clippy` — see [development](./development). |
+
+## Validate CSS without publishing output
+
+Compilation validates the config, directives, imports and the CSS backend's syntax. To check an entry without writing a build file, discard stdout:
+
+```sh
+# POSIX shells
+europa css/app.css --config europa.json5 --quiet > /dev/null
+```
+
+In PowerShell:
+
+```powershell
+europa css/app.css --config europa.json5 --quiet > $null
+```
+
+Errors exit with status 1. `--quiet` keeps diagnostics visible. These checks do not enforce formatting conventions, lint unused tokens or certify accessibility.
+
+## Convert an existing config
+
+Work on a migration branch and use the version the source was authored against. Supported profiles are `1.0.0-beta.6`, `1.0.0-beta.11` and `1.0.0-beta.16`; other versions are rejected rather than treated as equivalent.
+
+```sh
+europa migrate-config europa.config.cjs -o europa.json5
+```
+
+Conversion accepts JSON, JSON5, static `module.exports = { … }` and `export default { … }` objects. It also handles supported theme-section callbacks that simply return an object literal. JavaScript is never executed. Other callbacks, imports, spreads or computed expressions need conversion to data or token references. Existing output files are not overwritten.
+
+For example, replace this legacy callback:
+
+```js
+'font-family': theme => theme.typography.families.main
+```
+
+with this JSON5 value:
+
+```json5
+'font-family': '{typography.families.main}'
+```
+
+Check [replacement and extension semantics](./configuration#defaults-and-extensions) before changing the shape of the config.
+
+## Run the migration checks
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > migration.json
+```
+
+Replace the version with your actual supported source version. Both commands are read-only. The entry and its local imports are checked using the supplied config. Exit 1 means unresolved findings or incomplete analysis, so a report can be useful even when the command fails. `--json` writes the report to stdout; no CSS build is produced.
+
+Checks include:
+
+- Native nesting specificity and matching, including selector-list parents and repeated `&`.
+- Unsupported suffix nesting such as `&__title`.
+- Declarations and repeated media rules whose legacy ordering differed.
+- Named breakpoint boundaries that now cover fractional widths without gaps.
+- Selected sizing changes, negative column intent and profile-specific differences.
+
+Named ranges now meet at `< next-breakpoint`: the old `width <= 739px` becomes `width < 740px`. Explicit arrow endpoints and authored CSS media conditions remain unchanged. Negative `-1/4` still uses the legacy signed-column formula; [whole-width negation](../reference/space#reusable-negation) has a different meaning.
+
+## Apply supported syntax fixes
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
+```
+
+`--fix` writes supported suffix-selector rewrites and reruns analysis. A simple `.card { &__title { color: red; } }` can become `.card__title { color: red; }`. Complex/generated cases may require a manual edit. The command can still exit 1 after successful edits if other findings remain.
+
+It does not change specificity, sizing, breakpoint semantics or declaration order on your behalf. Review the diff before continuing.
+
+## Review appearance changes
+
+For a supported adjacent declaration-order conflict, a beta.16 report may contain a `preserve-appearance` fix with exact edits. Set `apply_fix: true` only on the proposals you want, then run:
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes migration.json
+```
+
+This applies the compiler's verified proposals and reruns analysis. Changing the replacement text inside the saved report does not invent a new edit. Beta.6 and beta.11 report differences without beta.16 appearance-edit proposals.
+
+Once edits are finished, generate a **fresh** JSON report. For semantic changes you have reviewed and intend to keep, set `accepted: true` on those findings:
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > review.json
+# Review findings and set accepted: true only where appropriate.
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept review.json
+```
+
+Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply-fixes` and `--accept` as separate stages.
+
+## Verify the site
+
+A clean migration report covers its listed checks; it does not prove an identical site. Build with the intended [browser targets](./build#browser-targets), compare representative pages and interaction states, and inspect breakpoint boundaries. Studio is useful for token comparisons, but it cannot reproduce an entire site's cascade or layout.
+
+For CI, run the read-only check or replay a valid reviewed report before the production build. Never hide its nonzero status with `|| true`. Since reviews include canonical paths, a report saved in another checkout may need regeneration and review.

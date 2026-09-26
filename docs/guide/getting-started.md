@@ -1,136 +1,128 @@
-# Getting Started
+# Getting started
 
-## Installation
+EuropaCSS turns design tokens and directives such as `@space` and `@fontsize` into responsive CSS. The native compiler uses Rust, JSON5 configuration and Lightning CSS for browser transforms. Its executable and Config Studio need no Node or PostCSS.
 
-```bash
-yarn add @brandocms/europacss
+::: info Native preview
+These guides describe the experimental native compiler in this checkout. It is not yet a published replacement for the JavaScript npm package. Existing PostCSS projects should start with [migration](./lint-and-migration), or use the [legacy setup](./legacy-postcss).
+:::
+
+## Install the native executable
+
+From a checkout containing `Cargo.toml` and `crates/europacss`, with the stable Rust toolchain installed:
+
+```sh
+cargo install --locked --path crates/europacss
+europa --version
 ```
 
-## PostCSS Setup
+Cargo installs `europa` into its bin directory; that directory must be on your `PATH`. To keep the executable inside the checkout instead, run `cargo build --locked --release -p europacss` and use `./target/release/europa` in place of `europa` below. Windows uses `europa.exe`.
 
-Add EuropaCSS to your PostCSS configuration:
+If you already have a native preview archive for your OS and CPU, extract it and use its executable. Running the binary does not require Rust. The npm package `@brandocms/europacss` is the legacy PostCSS implementation; installing it does not install this CLI.
 
-```js
-// postcss.config.js
-module.exports = {
-  plugins: [
-    require('@brandocms/europacss')()
-  ]
-}
-```
+## Create a project configuration
 
-EuropaCSS will automatically look for `europa.config.js` or `europa.config.cjs` in your project root.
+Create `europa.json5` in your project. Comments, trailing commas, unquoted identifier keys and single quotes are supported:
 
-You can also specify a config path or pass the config directly:
-
-```js
-// Specify config path
-require('@brandocms/europacss')({ config: './config/europa.config.js' })
-
-// Pass config object directly
-require('@brandocms/europacss')({ config: { theme: { /* ... */ } } })
-```
-
-## PostCSS Preset Env
-
-EuropaCSS includes PostCSS Preset Env integration. Configure it via the `presetEnv` option:
-
-```js
-require('@brandocms/europacss')({
-  presetEnv: {
-    browsers: ['> 1%', 'last 2 versions'],
-    features: { /* ... */ },
-    preserve: false
-  }
-})
-```
-
-Set `presetEnv: { disable: true }` to disable it entirely.
-
-## Create Your Config
-
-Create `europa.config.js` in your project root:
-
-```js
-module.exports = {
+```json5
+{
+  // Values in dpx use this design viewport as their reference.
+  dpxViewportSize: 1440,
   theme: {
-    breakpoints: {
-      xs: '0',
-      sm: '740px',
-      md: '1024px',
-      lg: '1399px',
-      xl: '1900px'
-    },
-
+    breakpoints: { xs: '0', sm: '740px', md: '1024px' },
+    breakpointCollections: { $mobile: 'xs', $tablet: 'sm', $desktop: 'md' },
     container: {
-      maxWidth: {
-        xs: '100%',
-        sm: '100%',
-        md: '100%',
-        lg: '100%',
-        xl: '1920px'
-      },
-      padding: {
-        xs: '15px',
-        sm: '35px',
-        md: '50px',
-        lg: '80px',
-        xl: '120px'
-      }
+      maxWidth: { xs: '100%', sm: '100%', md: '1200px' },
+      padding: { xs: '20px', sm: '32px', md: '48px' },
     },
-
+    columns: {
+      count: { xs: 2, sm: 4, md: 12 },
+      gutters: { xs: '16px', sm: '24px', md: '32px' },
+    },
     spacing: {
-      xs: { xs: '10px', sm: '15px', md: '15px', lg: '20px', xl: '20px' },
-      sm: { xs: '20px', sm: '25px', md: '30px', lg: '35px', xl: '40px' },
-      md: { xs: '35px', sm: '45px', md: '55px', lg: '65px', xl: '75px' },
-      lg: { xs: '50px', sm: '70px', md: '100px', lg: '120px', xl: '140px' },
-      xl: { xs: '70px', sm: '100px', md: '140px', lg: '170px', xl: '200px' }
+      sm: { xs: '12px', sm: '16px', md: '20px' },
+      md: { xs: '24px', sm: '32px', md: '48px' },
+      block: '{spacing.md}',
     },
-
     typography: {
-      base: '18px',
+      base: '16px',
       families: {
-        main: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace']
+        main: ['system-ui', 'sans-serif'],
+        mono: ['ui-monospace', 'monospace'],
       },
       sizes: {
-        xs: { xs: '12px', sm: '12px', md: '14px', lg: '14px', xl: '14px' },
-        sm: { xs: '14px', sm: '15px', md: '16px', lg: '16px', xl: '16px' },
-        base: { xs: '16px', sm: '17px', md: '18px', lg: '18px', xl: '18px' },
-        lg: { xs: '20px', sm: '24px', md: '28px', lg: '30px', xl: '32px' },
-        xl: { xs: '28px', sm: '36px', md: '44px', lg: '50px', xl: '56px' }
-      }
+        body: { __base__: { 'line-height': 1.5 }, xs: '16px', '*': '18px' },
+        heading: {
+          __base__: { 'font-weight': 600, 'line-height': 1.1 },
+          xs: '32px', sm: '40px', md: '48px',
+        },
+      },
     },
-
-    colors: {
-      black: '#000',
-      white: '#fff'
-    }
-  }
+    colors: { ink: '#263344', paper: '#ffffff', accent: '#6554cf' },
+  },
 }
 ```
 
-## Write Your First CSS
+<a href="../examples/europa.json5" download>Download this configuration</a>. The [configuration guide](./configuration) explains references, defaults, shared type properties and design pixels.
+
+## Write a stylesheet
+
+Create `css/app.css`:
 
 ```css
-.container {
-  @space container;
+@europa base;
+
+body {
+  @font main;
+  @fontsize body;
+  @color fg ink;
+  @color bg paper;
 }
 
 .hero {
-  @space padding-y xl;
-}
+  @space container;
+  @space padding-y block;
 
-.hero h1 {
-  @fontsize xl;
+  h1 {
+    @fontsize heading;
+    @space margin-bottom sm;
+  }
+
+  @responsive >=sm {
+    text-align: center;
+  }
 }
 ```
 
-This compiles to responsive CSS with media queries for each breakpoint, using the values from your config.
+<a href="../examples/app.css" download>Download this stylesheet</a>. The bundled `@europa base` includes normalize/reset styles and initializes `--ec-zoom` to `1`. Place local `@import` statements before the bundle and other rules. If you use your own reset, initialize `:root { --ec-zoom: 1; }` when using sizes that depend on it.
 
-## Next Steps
+## Build and watch
 
-- [Configuration](/guide/configuration) — Full config reference
-- [@responsive](/reference/responsive) — Media query at-rule
-- [@space](/reference/space) — Spacing at-rule
-- [@fontsize](/reference/fontsize) — Typography at-rule
+Run these commands from your project directory:
+
+```sh
+mkdir -p public
+europa css/app.css --config europa.json5 -o public/app.css --source-map
+europa css/app.css --config europa.json5 -o public/app.css --source-map --watch
+```
+
+Selectors follow [native CSS nesting and source order](../reference/nesting).
+
+The output directory must exist. Link `public/app.css` from your site using the appropriate public URL. Watch mode recompiles the entry, its local CSS imports and the config. Stop it with Ctrl-C.
+
+**Pass `--config` explicitly.** The CLI does not discover `europa.json5`; omitting the option uses Europa's built-in defaults. The Vite adapter has its own default config path.
+
+## Open Config Studio
+
+```sh
+europa studio --config europa.json5
+```
+
+Open the printed local URL. Preview typography, spacing, grids and realistic content; click a specimen to edit its authored values. Export JSON5 to keep your changes. Studio does not overwrite your file.
+
+## Choose your workflow
+
+- [Vite](./vite): compile imported CSS with HMR and source maps.
+- [Build and watch](./build): production builds, targets, imports and CLI options.
+- [Lint and migration](./lint-and-migration): validation, legacy warnings and reviewed fixes.
+- [Config Studio](./studio): visual editing, fonts and accessibility checks.
+- [Development](./development): build, lint and test Europa itself.

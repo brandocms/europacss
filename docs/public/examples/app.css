@@ -1,0 +1,22 @@
+@europa base;
+
+body {
+  @font main;
+  @fontsize body;
+  @color fg ink;
+  @color bg paper;
+}
+
+.hero {
+  @space container;
+  @space padding-y block;
+
+  h1 {
+    @fontsize heading;
+    @space margin-bottom sm;
+  }
+
+  @responsive >=sm {
+    text-align: center;
+  }
+}
