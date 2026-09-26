@@ -18,7 +18,7 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
-pub const REPORT_VERSION: u32 = 1;
+pub const REPORT_VERSION: u32 = 2;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -100,7 +100,8 @@ fn report(
     request: &Request,
     from: &str,
 ) -> Result<Report, Error> {
-    let config = Config::new(&request.config)?;
+    let mut config = Config::new(&request.config)?;
+    config.migration_warnings = Some(std::cell::RefCell::new(Vec::new()));
     let mut audit = Audit {
         sources: &sources,
         findings: Vec::new(),
@@ -136,6 +137,13 @@ fn report(
                 "Resolve this compiler diagnostic and rerun migration; generated selectors have not been fully checked.", None);
         }
     }
+    for warning in config.migration_warnings.unwrap().into_inner() {
+        if warning.code == "EU_MIGRATION_INCOMPLETE" {
+            audit.complete = false;
+        }
+        audit.add(&warning.code, warning.message, warning.offset,
+            "Review the resolved sizes at the affected viewport widths. Accept the corrected formula intentionally, or replace the affected value with explicit CSS that preserves the old result. --fix never changes sizing formulas.", None);
+    }
     audit.findings.sort_by(|a, b| {
         (
             &a.diagnostic.filename,
@@ -160,13 +168,14 @@ fn report(
             "nested-pseudo-elements".into(),
             "repeated-nesting-combinators".into(),
             "local-declaration-order".into(),
+            "resolved-sizing-corrections".into(),
         ],
         analysis_complete: audit.complete,
         limitations: vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
-            "Sizing formula corrections and backend/browser-target differences require separate review".into(),
+            "Other sizing differences (including calculation grouping and color query gaps) and backend/browser-target changes require separate review".into(),
         ],
         findings: audit.findings,
     })

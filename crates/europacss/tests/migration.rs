@@ -317,3 +317,62 @@ fn syntax_and_incomplete_analysis_cannot_be_accepted() {
         assert!(report.findings.iter().all(|f| !f.accepted));
     }
 }
+
+#[test]
+fn resolved_fluid_spacing_and_rhythm_changes_are_reported_at_the_use_site() {
+    let mut cfg = config();
+    cfg["theme"]["spacing"] = json!({"fluid":{"*":"between(10px-20px)"}, "alias":{"*":"calc(var[fluid] * 2)"}, "rhythm":{"*":"vertical-rhythm(theme.typography.sizes.fluid, 1.6)"}});
+    cfg["theme"]["typography"] = json!({"sizes":{"fluid":{"*":"between(18px-22px)"},"plain":{"*":"18px"},"product":{"*":"calc(18px * 2)"}}});
+    for (expression, message) in [("alias", "320px"), ("rhythm", "whole resolved")] {
+        let source = format!(".x{{\n@space height {expression} mobile;\n}}");
+        let mut report =
+            migration::analyze(&request(&source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(report.analysis_complete, "{report:?}");
+        assert_eq!(report.findings.len(), 1, "{report:?}");
+        let finding = &report.findings[0];
+        assert_eq!(finding.diagnostic.code, "EU_MIGRATION_SIZE");
+        assert_eq!(finding.diagnostic.line, 2);
+        assert!(finding.diagnostic.message.contains(message), "{report:?}");
+        assert!(finding.fix.is_none());
+        let mut review = serde_json::to_value(&report).unwrap();
+        review["findings"][0]["accepted"] = true.into();
+        migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+        assert!(report.findings[0].accepted);
+    }
+    for source in [
+        ".x{@space width between(10px-20px) desktop}",
+        ".x{@space width between(10px-10px) mobile}",
+        ".x{@space height vertical-rhythm(theme.typography.sizes.fluid, 1) mobile}",
+        ".x{@space height vertical-rhythm(theme.typography.sizes.plain, 1.6) mobile}",
+        ".x{@space height vertical-rhythm(theme.typography.sizes.product, 1.6) mobile}",
+    ] {
+        let report = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(report.findings.is_empty(), "{source}: {report:?}");
+    }
+}
+
+#[test]
+fn font_modifiers_report_retained_object_properties_including_identity_modifiers() {
+    let mut cfg = config();
+    cfg["theme"]["typography"] =
+        json!({"sizes":{"body":{"*":{"font-size":"20px","font-weight":700,"line-height":1.5}}}});
+    for modifier in ["1", "2"] {
+        let report = migration::analyze(
+            &request(
+                &format!(".x{{@fontsize body({modifier}) desktop}}"),
+                cfg.clone(),
+            ),
+            LEGACY_VERSION,
+        )
+        .unwrap();
+        assert_eq!(report.findings.len(), 1, "{report:?}");
+        assert_eq!(report.findings[0].diagnostic.code, "EU_MIGRATION_SIZE");
+        assert!(report.findings[0]
+            .diagnostic
+            .message
+            .contains("font-weight"));
+    }
+    let report =
+        migration::analyze(&request(".x{@fontsize body desktop}", cfg), LEGACY_VERSION).unwrap();
+    assert!(report.findings.is_empty(), "{report:?}");
+}

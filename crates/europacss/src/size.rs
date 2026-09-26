@@ -392,7 +392,7 @@ impl Sizes<'_, '_> {
             if let Some(args) = args {
                 match name {
                     "var[]" => return self.spacing_inner(args.trim(), index, depth + 1).map(Some),
-                    "between" => return self.between(args, index).map(Some),
+                    "between" => return self.between(args, index, zoom).map(Some),
                     "vertical-rhythm" => return self.rhythm(args, index, depth + 1).map(Some),
                     _ => {}
                 }
@@ -516,7 +516,7 @@ impl Sizes<'_, '_> {
         ]);
         Ok(values)
     }
-    fn between(&self, args: &str, index: Option<usize>) -> Result<String, Error> {
+    fn between(&self, args: &str, index: Option<usize>, font: bool) -> Result<String, Error> {
         let index = self.index(index)?;
         let pair = args
             .char_indices()
@@ -564,6 +564,9 @@ impl Sizes<'_, '_> {
         if high <= low {
             return Err(self.error("between() requires a positive viewport range"));
         }
+        if !font && self.config.breakpoints[index].1 == 0.0 {
+            self.config.migration_warning(self.offset, || format!("At `{}`, spacing `between({args})` now uses the same 320px lower viewport endpoint for both its offset and slope (resolved interval {low}{unit}–{high}{unit}); the legacy spacing formula used a different interval", self.config.breakpoints[index].0));
+        }
         Ok(format!(
             "calc({min}{unit} + {} * ((100vw - {low}{unit}) / {}))",
             max - min,
@@ -580,9 +583,9 @@ impl Sizes<'_, '_> {
         let token = crate::config::lookup(self.config.value, args[0])
             .ok_or_else(|| self.error(format!("Unknown typography path `{}`", args[0])))?;
         let token = self.at(token, index)?;
-        let size = scalar(token.get("font-size").unwrap_or(token))
+        let raw = scalar(token.get("font-size").unwrap_or(token))
             .ok_or_else(|| self.error("vertical-rhythm() requires a font size"))?;
-        let size = self.css_inner(&size, index, true, depth + 1)?;
+        let size = self.css_inner(&raw, index, true, depth + 1)?;
         let line = match args.get(1) {
             Some(v) => v.to_string(),
             None => self.config_size("/theme/typography/lineHeight", index)?,
@@ -594,6 +597,19 @@ impl Sizes<'_, '_> {
             .ok_or_else(|| {
                 self.error("vertical-rhythm() requires a positive unitless line height")
             })?;
+        let additive = size
+            .strip_prefix("calc(")
+            .and_then(|s| s.strip_suffix(')'))
+            .is_some_and(|body| {
+                ['+', '-'].iter().any(|op| {
+                    split_top_level(body, *op).is_ok_and(|parts| {
+                        parts.len() > 1 && parts.iter().all(|p| !p.trim().is_empty())
+                    })
+                })
+            });
+        if line != 1.0 && additive && !token.is_object() {
+            self.config.migration_warning(self.offset, || format!("At `{}`, vertical-rhythm({}) scales the whole resolved `{raw}` by {line}; the legacy scalar calculation removed an outer calc() and could multiply only its final term", index.map(|i| self.config.breakpoints[i].0.as_str()).unwrap_or("all widths"), args[0]));
+        }
         scale(&size, line, self.offset)
     }
 }

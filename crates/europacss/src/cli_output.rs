@@ -245,7 +245,7 @@ impl Ui {
         } else {
             "! migration review required"
         };
-        eprintln!("\n  {}  {}\n          {files} files · {unresolved} unresolved · {accepted} accepted · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, suffix syntax, and local declaration order; rendered-page comparison remains necessary."));
+        eprintln!("\n  {}  {}\n          {files} files · {unresolved} unresolved · {accepted} accepted · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."));
     }
 }
 

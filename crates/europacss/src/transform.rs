@@ -786,6 +786,9 @@ impl Compiler<'_, '_> {
             ));
         }
         let (name, multiplier, line_height) = self.font_query(node, args[0])?;
+        let modified = args[0]
+            .strip_prefix(&name)
+            .is_some_and(|suffix| suffix.starts_with('('));
         let token = self.config.get("/theme/typography/sizes", &name);
         let sizes = crate::size::Sizes {
             config: self.config,
@@ -802,21 +805,27 @@ impl Compiler<'_, '_> {
             }
             // Keep shared properties at the use site before the breakpoint overrides.
             result.extend(self.size_rules(node, None, ctx, |index| {
-                self.font_properties(node, base, index, 1.0, None)
+                self.font_properties(node, base, index, 1.0, None, false)
             })?);
         }
         result.extend(self.size_rules(node, args.get(1).copied(), ctx, |index| {
             let value = token.map(|v| sizes.at(v, index)).transpose()?;
             match value {
-                Some(value) => {
-                    self.font_properties(node, value, index, multiplier, line_height.as_deref())
-                }
+                Some(value) => self.font_properties(
+                    node,
+                    value,
+                    index,
+                    multiplier,
+                    line_height.as_deref(),
+                    modified,
+                ),
                 None => self.font_properties(
                     node,
                     &Value::String(name.clone()),
                     index,
                     multiplier,
                     line_height.as_deref(),
+                    modified,
                 ),
             }
         })?);
@@ -875,6 +884,7 @@ impl Compiler<'_, '_> {
         index: Option<usize>,
         multiplier: f64,
         line_height: Option<&str>,
+        modified: bool,
     ) -> Result<Vec<Node>, Error> {
         let sizes = crate::size::Sizes {
             config: self.config,
@@ -882,6 +892,18 @@ impl Compiler<'_, '_> {
         };
         let mut result = Vec::new();
         if let Some(properties) = value.as_object() {
+            if self.migration && modified {
+                let retained: Vec<_> = properties
+                    .keys()
+                    .filter(|key| {
+                        key.as_str() != "font-size"
+                            && !(key.as_str() == "line-height" && line_height.is_some())
+                    })
+                    .collect();
+                if !retained.is_empty() {
+                    self.config.migration_warning(node.offset, || format!("At `{}`, multiplying this object-based font size by {multiplier} now retains properties {:?}; the legacy modifier returned only font-size and an explicit line-height suffix", index.map(|i| self.config.breakpoints[i].0.as_str()).unwrap_or("all widths"), retained));
+                }
+            }
             for (property, value) in properties {
                 let raw = css_value(value, property, node)?;
                 let value = if property == "font-size" {

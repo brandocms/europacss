@@ -1,9 +1,11 @@
 use crate::Error;
 use serde_json::Value;
+use std::cell::RefCell;
 
 pub struct Config<'a> {
     pub value: &'a Value,
     pub breakpoints: Vec<(String, f64)>,
+    pub migration_warnings: Option<RefCell<Vec<Error>>>,
 }
 
 pub fn lookup<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
@@ -54,7 +56,38 @@ impl<'a> Config<'a> {
                 0,
             ));
         }
-        Ok(Self { value, breakpoints })
+        Ok(Self {
+            value,
+            breakpoints,
+            migration_warnings: None,
+        })
+    }
+    /// Record resolved sizing behavior only while running explicit migration analysis.
+    pub fn migration_warning(&self, offset: usize, message: impl FnOnce() -> String) {
+        let Some(warnings) = &self.migration_warnings else {
+            return;
+        };
+        let mut warnings = warnings.borrow_mut();
+        if warnings.len() > 512 {
+            return;
+        }
+        let message = message();
+        if warnings
+            .iter()
+            .any(|e| e.offset == offset && e.message == message)
+        {
+            return;
+        }
+        let error = if warnings.len() == 512 {
+            Error::new(
+                "EU_MIGRATION_INCOMPLETE",
+                "Sizing migration exceeded its finding budget",
+                offset,
+            )
+        } else {
+            Error::new("EU_MIGRATION_SIZE", message, offset)
+        };
+        warnings.push(error);
     }
     pub fn get(&self, base: &str, key: &str) -> Option<&'a Value> {
         lookup(self.value.pointer(base)?, key)

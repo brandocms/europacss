@@ -63,7 +63,10 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
     for decision in review.findings.iter().filter(|f| f.accepted) {
         if !matches!(
             decision.code.as_str(),
-            "EU_MIGRATION_SPECIFICITY" | "EU_MIGRATION_MATCHING" | "EU_MIGRATION_ORDER"
+            "EU_MIGRATION_SPECIFICITY"
+                | "EU_MIGRATION_MATCHING"
+                | "EU_MIGRATION_ORDER"
+                | "EU_MIGRATION_SIZE"
         ) {
             return Err(fail(format!("{} is not an acceptable semantic change; resolve this syntax or analysis diagnostic", decision.code)));
         }
