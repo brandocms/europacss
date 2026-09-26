@@ -252,6 +252,19 @@ impl Sizes<'_, '_> {
         }
         if let Some(rest) = value.strip_prefix('-') {
             if dimension(value).is_none() {
+                // Fractions encode a signed column count plus gutter arithmetic.
+                // Keep the legacy negative-offset formula; negating the whole
+                // positive width would reverse its gutter adjustment as well.
+                let parts = split_top_level(value, '/').map_err(|e| self.error(e.message))?;
+                if parts.len() == 2
+                    && parts[0]
+                        .split(':')
+                        .next()
+                        .and_then(|n| n.parse::<f64>().ok())
+                        .is_some()
+                {
+                    return self.fraction(parts[0], parts[1], index);
+                }
                 return scale(
                     &self.spacing_inner(rest, index, depth + 1)?,
                     -1.0,
@@ -409,7 +422,7 @@ impl Sizes<'_, '_> {
                 .unwrap()
                 .parse::<f64>()
                 .ok()
-                .filter(|n| n.is_finite() && *n >= 0.0)
+                .filter(|n| n.is_finite())
                 .ok_or_else(|| self.error("Invalid column count"))?;
             let gutter = parts
                 .next()
@@ -427,11 +440,11 @@ impl Sizes<'_, '_> {
         };
         let (wanted, added) = parse(numerator)?;
         let (total, total_added) = parse(denominator)?;
-        if total == 0.0
+        if total <= 0.0
             || wanted > total
             || wanted == total && added.unwrap_or(0.0) > total_added.unwrap_or(0.0)
         {
-            return Err(self.error("Column fraction overflows or has a zero denominator"));
+            return Err(self.error("Column fraction overflows or has a nonpositive denominator"));
         }
         self.index(index)?;
         let ratio = wanted / total;

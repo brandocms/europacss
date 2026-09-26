@@ -196,3 +196,181 @@ fn invalid_sizes_and_recursive_tokens_fail_explicitly() {
         "EU_RESPONSIVE"
     );
 }
+
+fn column_css(width: &str, maximum: &str) -> String {
+    format!("position:relative;flex-grow:0;flex-shrink:0;flex-basis:{width};max-width:{maximum}")
+}
+
+#[test]
+fn column_fractions_and_gutter_modifiers_cover_all_breakpoints() {
+    for (query, widths) in [
+        (
+            "3/4",
+            ["calc(75% - 5px)", "calc(75% - 7.5px)", "calc(75% - 12.5px)"],
+        ),
+        (
+            "3:1/4",
+            [
+                "calc(75% + 15px)",
+                "calc(75% + 22.5px)",
+                "calc(75% + 37.5px)",
+            ],
+        ),
+        (
+            "3:0.5/4",
+            ["calc(75% + 5px)", "calc(75% + 7.5px)", "calc(75% + 12.5px)"],
+        ),
+        (
+            "2/10:1",
+            ["calc(20% - 20px)", "calc(20% - 30px)", "calc(20% - 50px)"],
+        ),
+        ("2:1/10:1", ["20%", "20%", "20%"]),
+        (
+            "10/10:1",
+            [
+                "calc(100% - 20px)",
+                "calc(100% - 30px)",
+                "calc(100% - 50px)",
+            ],
+        ),
+        ("10:1/10:1", ["100%", "100%", "100%"]),
+        (
+            "10:1/12",
+            [
+                "calc(83.33333333333334% + 16.666666666666668px)",
+                "calc(83.33333333333334% + 25px)",
+                "calc(83.33333333333334% + 41.66666666666667px)",
+            ],
+        ),
+        (
+            "2:1/4",
+            ["calc(50% + 10px)", "calc(50% + 15px)", "calc(50% + 25px)"],
+        ),
+        ("12/12", ["100%", "100%", "100%"]),
+    ] {
+        let expected = format!(".x{{@media (width <= 739px){{{}}}@media (width >= 740px) and (width <= 1023px){{{}}}@media (width >= 1024px){{{}}}}}", column_css(widths[0], widths[0]), column_css(widths[1], widths[1]), column_css(widths[2], widths[2]));
+        assert_css(
+            &format!(".x{{@column {query};}}"),
+            &expected,
+            sizes_config(),
+        );
+    }
+}
+
+#[test]
+fn viewport_and_calculated_columns_retain_the_maximum_adjustment() {
+    let mut cfg = sizes_config();
+    cfg["setMaxForVw"] = true.into();
+    cfg["theme"]["columns"]["gutters"] = json!({"*":"2vw"});
+    cfg["theme"]["container"]["maxWidth"]["desktop"] = "1024px".into();
+    let vw = column_css("calc(75% - .5vw)", "calc(75% - .502vw)");
+    let capped = column_css("calc(75% - 5.12px)", "calc(75% - 5.12px)");
+    assert_css(".x{@column 3/4;}", &format!(".x{{@media (width <= 739px){{{vw}}}@media (width >= 740px) and (width <= 1023px){{{vw}}}@media (width >= 1024px){{{capped}}}}}"), cfg);
+    for (query, width, maximum) in [
+        (
+            "mobile",
+            "calc(100vw - (75% - 5px))",
+            "calc(100vw - (75% - 5px) - .002vw)",
+        ),
+        (
+            "tablet",
+            "calc(100vw - (75% - 7.5px))",
+            "calc(100vw - (75% - 7.5px) - .002vw)",
+        ),
+        (
+            "desktop",
+            "calc(100vw - (75% - 12.5px))",
+            "calc(100vw - (75% - 12.5px) - .002vw)",
+        ),
+    ] {
+        // Explicit queries and responsive parents must produce the same computed width.
+        let direct = compile(&request(
+            &format!(".x{{@column calc(100vw - var[3/4]) {query};}}"),
+            sizes_config(),
+        ))
+        .unwrap();
+        let scoped = compile(&request(
+            &format!(".x{{@responsive {query}{{@column calc(100vw - var[3/4]);}}}}"),
+            sizes_config(),
+        ))
+        .unwrap();
+        assert_eq!(direct.css, scoped.css);
+        assert_css(
+            &format!(".x{{@responsive {query}{{@column calc(100vw - var[3/4]);}}}}"),
+            &format!(
+                ".x{{@responsive {query}{{{}}}}}",
+                column_css(width, maximum)
+            ),
+            sizes_config(),
+        );
+    }
+}
+
+#[test]
+fn columns_remain_ordered_inside_nested_and_collected_queries() {
+    let tablet = column_css("calc(75% - 7.5px)", "calc(75% - 7.5px)");
+    let desktop = column_css("calc(75% - 12.5px)", "calc(75% - 12.5px)");
+    assert_css(".outer{@responsive >=tablet{> * {@column 3/4;max-width:90%;}}}", &format!(".outer{{@media (width >= 740px){{> * {{@media (width >= 740px) and (width <= 1023px){{{tablet}}}@media (width >= 1024px){{{desktop}}}max-width:90%;}}}}}}"), sizes_config());
+    let full = column_css("100%", "100%");
+    let tablet = column_css("calc(50% - 15px)", "calc(50% - 15px)");
+    let desktop = column_css("calc(50% - 25px)", "calc(50% - 25px)");
+    assert_css(".x{@column 12/12 mobile;@column 6/12 tablet/desktop;}", &format!(".x{{@media (width <= 739px){{{full}}}@media (width >= 740px) and (width <= 1023px){{{tablet}}}@media (width >= 1024px){{{desktop}}}}}"), sizes_config());
+    assert_css(
+        ".x{@column 6/12 $lg;}",
+        &format!(".x{{@media (width >= 1024px){{{desktop}}}}}"),
+        sizes_config(),
+    );
+}
+
+#[test]
+fn negative_column_offsets_preserve_the_legacy_signed_count_formula() {
+    // A signed column count retains the gap subtraction. It is not unary negation
+    // of the positive fraction's entire width (which would add the gutter back).
+    assert_css(
+        ".x{@column-offset -1/4 mobile;}",
+        ".x{@media (width <= 739px){margin-left:calc(-25% - 25px)}}",
+        sizes_config(),
+    );
+    assert_css(
+        ".x{@column-offset -1/12 mobile;}",
+        ".x{@media (width <= 739px){margin-left:calc(-8.333333333333333% - 21.666666666666664px)}}",
+        sizes_config(),
+    );
+    assert_css(
+        ".x{@space margin-left -1:0.5/4 mobile;}",
+        ".x{@media (width <= 739px){margin-left:calc(-25% - 15px)}}",
+        sizes_config(),
+    );
+    assert_css(".x{@column-offset -1/4;}", ".x{@media (width <= 739px){margin-left:calc(-25% - 25px)}@media (width >= 740px) and (width <= 1023px){margin-left:calc(-25% - 37.5px)}@media (width >= 1024px){margin-left:calc(-25% - 62.5px)}}", sizes_config());
+    assert_css(
+        ".x{@column-offset 1/4 mobile;}",
+        ".x{@media (width <= 739px){margin-left:calc(25% - 15px)}}",
+        sizes_config(),
+    );
+    assert_css(
+        ".x{@column-offset 1/12 mobile;}",
+        ".x{@media (width <= 739px){margin-left:calc(8.333333333333333% - 18.333333333333332px)}}",
+        sizes_config(),
+    );
+    assert_css(".x{@column-offset 1/12;}", ".x{@media (width <= 739px){margin-left:calc(8.333333333333333% - 18.333333333333332px)}@media (width >= 740px) and (width <= 1023px){margin-left:calc(8.333333333333333% - 27.5px)}@media (width >= 1024px){margin-left:calc(8.333333333333333% - 45.83333333333333px)}}", sizes_config());
+}
+
+#[test]
+fn column_and_offset_context_and_argument_errors_are_explicit() {
+    for source in [
+        "@column 3/4;",
+        ".x{@column 3/4@mobile;}",
+        ".x{@column 1/2 {color:red;}}",
+        ".x{@column 1/-2;}",
+        ".x{@column 1/0;}",
+        ".x{@column 5/4;}",
+        ".x{@responsive mobile{@column 3/4 tablet;}}",
+        ".x{@column-offset;}",
+        "@column-offset 1/4;",
+    ] {
+        assert!(
+            compile(&request(source, sizes_config())).is_err(),
+            "{source}"
+        );
+    }
+}
