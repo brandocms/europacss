@@ -64,6 +64,9 @@ impl<'a> Config<'a> {
     }
     /// Record resolved sizing behavior only while running explicit migration analysis.
     pub fn migration_warning(&self, offset: usize, message: impl FnOnce() -> String) {
+        self.migration_notice("EU_MIGRATION_SIZE", offset, message);
+    }
+    pub fn migration_notice(&self, code: &str, offset: usize, message: impl FnOnce() -> String) {
         let Some(warnings) = &self.migration_warnings else {
             return;
         };
@@ -85,7 +88,7 @@ impl<'a> Config<'a> {
                 offset,
             )
         } else {
-            Error::new("EU_MIGRATION_SIZE", message, offset)
+            Error::new(code, message, offset)
         };
         warnings.push(error);
     }

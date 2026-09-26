@@ -310,3 +310,34 @@ Use `@space!` for `!important`:
   @space gap sm;
 }
 ```
+
+## Native compiler: reusable negation
+
+The experimental Rust compiler also accepts `negate(value)` in sizing expressions:
+
+```css
+@column-offset negate(1/4);
+@space margin-left negate(1/4);
+@space margin-top negate(block, sm); /* desired gap minus current gap */
+@space negate(block, sm);           /* existing margin-top shorthand */
+```
+
+A spacing token can contain `negate(1/4)` too. It resolves at each breakpoint,
+including inside `calc()`. This helper belongs to Europa sizing directives, not
+ordinary CSS declarations.
+
+`negate(1/4)` negates the entire gutter-adjusted width. Bare `-1/4` retains the
+legacy signed column-count formula. In a 1000px container with a 20px gutter:
+
+| Expression | Resolved offset |
+| --- | ---: |
+| `1/4` | 235px |
+| `negate(1/4)` | -235px |
+| `negate(1:1/4)` (one column step) | -255px |
+| `-1/4` (legacy signed count) | -275px |
+
+Migration reports flag negative column fractions, including values reached through
+spacing tokens. They show an explicit `calc()` equivalent for each breakpoint.
+Review the layout before choosing whole-width negation: `--fix` cannot infer that
+intent and does not change these values. A reviewed legacy offset can be accepted
+in the migration report without changing the layout.

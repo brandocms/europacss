@@ -18,7 +18,7 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
-pub const REPORT_VERSION: u32 = 2;
+pub const REPORT_VERSION: u32 = 3;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -141,6 +141,11 @@ fn report(
         if warning.code == "EU_MIGRATION_INCOMPLETE" {
             audit.complete = false;
         }
+        if warning.code == "EU_MIGRATION_COLUMN_SIGN" {
+            audit.add(&warning.code, warning.message, warning.offset,
+                "Existing output is preserved. To make the intent explicit, replace the fraction with the suggested calc() at each breakpoint, or choose negate(value) after reviewing the visual change. No automatic edit is made: column-count offsets and whole-width negation are different operations.", None);
+            continue;
+        }
         audit.add(&warning.code, warning.message, warning.offset,
             "Review the resolved sizes at the affected viewport widths. Accept the corrected formula intentionally, or replace the affected value with explicit CSS that preserves the old result. --fix never changes sizing formulas.", None);
     }
@@ -169,6 +174,7 @@ fn report(
             "repeated-nesting-combinators".into(),
             "local-declaration-order".into(),
             "resolved-sizing-corrections".into(),
+            "signed-column-intent".into(),
         ],
         analysis_complete: audit.complete,
         limitations: vec![

@@ -1087,14 +1087,8 @@ impl Compiler<'_, '_> {
                 ));
             }
             return self.size_rules(node, args.get(1).copied(), ctx, |index| {
-                let current = sizes.spacing(params[0], index)?;
-                let desired = sizes.gap(params[1], index)?;
-                Ok(vec![decl(
-                    "margin-top",
-                    &format!("calc({desired} - {current})"),
-                    node,
-                    important,
-                )])
+                let value = sizes.negate(inner, index)?;
+                Ok(vec![decl("margin-top", &value, node, important)])
             });
         }
         if prop == "container" {

@@ -180,8 +180,8 @@ pub struct Sizes<'a, 'b> {
 }
 
 impl Sizes<'_, '_> {
-    pub fn gap(&self, value: &str, index: Option<usize>) -> Result<String, Error> {
-        match self.spacing(value, index) {
+    fn gap_inner(&self, value: &str, index: Option<usize>, depth: usize) -> Result<String, Error> {
+        match self.spacing_inner(value.trim(), index, depth) {
             Ok(value) => return Ok(value),
             Err(e) if e.code == "EU_SIZE_CONTEXT" => return Err(e),
             Err(_) => {}
@@ -191,12 +191,34 @@ impl Sizes<'_, '_> {
             if parts.len() > 1 && parts.iter().all(|p| !p.is_empty()) {
                 let values = parts
                     .into_iter()
-                    .map(|p| self.spacing(p, index))
+                    .map(|p| self.spacing_inner(p.trim(), index, depth + 1))
                     .collect::<Result<Vec<_>, _>>()?;
                 return Ok(format!("calc({})", values.join(&format!(" {op} "))));
             }
         }
-        self.spacing(value, index)
+        self.spacing_inner(value.trim(), index, depth + 1)
+    }
+    /// Negate the resolved width, or subtract the current gap from a desired gap.
+    pub fn negate(&self, args: &str, index: Option<usize>) -> Result<String, Error> {
+        self.negate_inner(args, index, 0)
+    }
+    fn negate_inner(
+        &self,
+        args: &str,
+        index: Option<usize>,
+        depth: usize,
+    ) -> Result<String, Error> {
+        let params = split_top_level(args, ',').map_err(|e| self.error(e.message))?;
+        if !(1..=2).contains(&params.len()) || params.iter().any(|s| s.is_empty()) {
+            return Err(self.error("negate() expects a value and an optional desired gap"));
+        }
+        let current = self.spacing_inner(params[0].trim(), index, depth + 1)?;
+        if params.len() == 1 {
+            scale(&current, -1.0, self.offset)
+        } else {
+            let desired = self.gap_inner(params[1].trim(), index, depth + 1)?;
+            Ok(format!("calc({desired} - {current})"))
+        }
     }
     fn error(&self, message: impl Into<String>) -> Error {
         Error::new("EU_SIZE", message, self.offset)
@@ -382,6 +404,7 @@ impl Sizes<'_, '_> {
             "fit-content(",
             "between(",
             "vertical-rhythm(",
+            "negate(",
         ]
         .iter()
         .any(|name| value.starts_with(name))
@@ -392,6 +415,7 @@ impl Sizes<'_, '_> {
             if let Some(args) = args {
                 match name {
                     "var[]" => return self.spacing_inner(args.trim(), index, depth + 1).map(Some),
+                    "negate" => return self.negate_inner(args, index, depth + 1).map(Some),
                     "between" => return self.between(args, index, zoom).map(Some),
                     "vertical-rhythm" => return self.rhythm(args, index, depth + 1).map(Some),
                     _ => {}
@@ -449,15 +473,32 @@ impl Sizes<'_, '_> {
         self.index(index)?;
         let ratio = wanted / total;
         let coefficient = added.unwrap_or(0.0) - total_added.unwrap_or(1.0 - ratio);
+        if !ratio.is_finite() || !(ratio * 100.0).is_finite() || !coefficient.is_finite() {
+            return Err(self.error("Column fraction overflowed"));
+        }
         let percentage = format!("{}%", ratio * 100.0);
+        let gutter = if coefficient == 0.0 {
+            String::new()
+        } else {
+            self.css(
+                &self.config_size("/theme/columns/gutters", index)?,
+                index,
+                false,
+            )?
+        };
+        if wanted < 0.0 {
+            self.config.migration_notice("EU_MIGRATION_COLUMN_SIGN", self.offset, || {
+                // Resolve the actual gutter expression, rather than var[1], which
+                // a user-defined spacing token named `1` could shadow.
+                let explicit = if coefficient == 0.0 { percentage.clone() } else {
+                    format!("calc({percentage} {} {} * ({gutter}))", if coefficient < 0.0 { "-" } else { "+" }, coefficient.abs())
+                };
+                format!("`{numerator}/{denominator}` keeps the legacy signed-column formula. At `{}`, its explicit equivalent is `{explicit}`. `negate({}/{denominator})` negates the whole positive width instead and can change the layout.", self.config.breakpoints[index.unwrap()].0, numerator.trim_start_matches('-'))
+            });
+        }
         if coefficient == 0.0 {
             return Ok(percentage);
         }
-        let gutter = self.css(
-            &self.config_size("/theme/columns/gutters", index)?,
-            index,
-            false,
-        )?;
         let amount = scale(&gutter, coefficient.abs(), self.offset)?;
         Ok(format!(
             "calc({percentage} {} {amount})",

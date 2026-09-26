@@ -376,3 +376,42 @@ fn font_modifiers_report_retained_object_properties_including_identity_modifiers
         migration::analyze(&request(".x{@fontsize body desktop}", cfg), LEGACY_VERSION).unwrap();
     assert!(report.findings.is_empty(), "{report:?}");
 }
+
+#[test]
+fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
+    let mut cfg = config();
+    cfg["theme"]["columns"] = json!({"gutters":{"*":"20px"}});
+    cfg["theme"]["spacing"] = json!({"offset":{"*":"-1/4"}});
+    for value in ["-1/4", "offset", "calc(var[offset] + 1px)"] {
+        let mut report = migration::analyze(
+            &request(
+                &format!(".x{{\n@column-offset {value} mobile}}"),
+                cfg.clone(),
+            ),
+            LEGACY_VERSION,
+        )
+        .unwrap();
+        assert!(report.analysis_complete, "{report:?}");
+        assert_eq!(report.findings.len(), 1, "{report:?}");
+        let finding = &report.findings[0];
+        assert_eq!(finding.diagnostic.code, "EU_MIGRATION_COLUMN_SIGN");
+        assert_eq!(finding.diagnostic.line, 2);
+        assert!(finding
+            .diagnostic
+            .message
+            .contains("calc(-25% - 1.25 * (20px))"));
+        assert!(finding.fix.is_none());
+        let mut review = serde_json::to_value(&report).unwrap();
+        review["findings"][0]["accepted"] = true.into();
+        migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+        assert!(report.findings[0].accepted);
+    }
+    for value in ["negate(1/4)", "-20px", "-2", "calc(-25% - 1.25 * (20px))"] {
+        let report = migration::analyze(
+            &request(&format!(".x{{@column-offset {value} mobile}}"), cfg.clone()),
+            LEGACY_VERSION,
+        )
+        .unwrap();
+        assert!(report.findings.is_empty(), "{report:?}");
+    }
+}

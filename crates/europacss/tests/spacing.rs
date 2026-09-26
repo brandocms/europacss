@@ -327,3 +327,48 @@ fn invalid_spacing_does_not_leak_directives_or_drop_declarations() {
     .unwrap();
     assert!(output.css.find("width: 10px").unwrap() < output.css.find("width: 20px").unwrap());
 }
+
+#[test]
+fn negate_values_resolve_the_whole_width_and_preserve_gap_shorthand() {
+    for (value, expected) in [
+        ("negate(1/4)", "calc((25% - 15px) * -1)"),
+        ("negate(1:1/4)", "calc(-25% - 5px)"),
+        ("-1/4", "calc(-25% - 25px)"),
+        ("negate(block)", "-20px"),
+        ("negate(negate(1/4))", "calc(25% - 15px)"),
+        ("negate(1/4, 10px)", "calc(10px - (25% - 15px))"),
+        ("negate(block, xs + 5px)", "-5px"),
+        ("calc(negate(1/4) + 3px)", "calc((25% - 15px) * -1 + 3px)"),
+    ] {
+        for directive in ["@space margin-left", "@column-offset"] {
+            assert_css(
+                &format!(".x{{{directive} {value} mobile}}"),
+                &format!(".x{{@media (width <= 739px){{margin-left:{expected}}}}}"),
+                spacing_config(),
+            );
+        }
+    }
+    let mut cfg = spacing_config();
+    cfg["theme"]["spacing"]["offset"] = json!({"*":"negate(1/4)"});
+    assert_css(
+        ".x{@space margin-left offset tablet}",
+        ".x{@media (width >= 740px) and (width <= 1023px){margin-left:calc((25% - 22.5px) * -1)}}",
+        cfg,
+    );
+}
+
+#[test]
+fn negate_invalid_arguments_and_token_cycles_are_bounded() {
+    for value in ["negate()", "negate(1/4,)", "negate(,1/4)", "negate(1,2,3)"] {
+        assert!(compile(&request(
+            &format!(".x{{@space left {value}}}"),
+            spacing_config()
+        ))
+        .is_err());
+    }
+    for value in ["negate(loop)", "negate(1px, loop)"] {
+        let mut cfg = spacing_config();
+        cfg["theme"]["spacing"]["loop"] = json!(value);
+        assert!(compile(&request(".x{@space left loop}", cfg)).is_err());
+    }
+}
