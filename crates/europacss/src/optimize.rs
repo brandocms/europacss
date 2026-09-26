@@ -106,6 +106,10 @@ fn width_ranges(node: &Node) -> Option<WidthRanges> {
     if !ordinary(node.children.as_ref()?) {
         return None;
     }
+    width_query_ranges(query)
+}
+
+pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
     let mut ranges = Vec::new();
     let clauses = parser::split_top_level(query, ',').ok()?;
     if clauses.len() > 64 {

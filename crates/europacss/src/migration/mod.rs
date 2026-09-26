@@ -18,7 +18,7 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
-pub const REPORT_VERSION: u32 = 3;
+pub const REPORT_VERSION: u32 = 4;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -130,6 +130,7 @@ fn report(
         Ok(expanded) => {
             selectors::walk(&expanded, None, &mut audit)?;
             order::walk(&expanded, &origins, &mut audit)?;
+            order::repeated_selectors(&expanded, &mut audit);
         }
         Err(error) => {
             audit.complete = false;
@@ -173,6 +174,8 @@ fn report(
             "nested-pseudo-elements".into(),
             "repeated-nesting-combinators".into(),
             "local-declaration-order".into(),
+            "repeated-selector-media-order".into(),
+            "overlapping-width-media-order".into(),
             "resolved-sizing-corrections".into(),
             "signed-column-intent".into(),
         ],

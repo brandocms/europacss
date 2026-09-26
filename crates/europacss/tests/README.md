@@ -67,3 +67,18 @@ Sizing corrections (the first, second, and object-modifier checks below are incl
 - `var[...]` replacements stay grouped inside calculations, including negative/subtracted expressions and nested native math. Strings, comments, URL payloads, and custom-property names are excluded from dimension rewriting.
 
 Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss --all-targets -- -D warnings` and `cargo fmt --all -- --check` before committing.
+
+## Render-driven edge cases
+
+The live-site comparison added repeated-selector media-order, overlapping-width,
+and equal-value grouping cases to [migration.rs](migration.rs). These warnings
+are conservative review prompts, not a complete cascade simulator. The report
+version is now 4, so previous acceptance files must be regenerated and reviewed.
+See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
+for the original and manually migrated site observations.
+
+[spacing.rs](spacing.rs) also checks reusable `negate()` values, retained two-argument
+gap shorthand, negative column migration guidance, nonnumeric arguments, gutter
+reference cycles through fractions and calculations, and finite arithmetic limits.
+Recursive gutter resolution now retains the expression-depth budget instead of
+restarting it through `css()`; overflow/cycles fail at the authored directive.

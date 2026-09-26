@@ -372,3 +372,35 @@ fn negate_invalid_arguments_and_token_cycles_are_bounded() {
         assert!(compile(&request(".x{@space left loop}", cfg)).is_err());
     }
 }
+
+#[test]
+fn gutter_reference_cycles_and_non_numeric_negation_fail_at_the_directive() {
+    for gutter in ["calc(var[1])", "calc(var[1/4])", "negate(1/4)"] {
+        for value in ["1", "1/4", "negate(1/4)"] {
+            let mut cfg = spacing_config();
+            cfg["theme"]["columns"]["gutters"] = json!({"*":gutter});
+            let error = compile(&request(
+                &format!(".x{{\n@space left {value} mobile}}"),
+                cfg,
+            ))
+            .unwrap_err();
+            assert_eq!(error.code, "EU_SIZE");
+            assert_eq!(error.line, 2);
+            assert!(error.message.contains("Cyclic"), "{gutter}: {error}");
+        }
+    }
+    for value in [
+        "negate(auto)",
+        "negate(inherit)",
+        "negate(1px, normal)",
+        "between(1e308px--1e308px)",
+        "-1e308/0.001",
+    ] {
+        let error = compile(&request(
+            &format!(".x{{@space left {value} mobile}}"),
+            spacing_config(),
+        ))
+        .unwrap_err();
+        assert_eq!(error.code, "EU_SIZE", "{value}: {error}");
+    }
+}

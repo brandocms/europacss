@@ -181,11 +181,11 @@ pub struct Sizes<'a, 'b> {
 
 impl Sizes<'_, '_> {
     fn gap_inner(&self, value: &str, index: Option<usize>, depth: usize) -> Result<String, Error> {
-        match self.spacing_inner(value.trim(), index, depth) {
+        let initial = match self.spacing_inner(value.trim(), index, depth) {
             Ok(value) => return Ok(value),
             Err(e) if e.code == "EU_SIZE_CONTEXT" => return Err(e),
-            Err(_) => {}
-        }
+            Err(error) => error,
+        };
         for op in ['+', '-'] {
             let parts = split_top_level(value, op).map_err(|e| self.error(e.message))?;
             if parts.len() > 1 && parts.iter().all(|p| !p.is_empty()) {
@@ -196,7 +196,7 @@ impl Sizes<'_, '_> {
                 return Ok(format!("calc({})", values.join(&format!(" {op} "))));
             }
         }
-        self.spacing_inner(value.trim(), index, depth + 1)
+        Err(initial)
     }
     /// Negate the resolved width, or subtract the current gap from a desired gap.
     pub fn negate(&self, args: &str, index: Option<usize>) -> Result<String, Error> {
@@ -213,10 +213,17 @@ impl Sizes<'_, '_> {
             return Err(self.error("negate() expects a value and an optional desired gap"));
         }
         let current = self.spacing_inner(params[0].trim(), index, depth + 1)?;
+        let numeric = |value: &str| dimension(value).is_some() || value.contains('(');
+        if !numeric(&current) {
+            return Err(self.error("negate() requires a numeric size, not a CSS keyword"));
+        }
         if params.len() == 1 {
             scale(&current, -1.0, self.offset)
         } else {
             let desired = self.gap_inner(params[1].trim(), index, depth + 1)?;
+            if !numeric(&desired) {
+                return Err(self.error("negate() requires a numeric desired gap"));
+            }
             Ok(format!("calc({desired} - {current})"))
         }
     }
@@ -285,7 +292,7 @@ impl Sizes<'_, '_> {
                         .and_then(|n| n.parse::<f64>().ok())
                         .is_some()
                 {
-                    return self.fraction(parts[0], parts[1], index);
+                    return self.fraction(parts[0], parts[1], index, depth + 1);
                 }
                 return scale(
                     &self.spacing_inner(rest, index, depth + 1)?,
@@ -304,7 +311,7 @@ impl Sizes<'_, '_> {
                         .and_then(|v| v.parse::<f64>().ok())
                         .is_some()
                 {
-                    return self.fraction(parts[0], parts[1], index);
+                    return self.fraction(parts[0], parts[1], index, depth + 1);
                 }
                 let factor = parts[1]
                     .parse::<f64>()
@@ -332,7 +339,12 @@ impl Sizes<'_, '_> {
             }
             let gutter = self.config_size("/theme/columns/gutters", index)?;
             // Multiply before conversion to avoid compounding dpx rounding.
-            return self.css(&scale(&gutter, number, self.offset)?, index, false);
+            return self.css_inner(
+                &scale(&gutter, number, self.offset)?,
+                index,
+                false,
+                depth + 1,
+            );
         }
         self.css_inner(value, index, false, depth + 1)
     }
@@ -438,6 +450,7 @@ impl Sizes<'_, '_> {
         numerator: &str,
         denominator: &str,
         index: Option<usize>,
+        depth: usize,
     ) -> Result<String, Error> {
         let parse = |part: &str| -> Result<(f64, Option<f64>), Error> {
             let mut parts = part.split(':');
@@ -480,10 +493,11 @@ impl Sizes<'_, '_> {
         let gutter = if coefficient == 0.0 {
             String::new()
         } else {
-            self.css(
+            self.css_inner(
                 &self.config_size("/theme/columns/gutters", index)?,
                 index,
                 false,
+                depth + 1,
             )?
         };
         if wanted < 0.0 {
@@ -602,8 +616,11 @@ impl Sizes<'_, '_> {
             low /= root;
             high /= root;
         }
-        if high <= low {
-            return Err(self.error("between() requires a positive viewport range"));
+        if high <= low || !low.is_finite() || !high.is_finite() || !(high - low).is_finite() {
+            return Err(self.error("between() requires a finite positive viewport range"));
+        }
+        if !(max - min).is_finite() {
+            return Err(self.error("between() endpoint difference overflowed"));
         }
         if !font && self.config.breakpoints[index].1 == 0.0 {
             self.config.migration_warning(self.offset, || format!("At `{}`, spacing `between({args})` now uses the same 320px lower viewport endpoint for both its offset and slope (resolved interval {low}{unit}–{high}{unit}); the legacy spacing formula used a different interval", self.config.breakpoints[index].0));

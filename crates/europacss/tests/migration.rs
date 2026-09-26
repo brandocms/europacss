@@ -415,3 +415,67 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
         assert!(report.findings.is_empty(), "{report:?}");
     }
 }
+
+#[test]
+fn repeated_nested_selector_media_overrides_are_reported_across_rule_nodes() {
+    // Real mobile news-card regression found by comparing rendered Site A.
+    for source in [
+        ".news-card{@responsive mobile{.media{flex:0 0 105px}} .media{flex:0 0 auto}}",
+        "@media (width < 740px){.news-card .media{flex:0 0 105px}} .news-card .media{flex:0 0 auto}",
+        ".news-card{.media{@responsive mobile{flex:0 0 105px}} .media{flex:0 0 auto}}",
+        ".news-card{.media{@responsive mobile{&{flex:0 0 105px}} &{flex:0 0 auto}}}",
+    ] {
+        let report = analyze(source);
+        assert!(report.analysis_complete, "{report:?}");
+        assert!(report.findings.iter().any(|finding| finding.diagnostic.code == "EU_MIGRATION_ORDER" && finding.diagnostic.message.contains("Repeated selector path") && finding.diagnostic.message.contains("flex-basis: 105px")), "{source}: {report:?}");
+    }
+    for source in [
+        ".news-card{.media{flex:0 0 auto} @responsive mobile{.media{flex:0 0 105px}}}",
+        ".news-card{@responsive mobile{.media{flex:0 0 105px}} .other{flex:0 0 auto}}",
+        ".news-card{@responsive mobile{.media{flex:0 0 105px}} .media{flex:0 0 auto!important}}",
+        "@layer a{.x{@responsive mobile{color:red}}} @layer b{.x{color:blue}}",
+        ".x{@responsive mobile{color:red}} .x{@responsive desktop{color:blue}}",
+    ] {
+        assert!(
+            analyze(source).findings.is_empty(),
+            "{source}: {:?}",
+            analyze(source)
+        );
+    }
+}
+
+#[test]
+fn overlapping_width_groups_warn_without_claiming_a_definite_cascade_winner() {
+    let source = ".x{@media (width >= 740px) and (width <= 1023px){padding:20px} @media (width <= 1023px){padding:24px}}";
+    let report = analyze(source);
+    assert!(report.analysis_complete);
+    assert_eq!(report.findings.len(), 4, "{report:?}");
+    assert!(report
+        .findings
+        .iter()
+        .all(|f| f.diagnostic.message.contains("can favor")));
+    let report =
+        analyze(".x{@media (width <= 739px){padding:20px} @media (width >= 740px){padding:24px}}");
+    assert!(report.findings.is_empty());
+}
+
+#[test]
+fn legacy_equal_value_grouping_is_considered_before_media_sorting() {
+    let mut cfg = config();
+    cfg["theme"]["columns"] = json!({"gutters":{"mobile":"16px","tablet":"20px","desktop":"30px"}});
+    cfg["theme"]["spacing"] = json!({"lg":{"mobile":"40px","tablet":"40px","desktop":"60px"}});
+    let report = migration::analyze(
+        &request(".grid{@space gap 1; @space row-gap lg}", cfg),
+        LEGACY_VERSION,
+    )
+    .unwrap();
+    assert!(report.analysis_complete);
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.diagnostic.message.contains("row-gap: 20px")
+                && f.diagnostic.message.contains("row-gap: 40px")),
+        "{report:?}"
+    );
+}
