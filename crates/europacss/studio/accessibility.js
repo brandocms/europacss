@@ -13,6 +13,10 @@ window.EuropaAccessibility = (() => {
   const round = n => Math.round(n*100)/100;
   const ratioLabel = n => (Math.floor(n*100)/100).toFixed(2) + ':1';
   const zoomSteps = maximum => [1,1.1,1.25,1.5,1.75,2,2.5,3,4].filter(n=>n<=maximum);
+  // Jupiter's current Chrome detector accumulates changes in rounded DPR.
+  // This models a run starting at 100% on one display; it does not detect zoom.
+  const runtimeZoom = (mode,zoom,dpr=1) => mode==='proportional' ? zoom : mode==='jupiter-chrome' ? 1+(Math.round(dpr*zoom*100)-Math.round(dpr*100))/100 : 1;
+  const runtimeLabel = options => options.runtime==='proportional' ? '--ec-zoom follows browser zoom' : options.runtime==='jupiter-chrome' ? 'Jupiter Chrome · starting DPR '+options.dpr : 'CSS only · --ec-zoom fixed at 1';
   function widths(breakpoints,from,to,current) {
     const edges=breakpoints.map(([,px])=>px).filter(px=>px>=from && px<=to);
     if(edges.length>32) throw Error('Narrow the width range to at most 32 breakpoints.');
@@ -25,15 +29,26 @@ window.EuropaAccessibility = (() => {
   function create({getContext,trace}) {
     const $=id=>document.getElementById(id), make=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;};
     let generation=0, report=null, selected=null;
-    const settingsIds=['a11y-level','a11y-from','a11y-to','a11y-zoom','a11y-min-size','a11y-jump','a11y-canvas'];
+    const settingsIds=['a11y-level','a11y-from','a11y-to','a11y-zoom','a11y-runtime','a11y-dpr','a11y-min-size','a11y-jump','a11y-canvas'];
     try {const saved=JSON.parse(localStorage.getItem('europa.accessibility.v1')||'{}');for(const id of settingsIds)if(typeof saved[id]==='string')$(id).value=saved[id];} catch {}
     function settings() {
       const value=id=>Number($(id).value);
-      const result={level:$('a11y-level').value,from:value('a11y-from'),to:value('a11y-to'),maxZoom:value('a11y-zoom'),minSize:value('a11y-min-size'),jump:value('a11y-jump'),canvas:$('a11y-canvas').value};
+      const result={level:$('a11y-level').value,from:value('a11y-from'),to:value('a11y-to'),maxZoom:value('a11y-zoom'),runtime:$('a11y-runtime').value,dpr:value('a11y-dpr'),minSize:value('a11y-min-size'),jump:value('a11y-jump'),canvas:$('a11y-canvas').value};
+      if(!['none','proportional','jupiter-chrome'].includes(result.runtime)||!Number.isFinite(result.dpr)||result.dpr<.5||result.dpr>4)throw Error('Choose a zoom runtime and a starting display DPR from 0.5–4.');
       if(!['AA','AAA'].includes(result.level)||![2,4].includes(result.maxZoom)||!Object.values(result).every(v=>typeof v!=='number'||Number.isFinite(v))||result.from<280||result.to>3840||result.from>=result.to||result.minSize<0||result.minSize>96||result.jump<1||result.jump>100) throw Error('Choose a valid width range from 280–3840px, a size hint from 0–96px and a jump hint from 1–100%.');
       return result;
     }
     function remember() {try {localStorage.setItem('europa.accessibility.v1',JSON.stringify(Object.fromEntries(settingsIds.map(id=>[id,$(id).value]))));}catch{}}
+    function runtimeHelp() {
+      const mode=$('a11y-runtime').value;
+      $('a11y-dpr-field').hidden=mode!=='jupiter-chrome';
+      $('a11y-runtime-help').textContent=mode==='proportional'
+        ? 'Models --ec-zoom = browser zoom (2 at 200%). This assumes the runtime detects zoom correctly. Fixed pixel rules remain unchanged.'
+        : mode==='jupiter-chrome'
+        ? 'Models Jupiter’s current Chrome DPR calculation. On a DPR 2 display, 200% zoom sets --ec-zoom to 3, not 2. Assumes the page starts at 100% and stays on one display.'
+        : 'CSS only holds --ec-zoom at 1. These results exclude Jupiter’s JavaScript compensation.';
+    }
+    runtimeHelp();
     function invalidate(message='Settings or configuration changed. Run checks again.') {
       generation++;report=null;$('a11y-results').hidden=true;$('a11y-export').disabled=true;
       $('a11y-status').textContent=message;$('a11y-run').disabled=!getContext().valid;
@@ -135,10 +150,11 @@ window.EuropaAccessibility = (() => {
         if(!context.text)notes.push('The empty specimen uses the default sample sentence for text measurements.');
         if(!fontReady||[...doc.fonts].some(f=>f.status==='error'))notes.push('Some fonts did not load; measurements may use fallback fonts.');
         const points=widths(context.data.breakpoints,options.from,options.to,context.width), steps=zoomSteps(options.maxZoom);
-        const key=(width,height=900)=>width+':'+height;
+        const compensation=zoom=>runtimeZoom(options.runtime,zoom,options.dpr);
+        const key=(width,height=900,ecZoom=1)=>width+':'+height+':'+ecZoom;
         const dimensions=new Map();
-        for(const width of [320,context.width,...points]) dimensions.set(key(width),[width,900]);
-        for(const width of [...points,context.width]) for(const zoom of steps) dimensions.set(key(width/zoom,900/zoom),[width/zoom,900/zoom]);
+        for(const width of [320,context.width,...points]) dimensions.set(key(width),[width,900,1]);
+        for(const width of [...points,context.width]) for(const zoom of steps) dimensions.set(key(width/zoom,900/zoom,compensation(zoom)),[width/zoom,900/zoom,compensation(zoom)]);
         const all=[...dimensions.values()];
         const measured=new Map();
         const frameTick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
@@ -155,12 +171,12 @@ window.EuropaAccessibility = (() => {
           }
           return values;
         };
-        for(const [i,[width,height]] of all.entries()) {
-          check();iframe.style.width=width+'px';iframe.style.height=height+'px';await frameTick();check();
-          measured.set(key(width,height),capture());
+        for(const [i,[width,height,ecZoom]] of all.entries()) {
+          check();iframe.style.width=width+'px';iframe.style.height=height+'px';doc.documentElement.style.setProperty('--ec-zoom',ecZoom);await frameTick();check();
+          measured.set(key(width,height,ecZoom),capture());
           if(i%12===0)$('a11y-status').textContent='Sampling '+(i+1)+' / '+all.length+' widths…';
         }
-        iframe.style.width='320px';iframe.style.height='900px';await frameTick();check();
+        iframe.style.width='320px';iframe.style.height='900px';doc.documentElement.style.setProperty('--ec-zoom',1);await frameTick();check();
         const reflow=capture();
         for(const [id,node] of nodes) {
           const css=win.getComputedStyle(node),size=reflow[id].size;
@@ -171,29 +187,32 @@ window.EuropaAccessibility = (() => {
         await frameTick();check();const resized=capture();
         const zoomAt=(token,width)=>{
           const start=measured.get(key(width))[token.id].size;
-          const rows=steps.map(zoom=>{const size=measured.get(key(width/zoom,900/zoom))[token.id].size;return {zoom,viewport:width/zoom,viewportHeight:900/zoom,cssSize:size,equivalentSize:size*zoom,growth:start>0?size*zoom/start:null};});
+          const rows=steps.map(zoom=>{const ecZoom=compensation(zoom),sample=measured.get(key(width/zoom,900/zoom,ecZoom))[token.id],size=sample.size;return {zoom,ecZoom,viewport:width/zoom,viewportHeight:900/zoom,cssSize:size,equivalentSize:size*zoom,growth:start>0?size*zoom/start:null,overflow:sample.overflow,clipped:sample.clipped,hidden:sample.hidden};});
           return {width,baseline:start,maximum:start>0?Math.max(...rows.map(r=>r.growth)):null,reachedAt:rows.find(r=>r.growth>=1.9999)?.zoom||null,rows};
         };
         const results=types.map(token=>{
           if(token.error)return {id:token.id,name:token.name,config_paths:token.config_paths,error:token.error};
           const samples=points.map(width=>({width,...measured.get(key(width))[token.id]}));
-          const zoom=points.map(width=>zoomAt(token,width)).sort((a,b)=>a.maximum-b.maximum)[0];
+          const zoomSamples=[...new Set([...points,context.width])].map(width=>zoomAt(token,width));
+          const zoom=zoomSamples.filter(s=>points.includes(s.width)).sort((a,b)=>a.maximum-b.maximum)[0];
+          const zoomLayoutIssues=zoomSamples.flatMap(s=>s.rows.filter(r=>r.overflow||r.clipped||r.hidden).map(r=>({startingWidth:s.width,...r})));
           const jumps=context.data.breakpoints.filter(([,w])=>w>options.from&&w<=options.to).map(([name,width])=>{
             const a=measured.get(key(width-1))?.[token.id]?.size,b=measured.get(key(width))?.[token.id]?.size;
             return {name,width,before:a,after:b,percent:(b-a)/a*100};
           }).filter(j=>Number.isFinite(j.percent)&&Math.abs(j.percent)>=options.jump);
-          const result={id:token.id,name:token.name,config_paths:token.config_paths,samples,minimum:Math.min(...samples.map(s=>s.size)),maximum:Math.max(...samples.map(s=>s.size)),zoom,currentZoom:zoomAt(token,context.width),jumps,layout:{reflow:reflow[token.id],spacing:spaced[token.id],textResize:resized[token.id]},hints:[]};
+          const result={id:token.id,name:token.name,config_paths:token.config_paths,samples,minimum:Math.min(...samples.map(s=>s.size)),maximum:Math.max(...samples.map(s=>s.size)),zoom,currentZoom:zoomAt(token,context.width),zoomLayoutIssues,jumps,layout:{reflow:reflow[token.id],spacing:spaced[token.id],textResize:resized[token.id]},hints:[]};
           if(zoom.maximum===null)result.hints.push('Zero-sized text: enlargement cannot be calculated');
           else if(zoom.maximum<1.9999)result.hints.push('Zoom review: text did not reach 200% in this model');
           if(result.minimum<options.minSize)result.hints.push('Below '+options.minSize+'px design hint');
           if(jumps.length)result.hints.push(jumps.length+' abrupt breakpoint change'+(jumps.length===1?'':'s'));
+          if(zoomLayoutIssues.length)result.hints.push('Modeled zoom: inspect overflow, clipping or hidden text');
           for(const [name,sample] of Object.entries(result.layout)) if(sample.overflow||sample.clipped||sample.hidden)result.hints.push(({reflow:'320px reflow',spacing:'Text spacing',textResize:'200% text'})[name]+': inspect overflow, clipping or hidden text');
           if(samples.some(s=>s.writingMode!=='horizontal-tb'))result.hints.push('Vertical writing: manual layout review required');
           return result;
         });
         check();
         const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(context.source));check();
-        report={version:1,createdAt:new Date().toISOString(),wcag:'2.2',settings:options,configSha256:[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join(''),family:context.family,specimenText,baseViewport:context.width,baseHeight:900,breakpoints:context.data.breakpoints,sampledWidths:points,measurementCount:all.length,notes,typography:results,scope:'Compiled token specimens and page-zoom model. No actual browser zoom or site-wide conformance result.'};
+        report={version:2,createdAt:new Date().toISOString(),wcag:'2.2',settings:options,runtime:runtimeLabel(options),configSha256:[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join(''),family:context.family,specimenText,baseViewport:context.width,baseHeight:900,breakpoints:context.data.breakpoints,sampledWidths:points,measurementCount:all.length,notes,typography:results,scope:'Compiled token specimens and page-zoom model with an explicit runtime assumption. No actual browser zoom or site-wide conformance result.'};
         renderReport();$('a11y-status').textContent='Checked '+results.length+' text tokens at '+points.length+' base widths ('+all.length+' measurements).';$('a11y-export').disabled=false;
       } catch(error) {if(ticket===generation)$('a11y-status').textContent=error.message;}
       finally {iframe.remove();if(ticket===generation)$('a11y-run').disabled=false;}
@@ -205,6 +224,7 @@ window.EuropaAccessibility = (() => {
         const card=make('div');card.append(make('strong',String(number)),make('span',label));summary.append(card);
       }
       if(report.notes.length)summary.append(make('p',report.notes.join(' '),'a11y-review'));
+      summary.append(make('p','Runtime: '+report.runtime+'.','a11y-help'));
       const body=$('a11y-types');body.replaceChildren();
       for(const row of rows) {
         const tr=make('tr');tr.dataset.token=row.name;const name=make('th'),button=make('button',row.name,'a11y-token');
@@ -235,10 +255,10 @@ window.EuropaAccessibility = (() => {
       for(const [left,top,label] of [[48,158,report.settings.from+'px viewport'],[440,158,report.settings.to+'px'],[3,20,round(upper)+'px'],[3,132,round(lower)+'px']]){const t=document.createElementNS(ns,'text');t.setAttribute('x',left);t.setAttribute('y',top);t.textContent=label;svg.append(t);}
       chart.append(svg);
       body.append(make('p','Dots are measured sizes; connecting lines are visual guides. Dashed lines mark breakpoints.','a11y-help'));
-      body.append(make('p','Worst sampled starting width: '+round(row.zoom.width)+'px. Maximum apparent enlargement: '+(row.zoom.maximum===null?'unknown':round(row.zoom.maximum*100)+'%')+' at up to '+report.settings.maxZoom*100+'% modeled page zoom.','a11y-help'));
+      body.append(make('p','Across the checked range, the hardest starting width to enlarge is '+round(row.zoom.width)+'px: its best sampled enlargement is '+(row.zoom.maximum===null?'unknown':round(row.zoom.maximum*100)+'%')+'. The table below starts at your selected '+report.baseViewport+'px viewport. Runtime: '+report.runtime+'.','a11y-help'));
       const zoom=make('table',undefined,'a11y-table');const head=make('tr');
-      for(const label of ['Zoom from '+report.baseViewport+'px','Layout width','CSS font size','Apparent size','Enlargement'])head.append(make('th',label));zoom.append(head);
-      for(const item of row.currentZoom.rows){const tr=make('tr');for(const value of [item.zoom*100+'%',round(item.viewport)+'px',round(item.cssSize)+'px',round(item.equivalentSize)+'px',item.growth===null?'Unknown':round(item.growth*100)+'%'])tr.append(make('td',value));zoom.append(tr);}
+      for(const label of ['Zoom from '+report.baseViewport+'px','Layout width','--ec-zoom','CSS font size','Apparent size','Enlargement'])head.append(make('th',label));zoom.append(head);
+      for(const item of row.currentZoom.rows){const tr=make('tr');for(const value of [round(item.zoom*100)+'%',round(item.viewport)+'px',round(item.ecZoom),round(item.cssSize)+'px',round(item.equivalentSize)+'px',item.growth===null?'Unknown':round(item.growth*100)+'%'])tr.append(make('td',value));zoom.append(tr);}
       const scroll=make('div',undefined,'a11y-scroll');scroll.tabIndex=0;scroll.setAttribute('aria-label','Zoom model measurements');scroll.append(zoom);body.append(scroll);
       for(const jump of row.jumps)body.append(make('p',jump.name+' ('+jump.width+'px): '+round(jump.before)+' → '+round(jump.after)+'px ('+(jump.percent>=0?'+':'')+round(jump.percent)+'%).','a11y-review'));
       const colors=palette(),fg=colors[Number($('a11y-fg').value)],bg=colors[Number($('a11y-bg').value)];
@@ -249,7 +269,7 @@ window.EuropaAccessibility = (() => {
       const table=make('table',undefined,'a11y-table'),header=make('tr');for(const label of ['Viewport','Font size','Weight','Line height','Large text'])header.append(make('th',label));table.append(header);
       for(const sample of row.samples){const tr=make('tr');for(const value of [sample.width+'px',round(sample.size)+'px',sample.weight,sample.lineHeight,largeText(sample.size,sample.weight)?'Yes':'No'])tr.append(make('td',String(value)));table.append(tr);}const sampleScroll=make('div',undefined,'a11y-scroll');sampleScroll.tabIndex=0;sampleScroll.setAttribute('aria-label','Sampled font sizes');sampleScroll.append(table);details.append(sampleScroll);body.append(details);
     }
-    for(const id of settingsIds)$(id).addEventListener('change',()=>{remember();invalidate();colorPairs();});
+    for(const id of settingsIds)$(id).addEventListener('change',()=>{runtimeHelp();remember();invalidate();colorPairs();});
     for(const id of ['a11y-fg','a11y-bg'])$(id).addEventListener('change',colorPairs);
     $('a11y-run').addEventListener('click',run);
     $('a11y-export').addEventListener('click',()=>{
@@ -260,5 +280,5 @@ window.EuropaAccessibility = (() => {
     });
     return {update,invalidate,run,colorPairs,get report(){return report;}};
   }
-  return {create,contrast,threshold,largeText,widths};
+  return {create,contrast,threshold,largeText,widths,runtimeZoom};
 })();

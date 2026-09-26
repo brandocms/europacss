@@ -37,10 +37,13 @@
           <label>From width (px)<input id="a11y-from" type="number" value="320" min="280" max="3840"></label>
           <label>To width (px)<input id="a11y-to" type="number" value="1920" min="280" max="3840"></label>
           <label>Model zoom up to<select id="a11y-zoom"><option value="4">400%</option><option value="2">200%</option></select></label>
+          <label>Zoom runtime<select id="a11y-runtime"><option value="none">None (CSS only)</option><option value="proportional">--ec-zoom follows zoom</option><option value="jupiter-chrome">Jupiter Chrome (DPR)</option></select></label>
+          <label id="a11y-dpr-field" hidden>Display DPR at 100%<input id="a11y-dpr" type="number" value="2" min="0.5" max="4" step="0.25"></label>
           <label>Small text hint (px)<input id="a11y-min-size" type="number" value="16" min="0" max="96" step="0.5"></label>
           <label>Breakpoint jump hint (%)<input id="a11y-jump" type="number" value="20" min="1" max="100"></label>
         </div>
         <p>Size and jump limits are design hints, not WCAG requirements. Settings are remembered in this browser; they do not change your JSON5.</p>
+        <p id="a11y-runtime-help">CSS only holds --ec-zoom at 1. Select a runtime to include JavaScript zoom compensation.</p>
       </details>
       <div class="a11y-actions"><button id="a11y-run" class="primary">Run checks</button><button id="a11y-export" disabled>Export report</button><span id="a11y-status" role="status">Run checks on this configuration.</span></div>
       <div id="a11y-results" hidden>
@@ -59,7 +62,8 @@
       <div id="a11y-contrast" aria-live="polite"></div>
       <details class="a11y-palette"><summary>Palette against the selected background</summary><div class="a11y-scroll" tabindex="0" aria-label="Palette contrast results"><table class="a11y-table"><thead><tr><th>Foreground</th><th>Ratio</th><th>Normal text</th><th>Large text</th><th>Source</th></tr></thead><tbody id="a11y-palette"></tbody></table></div></details>
       <details class="a11y-method"><summary>What these checks cover</summary>
-        <p>Text is rendered with the real compiler output, selected family and available project fonts. Base test viewports are 900px tall; modeled zoom divides both width and height. Root font size follows typography.base (16px fallback); --ec-zoom stays at 1. That design variable is not browser zoom.</p>
+        <p>Text is rendered with the real compiler output, selected family and available project fonts. Base test viewports are 900px tall; modeled zoom divides both width and height. Root font size follows typography.base (16px fallback). The selected runtime controls --ec-zoom at each zoom step. It affects only declarations that actually use that variable; fixed pixel rules are not multiplied.</p>
+        <p>“--ec-zoom follows zoom” models proportional compensation, assuming the runtime detects zoom correctly. “Jupiter Chrome (DPR)” models the current Jupiter Chrome calculation starting at 100% page zoom on one display; DPR is the display ratio at that starting point, not your current zoomed devicePixelRatio. Monitor changes, initial loads already zoomed, pinch zoom and other browser detectors require real-site testing.</p>
         <p>The 320px reflow and text-spacing tests look for overflowing or clipped specimen text. Spacing overrides use at least 1.5 line height, 2em after paragraphs, 0.12em letter spacing and 0.16em word spacing. They are user overrides, not required design defaults. Full page layouts and functional content still need testing.</p>
         <p>Also check on your site: real browser zoom, keyboard navigation and focus visibility, control target sizes, meaningful names and alt text, reduced motion, and contrast over images/gradients. No site-wide pass is inferred here.</p>
         <p><a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html" target="_blank" rel="noreferrer">Resize text</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html" target="_blank" rel="noreferrer">Reflow</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html" target="_blank" rel="noreferrer">Text spacing</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noreferrer">Contrast AA</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noreferrer">Contrast AAA</a></p>
