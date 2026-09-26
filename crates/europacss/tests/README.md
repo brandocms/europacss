@@ -44,7 +44,7 @@ Expected CSS follows the agreed in-place expansion and native nesting semantics.
 
 ## Next feature families
 
-1. Continue the systematic spacing and font-size case audit. The shared size engine and grid/column helpers are now implemented; [sizing.rs](sizing.rs) and [typography.rs](typography.rs) cover representative legacy calculations, wildcard/negative/hierarchical tokens, modifiers, viewport reference precedence, nested scope, and failures. These table-driven checks do not yet represent every old spacing/font-size case. Adjacent equivalent media bodies are compacted into exact comma-separated conditions. Repeated inclusive-pixel width queries can cross only media blocks proven disjoint; overlapping, unproven, or non-media siblings stop the search. [optimization.rs](optimization.rs) checks ordering, conditional scopes, fractional-width gaps, and source maps.
+1. The spacing/font-size source-case audit is complete: [legacy_sizing.rs](legacy_sizing.rs) runs all 86 spacing and 52 font-size cases from [static fixtures](fixtures/legacy-sizing.json), without Node. Every case includes its old title, input/config and reviewed standard-CSS expectation or diagnostic. Intentional changes have per-case notes: authored order, exact media ranges, fluid formulas, object line-height overrides, `system-ui` backend fallbacks, and strict rejection of undefined font tokens. Six callback fixtures use static data/token references. One old mixed-layout success case deliberately becomes an error because its expected CSS contained undefined font names; focused valid mixed-layout coverage remains in [typography.rs](typography.rs). The existing focused/table-driven suites add malformed input and interaction coverage. This is not a claim that the legacy output is unchanged.
 2. Value functions are now covered in [functions.rs](functions.rs): the three legacy function cases, every easing table entry, lazy/nested fallbacks, scalar arrays, literal exclusions, cycle detection, and source locations.
 3. Bundled `@europa` styles are covered in [bundles.rs](bundles.rs): both legacy bundle cases, config overrides, conditional scope, directive ordering, embedded asset consistency, and diagnostics at the authored directive.
 4. Import resolution and dependency tracking are covered in [imports.rs](imports.rs) and [cli.rs](cli.rs): repeated/nested imports, import conditions and layers, escaped keywords and adjacent CSS token boundaries, escaping/BOMs, URL rebasing, per-file frontend/backend diagnostics and maps, remote import ordering, cycles/limits, and protecting source dependencies from output writes. These are native Rust cases; package/glob resolution and namespaces remain unsupported.
@@ -73,7 +73,7 @@ Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss 
 The live-site comparison added repeated-selector media-order, overlapping-width,
 and equal-value grouping cases to [migration.rs](migration.rs). These warnings
 are conservative review prompts, not a complete cascade simulator. The report
-version is now 4, so previous acceptance files must be regenerated and reviewed.
+version is now 5, so previous acceptance files must be regenerated and reviewed.
 See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
 for the original and manually migrated site observations.
 
@@ -82,3 +82,13 @@ gap shorthand, negative column migration guidance, nonnumeric arguments, gutter
 reference cycles through fractions and calculations, and finite arithmetic limits.
 Recursive gutter resolution now retains the expression-depth budget instead of
 restarting it through `css()`; overflow/cycles fail at the authored directive.
+
+## Reviewed appearance proposals
+
+Migration tests now cover opt-in adjacent fallback reordering, stale/forged review
+rejection, ignored untrusted replacement payloads, generated-body exclusions and
+CLI reanalysis with an empty PATH. Object line-height suffixes that the legacy
+unmodified-object path ignored now produce a resolved migration warning.
+
+The Site B audit adds zero-argument constant theme resolver conversion (without JS
+evaluation), comma-separated placeholder extension order, invalid lists and cycles.

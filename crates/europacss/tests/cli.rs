@@ -143,7 +143,7 @@ fn watch_requires_file_input_and_output() {
 #[test]
 fn static_config_migration_runs_without_node_and_never_evaluates_expressions() {
     let dir = Temp::new();
-    let source = "/* keep me */ module.exports = {theme:{colors:{100:'red'}}};";
+    let source = "/* keep me */ module.exports = {theme:{colors:()=>({100:'red'})}};";
     fs::write(dir.0.join("europa.config.cjs"), source).unwrap();
     let result = dir
         .command()
@@ -842,4 +842,55 @@ fn bridge_uses_transform_source_and_returns_maps_dependencies_and_structured_err
     let (ok, response) = run(invalid);
     assert!(!ok);
     assert_eq!(response["error"]["code"], "EU_BRIDGE");
+}
+
+#[test]
+fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
+    let dir = Temp::new();
+    let source = ".x{@space width 40dpx md; width:40px;}";
+    fs::write(dir.0.join("app.css"), source).unwrap();
+    let base = ["migrate", "app.css", "--from", "1.0.0-beta.16", "--json"];
+    let result = dir.command().args(base).output().unwrap();
+    let mut review: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert!(review["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|f| f["fix"]["kind"] == "preserve-appearance"));
+    fs::write(dir.0.join("review.json"), review.to_string()).unwrap();
+    let run = || {
+        dir.command()
+            .args(base)
+            .args(["--apply-fixes", "review.json"])
+            .output()
+            .unwrap()
+    };
+    assert!(!run().status.success());
+    assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), source);
+    let syntax = dir.command().args(base).arg("--fix").output().unwrap();
+    assert!(!syntax.status.success());
+    assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), source);
+    for finding in review["findings"].as_array_mut().unwrap() {
+        if finding["fix"]["kind"] == "preserve-appearance" {
+            finding["apply_fix"] = true.into();
+        }
+    }
+    fs::write(dir.0.join("review.json"), review.to_string()).unwrap();
+    let result = run();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["fixed_files"], 1);
+    assert_eq!(report["unresolved_findings"], 0);
+    assert_eq!(
+        fs::read_to_string(dir.0.join("app.css")).unwrap(),
+        ".x{width:40px; @space width 40dpx md;}"
+    );
+    assert!(
+        !run().status.success(),
+        "The old review must be stale after edits"
+    );
 }

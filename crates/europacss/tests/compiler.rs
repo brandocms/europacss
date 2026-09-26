@@ -128,6 +128,28 @@ fn placeholder_forward_references_expand_at_use_site() {
 }
 
 #[test]
+fn multiple_placeholders_expand_in_list_order_and_retain_scope() {
+    let out = compile(&request("%first{color:red} %second{color:blue;&:hover{color:green}} .x{@responsive tablet{@extend %first, /* next */ %second; color:black}}" )).unwrap();
+    assert!(out.css.contains("color:red"), "{}", out.css);
+    assert!(out.css.find("color:red").unwrap() < out.css.find("color:blue").unwrap());
+    assert!(out.css.find("color:blue").unwrap() < out.css.find("color:black").unwrap());
+    assert!(out.css.contains("@media"));
+    for source in [
+        "%a{color:red}.x{@extend %a,}",
+        "%a{color:red}.x{@extend ,%a}",
+        "%a{color:red}.x{@extend %a .other}",
+        "%a{color:red}.x{@extend %a,.other}",
+        "%a{@extend %b,%a}%b{color:red}.x{@extend %a}",
+    ] {
+        assert_eq!(
+            compile(&request(source)).unwrap_err().code,
+            "EU_EXTEND",
+            "{source}"
+        );
+    }
+}
+
+#[test]
 fn rejects_legacy_suffixes_but_not_strings_or_comments() {
     let err = compile(&request(".card {\n  &__title { color: red; }\n}")).unwrap_err();
     assert_eq!(

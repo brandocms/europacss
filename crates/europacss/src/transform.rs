@@ -296,36 +296,49 @@ impl Compiler<'_, '_> {
                     }
                     "extend" => {
                         self.statement(&node, ctx)?;
-                        arity(&node, &args, 1, 1)?;
-                        if !placeholder(args[0]) {
-                            return Err(error(
-                                &node,
-                                "EU_EXTEND",
-                                "@extend supports named %placeholders only",
-                            ));
-                        }
-                        if self.expanding.iter().any(|s| s == args[0]) {
-                            return Err(error(
-                                &node,
-                                "EU_EXTEND",
-                                format!(
-                                    "Cyclic placeholder expansion: {} -> {}",
-                                    self.expanding.join(" -> "),
-                                    args[0]
-                                ),
-                            ));
-                        }
-                        let children =
-                            self.placeholders.get(args[0]).cloned().ok_or_else(|| {
-                                error(
+                        let names = crate::parser::split_top_level(&params, ',')
+                            .map_err(|e| error(&node, "EU_EXTEND", e.message))?;
+                        for name in names {
+                            let parts = arguments(name)
+                                .map_err(|e| error(&node, "EU_EXTEND", e.message))?;
+                            if parts.len() != 1 {
+                                return Err(error(
                                     &node,
                                     "EU_EXTEND",
-                                    format!("Unknown placeholder `{}`", args[0]),
-                                )
-                            })?;
-                        self.expanding.push(args[0].into());
-                        result.extend(self.nodes(children, ctx, depth + 1)?);
-                        self.expanding.pop();
+                                    "Expected a comma-separated list of %placeholders",
+                                ));
+                            }
+                            let name = parts[0];
+                            if !placeholder(name) {
+                                return Err(error(
+                                &node,
+                                "EU_EXTEND",
+                                "@extend supports named %placeholders only; move shared declarations into a %placeholder and extend it from both selectors, then review cascade order",
+                            ));
+                            }
+                            if self.expanding.iter().any(|s| s == name) {
+                                return Err(error(
+                                    &node,
+                                    "EU_EXTEND",
+                                    format!(
+                                        "Cyclic placeholder expansion: {} -> {}",
+                                        self.expanding.join(" -> "),
+                                        name
+                                    ),
+                                ));
+                            }
+                            let children =
+                                self.placeholders.get(name).cloned().ok_or_else(|| {
+                                    error(
+                                        &node,
+                                        "EU_EXTEND",
+                                        format!("Unknown placeholder `{}`", name),
+                                    )
+                                })?;
+                            self.expanding.push(name.into());
+                            result.extend(self.nodes(children, ctx, depth + 1)?);
+                            self.expanding.pop();
+                        }
                     }
                     "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space"
                     | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive"
@@ -892,6 +905,15 @@ impl Compiler<'_, '_> {
         };
         let mut result = Vec::new();
         if let Some(properties) = value.as_object() {
+            if self.migration && !modified {
+                if let Some(height) = line_height {
+                    let old = properties.get("line-height").and_then(scalar);
+                    let resolved = self.line_height(node, height, index)?;
+                    if old.as_deref() != Some(resolved.as_str()) {
+                        self.config.migration_warning(node.offset, || format!("At `{}`, explicit line-height `/{height}` now overrides the object font style's {}; the legacy unmodified object path ignored this suffix. Remove the suffix to retain the configured/inherited line-height, or accept the explicit override.", index.map(|i| self.config.breakpoints[i].0.as_str()).unwrap_or("all widths"), old.map(|v| format!("`{v}`")).unwrap_or_else(|| "inherited line-height".into())));
+                    }
+                }
+            }
             if self.migration && modified {
                 let retained: Vec<_> = properties
                     .keys()

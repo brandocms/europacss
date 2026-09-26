@@ -180,8 +180,12 @@ fn base_properties_and_responsive_fallbacks_report_concrete_order_changes() {
         .message
         .contains("line-height: normal"));
     assert!(
-        report.findings[0].fix.is_none(),
-        "Accepting corrected authored order is not an automatic edit"
+        report.findings[0]
+            .fix
+            .as_ref()
+            .is_some_and(|f| f.kind == "preserve-appearance")
+            && !report.findings[0].apply_fix,
+        "Preserving legacy order is an explicit review choice"
     );
     let report = analyze(".button{@space height 50px desktop;height:40px}");
     assert_eq!(report.findings.len(), 1, "{report:?}");
@@ -478,4 +482,98 @@ fn legacy_equal_value_grouping_is_considered_before_media_sorting() {
                 && f.diagnostic.message.contains("row-gap: 40px")),
         "{report:?}"
     );
+}
+
+#[test]
+fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions() {
+    let source = ".hero {\n  @space width 40dpx mobile;\n  width:40px;\n}";
+    let report = analyze(source);
+    let fix = report.findings.iter().find_map(|f| f.fix.as_ref()).unwrap();
+    assert_eq!(fix.kind, "preserve-appearance");
+    assert!(
+        migration::reviewed_edits(&report, &serde_json::to_string(&report).unwrap())
+            .unwrap()
+            .is_empty()
+    );
+    let mut review = serde_json::to_value(&report).unwrap();
+    for finding in review["findings"].as_array_mut().unwrap() {
+        if !finding["fix"].is_null() {
+            finding["apply_fix"] = true.into();
+        }
+    }
+    let edits = migration::reviewed_edits(&report, &review.to_string()).unwrap();
+    let fixed = migration::apply_edits(source, "rule.css", &edits).unwrap();
+    assert_eq!(
+        fixed,
+        ".hero {\n  width:40px;\n  @space width 40dpx mobile;\n}"
+    );
+    assert!(!analyze(&fixed)
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
+    assert_css(
+        &fixed,
+        ".hero{width:40px;@media(width <= 739px){width:calc(2.77778vw * var(--ec-zoom))}}",
+        config(),
+    );
+    assert!(
+        migration::reviewed_edits(&analyze(&(source.to_owned() + " ")), &review.to_string())
+            .is_err()
+    );
+    // The saved payload cannot inject edits: only a fresh compiler proposal is used.
+    review["findings"][0]["fix"]["edits"][0]["replacement"] = "evil".into();
+    assert_eq!(
+        migration::reviewed_edits(&report, &review.to_string()).unwrap()[0].replacement,
+        edits[0].replacement
+    );
+    review["findings"][0]["message"] = "forged".into();
+    assert!(migration::reviewed_edits(&report, &review.to_string()).is_err());
+}
+
+#[test]
+fn order_fixes_do_not_cross_intervening_rules_comments_or_generated_bodies() {
+    for source in [
+        ".x{@space width 40dpx mobile; color:red; width:40px;}",
+        ".x{@space width 40dpx mobile; /* explains fallback */ width:40px;}",
+        "%x{@space width 40dpx mobile;width:40px;}.x{@extend %x}",
+        ".x{@responsive mobile{width:30px;} width:40px;}",
+    ] {
+        let report = analyze(source);
+        assert!(
+            report.findings.iter().all(|f| f.fix.is_none()),
+            "{report:?}"
+        );
+    }
+}
+
+#[test]
+fn object_line_height_overrides_warn_only_at_affected_uses() {
+    let mut cfg = config();
+    cfg["theme"]["typography"] = json!({"sizes":{
+        "object":{"*":{"font-size":"20px","line-height":"1.3"}},
+        "inherited":{"*":{"font-size":"20px"}},
+        "scalar":{"*":"20px/1.3"}
+    }});
+    for (query, warns) in [
+        ("object/1", true),
+        ("object/1.3", false),
+        ("object", false),
+        ("object(2)/1", false),
+        ("scalar/1", false),
+        ("inherited/1", true),
+    ] {
+        let report = migration::analyze(
+            &request(&format!(".x{{@fontsize {query} tablet;}}"), cfg.clone()),
+            LEGACY_VERSION,
+        )
+        .unwrap();
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.message.contains("ignored this suffix")),
+            warns,
+            "{report:?}"
+        );
+    }
 }

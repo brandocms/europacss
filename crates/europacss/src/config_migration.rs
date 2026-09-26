@@ -50,6 +50,7 @@ pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {
         let &(a, b) = tokens.last().unwrap();
         edits.push((a, b, " ".into()));
     }
+    edits.extend(static_theme_callbacks(source, &tokens, start + prefix)?);
     for (index, &(a, b)) in tokens.iter().enumerate().skip(start + prefix) {
         let value = &source[a..b];
         if text(index + 1) == Some(":") && value.bytes().all(|c| c.is_ascii_digit()) {
@@ -76,6 +77,84 @@ pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {
     literal_semantics(&value)?;
     resolve_config(value).map_err(|e| e.message)?;
     Ok(output)
+}
+
+// Legacy Europa evaluates theme section resolvers (including extensions). A
+// zero-argument arrow returning an object literal needs no evaluation. Restrict
+// this rewrite to those positions: functions elsewhere are not necessarily data.
+// JSON5 validation below still rejects expressions anywhere in the returned body.
+fn static_theme_callbacks(
+    source: &str,
+    tokens: &[(usize, usize)],
+    start: usize,
+) -> Result<Vec<(usize, usize, String)>, String> {
+    let text = |i: usize| tokens.get(i).map(|&(a, b)| &source[a..b]);
+    let mut stack = Vec::new();
+    let mut edits = Vec::new();
+    let mut i = start;
+    while i < tokens.len() {
+        match text(i) {
+            Some("{" | "[") => {
+                let key = if i >= 2 && text(i - 1) == Some(":") {
+                    let key = text(i - 2).unwrap();
+                    if key.starts_with(['\'', '"']) {
+                        json5::from_str::<String>(key).unwrap_or_default()
+                    } else {
+                        key.into()
+                    }
+                } else {
+                    String::new()
+                };
+                stack.push(key);
+            }
+            Some("}" | "]") => {
+                stack.pop();
+            }
+            Some("(")
+                if (stack == ["", "theme"] || stack == ["", "theme", "extend"])
+                    && i >= 2
+                    && text(i - 1) == Some(":")
+                    && (0..6).map(|n| text(i + n)).eq([
+                        Some("("),
+                        Some(")"),
+                        Some("="),
+                        Some(">"),
+                        Some("("),
+                        Some("{"),
+                    ]) =>
+            {
+                // Do not turn invalid JavaScript arrows into valid JSON5.
+                if tokens[i + 2].1 != tokens[i + 3].0
+                    || source[tokens[i + 1].1..tokens[i + 2].0]
+                        .contains(['\n', '\r', '\u{2028}', '\u{2029}'])
+                {
+                    return Err("Invalid static theme arrow syntax".into());
+                }
+                let mut depth = 1usize;
+                let mut end = i + 6;
+                while end < tokens.len() && depth > 0 {
+                    match text(end) {
+                        Some("{") => depth += 1,
+                        Some("}") => depth -= 1,
+                        _ => {}
+                    }
+                    end += 1;
+                }
+                if depth != 0 || text(end) != Some(")") {
+                    return Err("Expected a static theme arrow returning one object literal".into());
+                }
+                for index in (i..i + 5).chain(std::iter::once(end)) {
+                    let (a, b) = tokens[index];
+                    edits.push((a, b, " ".repeat(b - a)));
+                }
+                // No recursive callback conversion inside the returned object.
+                i = end;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    Ok(edits)
 }
 
 // JavaScript sorts array-index property names ahead of other keys; preserve the

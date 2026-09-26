@@ -1,0 +1,2888 @@
+{
+  "configs": [
+    {
+      "setMaxForVw": true,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "2vw",
+            "tablet": "2vw",
+            "desktop": "2vw"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "16px",
+              "tablet": "18px",
+              "desktop": "20px"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "2vw",
+            "tablet": "2vw",
+            "desktop": "2vw"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "2vw",
+            "tablet": "2vw",
+            "desktop": "2vw"
+          }
+        },
+        "spacing": {
+          "sm": {
+            "*": "2vw",
+            "desktop": "3vw"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "2vw",
+            "tablet": "2vw",
+            "desktop": "2vw"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "740px",
+            "tablet": "1024px",
+            "desktop": "100%"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          },
+          "block": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "40px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "16px",
+              "tablet": "18px",
+              "desktop": "20px"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "setMaxForVw": true,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "740px",
+            "tablet": "1024px",
+            "desktop": "1440px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35dpx",
+            "desktop": "50dpx"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "16px",
+              "tablet": "18px",
+              "desktop": "20px"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "setMaxForVw": true,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "740px",
+            "tablet": "1024px",
+            "desktop": "1440px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35dpx",
+            "desktop": "50dpx"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30dpx",
+            "desktop": "50dpx"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "16px",
+              "tablet": "18px",
+              "desktop": "20px"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "740px",
+            "tablet": "1024px",
+            "desktop": "100%"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          },
+          "between": {
+            "mobile": "between(100px-200px)"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xl": {
+              "mobile": "between(18px-22px)",
+              "tablet": "between(22px-32px)",
+              "desktop": "34px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "480px",
+          "ipad_portrait": "768px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1200px",
+          "desktop_lg": "1560px",
+          "desktop_xl": "1920px"
+        },
+        "columns": {
+          "count": {
+            "iphone": 2,
+            "mobile": 2,
+            "ipad_portrait": 6,
+            "ipad_landscape": 6,
+            "desktop_md": 6,
+            "desktop_lg": 6,
+            "desktop_xl": 6
+          },
+          "gutters": {
+            "iphone": "40px",
+            "mobile": "40px",
+            "ipad_portrait": "35px",
+            "ipad_landscape": "70px",
+            "desktop_md": "80px",
+            "desktop_lg": "100px",
+            "desktop_xl": "120px"
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSize": 1440,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      },
+      "dpxViewportSizes": {
+        "mobile": 1440,
+        "tablet": 1440,
+        "desktop": 1440
+      }
+    },
+    {
+      "dpxViewportSize": 1440,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      },
+      "setMaxForVw": true,
+      "dpxViewportSizes": {
+        "mobile": 1440,
+        "tablet": 1440,
+        "desktop": 1440
+      }
+    },
+    {
+      "dpxViewportSizes": {
+        "mobile": 375,
+        "tablet": 768,
+        "desktop": 1440,
+        "$test": 768
+      },
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSizes": {
+        "$test": 768
+      },
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px",
+          "wide": "1280px"
+        },
+        "spacing": {
+          "equal": {
+            "mobile": "10px",
+            "tablet": "15px",
+            "desktop": "15px",
+            "wide": "15px"
+          },
+          "partially_equal": {
+            "mobile": "10px",
+            "tablet": "15px",
+            "desktop": "15px",
+            "wide": "20px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px",
+          "large": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "740px",
+            "desktop": "1024px",
+            "large": "1372px"
+          },
+          "padding": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px",
+            "large": "* 30px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px",
+          "large": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "740px",
+            "desktop": "1024px",
+            "large": "1372px"
+          },
+          "padding": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px",
+            "large": "*"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "spacing": {
+          "block": {
+            "sm": {
+              "mobile": "10px",
+              "tablet": "20px",
+              "desktop": "30px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "16px",
+            "tablet": "24px",
+            "desktop": "32px"
+          }
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "100%"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSize": 1440,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "h0": {
+              "mobile": "50dpx/1.2",
+              "*": "95dpx/1.2"
+            },
+            "h2": {
+              "mobile": "25dpx",
+              "tablet": "35dpx",
+              "desktop": "45dpx"
+            }
+          }
+        }
+      },
+      "dpxViewportSizes": {
+        "mobile": 1440,
+        "tablet": 1440,
+        "desktop": 1440
+      }
+    },
+    {
+      "dpxViewportSize": 1440,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "h0": {
+              "mobile": "50dpx/1.2",
+              "*": "95dpx/1.2"
+            },
+            "h2": {
+              "mobile": "20px",
+              "*": "35dpx"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSize": 1440,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "h2": {
+              "mobile": "35dpx",
+              "*": "35dpx"
+            }
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSizes": {
+        "mobile": 375,
+        "tablet": 768,
+        "desktop": 1440,
+        "$test": 768
+      },
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          }
+        }
+      }
+    },
+    {
+      "dpxViewportSizes": {
+        "$test": 768
+      },
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          }
+        }
+      }
+    },
+    {},
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "h0": {
+              "mobile": "8vw/12vw",
+              "*": "4vw/1.2"
+            },
+            "h1": {
+              "*": "4vw",
+              "desktop": "3.5vw"
+            },
+            "h2": {
+              "*": "3vw"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "450px",
+          "ipad_portrait": "740px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1280px",
+          "desktop_lg": "1440px",
+          "desktop_xl": "1600px"
+        },
+        "container": {
+          "maxWidth": {
+            "iphone": "100%",
+            "mobile": "100%",
+            "ipad_portrait": "100%",
+            "ipad_landscape": "100%",
+            "desktop_md": "100%",
+            "desktop_lg": "100%",
+            "desktop_xl": "100%"
+          },
+          "padding": {
+            "iphone": "15px",
+            "mobile": "35px",
+            "ipad_portrait": "35px",
+            "ipad_landscape": "35px",
+            "desktop_md": "50px",
+            "desktop_lg": "50px",
+            "desktop_xl": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "iphone": 1.6,
+            "mobile": 1.6,
+            "ipad_portrait": 1.6,
+            "ipad_landscape": 1.6,
+            "desktop_md": 1.6,
+            "desktop_lg": 1.6,
+            "desktop_xl": 1.6
+          },
+          "sizes": {
+            "header_text": {
+              "iphone": "17px",
+              "mobile": "17px",
+              "ipad_portrait": "17px",
+              "*": "1.0vw"
+            }
+          }
+        }
+      }
+    },
+    {
+      "setMaxForVw": true,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet",
+          "$lg": ">=tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "4vw",
+              "tablet": "3vw",
+              "desktop": "3vw"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "setMaxForVw": true,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "100%"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "lg": {
+              "mobile": "4vw",
+              "tablet": "3vw",
+              "desktop": "3vw"
+            }
+          }
+        }
+      }
+    },
+    {
+      "setMaxForVw": false,
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$test": "mobile/tablet",
+          "$lg": ">=tablet"
+        },
+        "container": {
+          "maxWidth": {
+            "mobile": "100%",
+            "tablet": "100%",
+            "desktop": "1920px"
+          },
+          "padding": {
+            "mobile": "15px",
+            "tablet": "35px",
+            "desktop": "50px"
+          }
+        },
+        "spacing": {
+          "xs": {
+            "mobile": "10px",
+            "tablet": "20px",
+            "desktop": "30px"
+          },
+          "md": {
+            "mobile": "15px",
+            "tablet": "25px",
+            "desktop": "50px"
+          },
+          "xl": {
+            "mobile": "25px",
+            "tablet": "50px",
+            "desktop": "75px"
+          },
+          "var": {
+            "mobile": "25px",
+            "tablet": "between(50px-100px)",
+            "desktop": "100px"
+          }
+        },
+        "typography": {
+          "base": "16px",
+          "lineHeight": {
+            "mobile": 1.6,
+            "tablet": 1.6,
+            "desktop": 1.6
+          },
+          "sizes": {
+            "xs": {
+              "mobile": "10px",
+              "tablet": "12px",
+              "desktop": "14px"
+            },
+            "sm": {
+              "mobile": "12px",
+              "tablet": "14px",
+              "desktop": "16px"
+            },
+            "base": {
+              "mobile": "14px",
+              "tablet": "16px",
+              "desktop": "18px"
+            },
+            "lg": {
+              "mobile": "4vw",
+              "tablet": "3vw",
+              "desktop": "3vw"
+            },
+            "xl": {
+              "mobile": "18px",
+              "tablet": "20px",
+              "desktop": "22px"
+            }
+          }
+        },
+        "columns": {
+          "gutters": {
+            "mobile": "20px",
+            "tablet": "30px",
+            "desktop": "50px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "serif": "SerifFont, serif"
+          },
+          "sizes": {
+            "base": {
+              "sm": {
+                "font-size": "17px",
+                "line-height": "1.3"
+              },
+              "md": {
+                "font-size": "19px",
+                "line-height": "1.3"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "base": {
+              "xs": {
+                "font-size": "17px",
+                "line-height": "24px",
+                "letter-spacing": "0.98px"
+              },
+              "sm": "19px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "variable": {
+              "sm": "between(20px-30px)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "variable": {
+              "sm": "4vw"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "variable": {
+              "sm": {
+                "font-size": "4vw",
+                "line-height": "4vw"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "product": {
+              "name": {
+                "xs": "14px",
+                "sm": "16px"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1399px",
+          "xl": "1900px"
+        },
+        "typography": {
+          "sizes": {
+            "header/xsmall": {
+              "xs": "10px",
+              "sm": "11px",
+              "md": "12px",
+              "lg": "13px",
+              "xl": "14px"
+            },
+            "header/large": {
+              "xs": "24px",
+              "sm": "28px",
+              "md": "32px",
+              "lg": "36px",
+              "xl": "40px"
+            },
+            "body/regular": {
+              "xs": "14px",
+              "sm": "15px",
+              "md": "16px",
+              "lg": "17px",
+              "xl": "18px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "header": {
+              "large": {
+                "xs": "24px",
+                "sm": "28px",
+                "md": "32px"
+              },
+              "small": {
+                "xs": "14px",
+                "sm": "16px",
+                "md": "18px"
+              }
+            },
+            "body": {
+              "text": {
+                "xs": "14px",
+                "sm": "15px",
+                "md": "16px"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px"
+        },
+        "typography": {
+          "sizes": {
+            "header/large": {
+              "xs": "30px",
+              "sm": "35px"
+            },
+            "header": {
+              "large": {
+                "xs": "20px",
+                "sm": "25px"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "header/large": {
+              "xs": "24px",
+              "sm": "28px",
+              "md": "32px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "body-large": {
+              "__base__": {
+                "line-height": "135.2%",
+                "letter-spacing": "-0.02em"
+              },
+              "xs": {
+                "font-size": "33px"
+              },
+              "sm": {
+                "font-size": "33px"
+              },
+              "md": {
+                "font-size": "33px"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "my-example": {
+              "__base__": {
+                "line-height": "135%"
+              },
+              "xs": {
+                "font-size": "20px"
+              },
+              "sm": {
+                "font-size": "25px",
+                "line-height": "140%"
+              },
+              "md": {
+                "font-size": "30px"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "main": [
+              "Inter",
+              "system-ui",
+              "sans-serif"
+            ],
+            "serif": [
+              "Georgia",
+              "Times",
+              "serif"
+            ]
+          },
+          "sizes": {
+            "body-text": {
+              "__base__": {
+                "font-family": "{typography.families.main}",
+                "letter-spacing": "0.01em"
+              },
+              "xs": "14px",
+              "sm": "15px",
+              "md": "16px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "body/regular": [
+              "Helvetica",
+              "Arial",
+              "sans-serif"
+            ],
+            "header/display": [
+              "Georgia",
+              "Times",
+              "serif"
+            ]
+          },
+          "sizes": {
+            "heading": {
+              "__base__": {
+                "font-family": "{typography.families.header/display}",
+                "text-transform": "uppercase"
+              },
+              "xs": "24px",
+              "sm": "28px",
+              "md": "32px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "main": [
+              "Inter",
+              "sans-serif"
+            ]
+          },
+          "sizes": {
+            "body-mini": {
+              "__base__": {
+                "font-family": "{typography.families.main}",
+                "font-size": "15px",
+                "letter-spacing": "0.05em",
+                "line-height": "141.3%"
+              },
+              "*": {
+                "font-size": "15dpx"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sizes": {
+            "test": {
+              "__base__": {
+                "color": [
+                  "red",
+                  "blue",
+                  "green"
+                ]
+              },
+              "xs": "14px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "main": "Inter, sans-serif"
+          },
+          "sizes": {
+            "test": {
+              "__base__": {
+                "font-family": "{typography.families.main}"
+              },
+              "xs": "14px",
+              "sm": "16px",
+              "md": "18px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "main": [
+              "Inter",
+              "sans-serif"
+            ]
+          },
+          "sizes": {
+            "body-mini": {
+              "__base__": {
+                "font-family": "{typography.families.flare}",
+                "font-size": "15px",
+                "letter-spacing": "0.05em",
+                "line-height": "141.3%"
+              },
+              "*": {
+                "font-size": "15dpx"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "space-01",
+      "title": "parses vw with maxPx",
+      "config": 0,
+      "input": "\n    body article .test {\n      @space padding-top 5vw;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px){body article .test{padding-top:5vw}}@media (min-width:1024px){body article .test{padding-top:96px}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-02",
+      "title": "parses gutter with maxPx",
+      "config": 0,
+      "input": "\n    body article .test {\n      @space padding-top 1;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px){body article .test{padding-top:2vw}}@media (min-width:1024px){body article .test{padding-top:38.4px}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-03",
+      "title": "parses with wildcards",
+      "config": 1,
+      "input": "\n    body article .test {\n      @space padding-top sm;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px){body article .test{padding-top:2vw}}@media (min-width:1024px){body article .test{padding-top:3vw}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-04",
+      "title": "parses @space translateX",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space translateX calc(100vw - var[container] + var[1]);\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{transform:translate(calc(100vw + 5px))}}@media (min-width:740px) and (max-width:1023px){body article .test{transform:translate(calc(100vw - 5px))}}@media (min-width:1024px){body article .test{transform:translate(100vw)}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-05",
+      "title": "parses @space calced",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space width calc(100vw - var[container] + var[1]);\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{width:calc(100vw + 5px)}}@media (min-width:740px) and (max-width:1023px){body article .test{width:calc(100vw - 5px)}}@media (min-width:1024px){body article .test{width:100vw}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-06",
+      "title": "parses @space calced with dpx padding config",
+      "config": 3,
+      "input": "\n    body article .test {\n      @space width calc(100vw - var[container] + var[1]);\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{width:calc(100vw + 5px)}}@media (min-width:740px) and (max-width:1023px){body article .test{width:calc(100vw - calc(2.43056vw * var(--ec-zoom)) + 30px)}}@media (min-width:1024px){body article .test{width:calc(100vw + .0000305176px)}}body article .test{font-size:18px}",
+      "note": "Authored order and equivalent nested calc grouping for design pixels."
+    },
+    {
+      "id": "space-07",
+      "title": "parses @space calced with dpx padding config and column with gutter",
+      "config": 3,
+      "input": "\n    body article .test {\n      @space width calc(100% - var[container] - var[2:1/12]) desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{width:calc(83.3333% - 58.3333px)}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-08",
+      "title": "parses @space calced with dpx container/column config and column with gutter",
+      "config": 4,
+      "input": "\n    body article .test {\n      @space width calc(100% - var[container] - var[2:1/12]) desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{width:calc(83.3333% - 58.3333px)}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-09",
+      "title": "parses @space calced with dpx container/column with gutter as value",
+      "config": 4,
+      "input": "\n    article {\n      @space padding-x 0.4;\n      @space padding-y 0.4;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article {\n        padding: 8px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article {\n        padding-left: calc(0.83333vw * var(--ec-zoom));\n        padding-right: calc(0.83333vw * var(--ec-zoom));\n        padding-top: calc(0.83333vw * var(--ec-zoom));\n        padding-bottom: calc(0.83333vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      article {\n        padding: 20px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-10",
+      "title": "parses @space container with dpx container/column",
+      "config": 4,
+      "input": "\n    article {\n      @space container;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article {\n        width: 100%;\n        max-width: 740px;\n        margin-left: auto;\n        margin-right: auto;\n        padding-left: 15px;\n        padding-right: 15px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article {\n        padding-left: calc(2.43056vw * var(--ec-zoom));\n        padding-right: calc(2.43056vw * var(--ec-zoom));\n        width: 100%;\n        max-width: 1024px;\n        margin-left: auto;\n        margin-right: auto;\n      }\n    }\n    @media (width >= 1024px) {\n      article {\n        width: 100%;\n        max-width: 1440px;\n        margin-left: auto;\n        margin-right: auto;\n        padding-left: 50px;\n        padding-right: 50px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-11",
+      "title": "parses @space padding-bottom container with dpx container/column",
+      "config": 4,
+      "input": "\n    article {\n      @space padding-bottom container;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article {\n        padding-bottom: 15px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article {\n        padding-bottom: calc(2.43056vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      article {\n        padding-bottom: 50px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-12",
+      "title": "parses @space per mq size",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top md;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:15px}}@media (min-width:740px) and (max-width:1023px){body article .test{margin-top:25px}}@media (min-width:1024px){body article .test{margin-top:50px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-13",
+      "title": "parses @space only for requested variable bp",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top var tablet;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:740px) and (max-width:1023px){body article .test{margin-top:calc(17.6678vw - 80.7421px)}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-14",
+      "title": "parses @space only for requested bp",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top xl desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{margin-top:75px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-15",
+      "title": "parses @space! only for requested bp",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space! margin-top md mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:15px!important}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-16",
+      "title": "parses @space between()",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top between(40px-80px) desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{margin-top:calc(20vw - 164.8px)}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-17",
+      "title": "parses @space with px",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top 40px desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{margin-top:40px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-18",
+      "title": "parses @space! with px",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space! margin-top 40px desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{margin-top:40px!important}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-19",
+      "title": "parses @space! with 0",
+      "config": 2,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      @space padding-top 35px desktop;\n      @space! padding-bottom 0 desktop;\n    }\n  ",
+      "expected": "\n    body article .test {\n      font-size: 18px;\n    }\n    @media (min-width: 1024px){\n      body article .test {\n        padding-top: 35px;\n        padding-bottom: 0 !important;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-20",
+      "title": "parses @space for theme(..)",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top vertical-rhythm(theme.typography.sizes.xl) mobile;\n    }\n\n    body article .test {\n      @space margin-top vertical-rhythm(theme.typography.sizes.xl, 1.2) mobile;\n    }\n  ",
+      "expected": "body article .test{@media (max-width:739px){margin-top:28.8px}}body article .test{@media (max-width:739px){margin-top:21.6px}}",
+      "note": "Keep repeated authored rules; later vertical-rhythm declaration still wins."
+    },
+    {
+      "id": "space-21",
+      "title": "parses @space for lh, svh, lvh, dvh",
+      "config": 5,
+      "input": "\n    body article .test {\n      @space margin-top 1lh mobile;\n      @space margin-left 1svh mobile;\n      @space margin-right 1lvh mobile;\n      @space margin-bottom 1dvh mobile;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      body article .test{\n        margin-top: 1lh;\n        margin-left: 1svh;\n        margin-right: 1lvh;\n        margin-bottom: 1dvh;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-22",
+      "title": "parses @space for between() vertical-rhythm()",
+      "config": 5,
+      "input": "\n    body article .test {\n      @space margin-top vertical-rhythm(theme.typography.sizes.xl) mobile;\n    }\n\n    body article .test {\n      @space margin-top vertical-rhythm(theme.typography.sizes.xl, 1.2) mobile;\n    }\n  ",
+      "expected": "body article .test{@media (max-width:739px){margin-top:calc(1.52745vw + 23.9122px)}}body article .test{@media (max-width:739px){margin-top:calc(1.14558vw + 17.9341px)}}",
+      "note": "Correct scalar fluid vertical-rhythm grouping and 320px lower endpoint; keep repeated rules in authored order."
+    },
+    {
+      "id": "space-23",
+      "title": "parses @space for between() breakpoint",
+      "config": 5,
+      "input": "\n    body article .test {\n      @space margin-top between mobile;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:calc(23.8664vw + 23.6277px)}}",
+      "note": "Use 320px consistently in the smallest-breakpoint fluid slope and offset."
+    },
+    {
+      "id": "space-24",
+      "title": "parses @space for between() breakpoint multiplied",
+      "config": 5,
+      "input": "\n    body article .test {\n      @space margin-top between*2 mobile;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:calc(47.7327vw + 47.2554px)}}",
+      "note": "Use 320px consistently in the smallest-breakpoint fluid slope and offset."
+    },
+    {
+      "id": "space-25",
+      "title": "parses @space for fraction",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top 6/12 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:calc(50% - 10px)}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-26",
+      "title": "parses @space for fraction with gutter multiplier",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top 6:-1/12;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:calc(50% - 30px)}}@media (min-width:740px) and (max-width:1023px){article{margin-top:calc(50% - 45px)}}@media (min-width:1024px){article{margin-top:calc(50% - 75px)}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-27",
+      "title": "parses advanced @responsive @space for fraction with gutter multiplier",
+      "config": 6,
+      "input": "\n    article {\n      @responsive >=ipad_portrait {\n        @space margin-top 1:1/6;\n      }\n    }\n  ",
+      "expected": "\n    @media (width >= 768px) {\n      @media (width >= 768px) and (width <= 1023px) {\n        article {\n          margin-top: calc(16.6667% + 5.83333px);\n        }\n      }\n      @media (width >= 1024px) and (width <= 1199px) {\n        article {\n          margin-top: calc(16.6667% + 11.6667px);\n        }\n      }\n      @media (width >= 1200px) and (width <= 1559px) {\n        article {\n          margin-top: calc(16.6667% + 13.3333px);\n        }\n      }\n      @media (width >= 1560px) and (width <= 1919px) {\n        article {\n          margin-top: calc(16.6667% + 16.6667px);\n        }\n      }\n      @media (width >= 1920px) {\n        article {\n          margin-top: calc(16.6667% + 20px);\n        }\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-28",
+      "title": "parses @space for fraction of breakpoint key",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top xs/2 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:5px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-29",
+      "title": "parses @space for 0.5 of gutter",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top 0.5 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:10px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-30",
+      "title": "parses @space for 1.5 of gutter",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top 1.5 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:30px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-31",
+      "title": "parses @space for fraction of breakpoint key for all breakpoints",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-top xs/2;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:5px}}@media (min-width:740px) and (max-width:1023px){article{margin-top:10px}}@media (min-width:1024px){article{margin-top:15px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-32",
+      "title": "@space with fraction and no breakpointQuery",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left 6/12;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-left:calc(50% - 10px)}}@media (min-width:740px) and (max-width:1023px){article{margin-left:calc(50% - 15px)}}@media (min-width:1024px){article{margin-left:calc(50% - 25px)}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-33",
+      "title": "parses @space as gutter multiplier for regular number",
+      "config": 2,
+      "input": "\n    article {\n      @space padding-left 1 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{padding-left:20px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-34",
+      "title": "parses @space as negative gutter multiplier for regular number",
+      "config": 2,
+      "input": "\n    article {\n      @space padding-left -1 mobile;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{padding-left:-20px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-35",
+      "title": "parses @space as gutter multiplier for regular number across bps",
+      "config": 2,
+      "input": "\n    article {\n      @space padding-left 1;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{padding-left:20px}}@media (min-width:740px) and (max-width:1023px){article{padding-left:30px}}@media (min-width:1024px){article{padding-left:50px}}article{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-36",
+      "title": "parses @space with no max for last bp",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top md desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (min-width:1024px){body article .test{margin-top:50px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-37",
+      "title": "parses @space 0 w/o breakpoints",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-y 0;\n    }\n  ",
+      "expected": "\n    article {\n      margin-top: 0;\n      margin-bottom: 0;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-38",
+      "title": "parses @space 0 w/ breakpoint",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-y 0 mobile;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        margin-top: 0;\n        margin-bottom: 0\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-39",
+      "title": "parses @space with dpx units",
+      "config": 7,
+      "input": "\n    article {\n      @space margin-top 20dpx;\n      @space padding-left 45dpx desktop;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px),(min-width:1024px){article{margin-top:calc(1.38889vw * var(--ec-zoom))}}@media (min-width:1024px){article{padding-left:calc(3.125vw * var(--ec-zoom))}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-40",
+      "title": "parses @space with dpx units and setMaxForVw",
+      "config": 8,
+      "input": "\n    article {\n      @space margin-top 20dpx desktop;\n    }\n  ",
+      "expected": "\n    @media (width >= 1024px) {\n      article {\n        margin-top: 26.6667px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-41",
+      "title": "parses @space with dpx units and setMaxForVw across all breakpoints",
+      "config": 8,
+      "input": "\n    article {\n      @space margin-top 20dpx;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px){article{margin-top:calc(1.38889vw * var(--ec-zoom))}}@media (min-width:1024px){article{margin-top:26.6667px}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-42",
+      "title": "parses @space with dpx units using per-collection reference viewport widths",
+      "config": 9,
+      "input": "\n    article {\n      @space margin-top 20dpx mobile;\n      @space margin-top 20dpx tablet;\n      @space margin-top 20dpx desktop;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article {\n        margin-top: calc(5.33333vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article {\n        margin-top: calc(2.60417vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      article {\n        margin-top: calc(1.38889vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-43",
+      "title": "parses @space with dpx units using breakpoint collections",
+      "config": 10,
+      "input": "\n    article {\n      @space margin-top 20dpx $test;\n    }\n  ",
+      "expected": "@media (max-width:739px),(min-width:740px) and (max-width:1023px){article{margin-top:calc(2.60417vw * var(--ec-zoom))}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-44",
+      "title": "parses @space shortcuts margin",
+      "config": 2,
+      "input": "\n    article {\n      @space margin 0;\n    }\n  ",
+      "expected": "\n    article {\n      margin: 0;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-45",
+      "title": "parses @space shortcuts padding",
+      "config": 2,
+      "input": "\n    article {\n      @space padding 0;\n    }\n  ",
+      "expected": "\n    article {\n      padding: 0;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-46",
+      "title": "parses @space shortcuts padding-y",
+      "config": 2,
+      "input": "\n    article {\n      @space padding-y 0;\n    }\n  ",
+      "expected": "\n    article {\n      padding-top: 0;\n      padding-bottom: 0;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-47",
+      "title": "parses @space with q",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top xl <=tablet;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:25px}}@media (min-width:740px) and (max-width:1023px){body article .test{margin-top:50px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-48",
+      "title": "parses @space with > *",
+      "config": 2,
+      "input": "\n    article {\n      display: flex;\n      flex-wrap: nowrap;\n\n      > * {\n        @space margin-left 2;\n\n        &:first-of-type {\n          margin-left: 0;\n        }\n      }\n    }\n  ",
+      "expected": "article{flex-wrap:nowrap;display:flex}@media (max-width:739px){article>*{margin-left:40px}}@media (min-width:740px) and (max-width:1023px){article>*{margin-left:60px}}@media (min-width:1024px){article>*{margin-left:100px}}article{>*{&:first-of-type{margin-left:0}}}",
+      "note": "Native child nesting and authored order, without global media hoisting or redundant wrappers."
+    },
+    {
+      "id": "space-49",
+      "title": "parses @space with multiple split bps",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top xl mobile/desktop;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:25px}}@media (min-width:1024px){body article .test{margin-top:75px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-50",
+      "title": "parses @space per mq size with shortcuts",
+      "config": 2,
+      "input": "\n    body {\n      @space margin-y xl;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      body{\n        margin-top: 25px;\n        margin-bottom: 25px\n      }\n    }\n\n    @media (min-width: 740px) and (max-width: 1023px){\n      body{\n        margin-top: 50px;\n        margin-bottom: 50px\n      }\n    }\n\n    @media (min-width: 1024px){\n      body{\n        margin-top: 75px;\n        margin-bottom: 75px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-51",
+      "title": "works inside @responsive",
+      "config": 2,
+      "input": "\n    article {\n      @responsive mobile {\n        @space margin-top xl;\n      }\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:25px}}",
+      "note": "Avoid redundant identical responsive wrappers."
+    },
+    {
+      "id": "space-52",
+      "title": "can use container as size",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left container mobile;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        margin-left: 15px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-53",
+      "title": "can use -container as size",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left -container mobile;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        margin-left: -15px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-54",
+      "title": "parses >=tablet correctly",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left 15px >=tablet;\n    }\n  ",
+      "expected": "\n    @media (width >= 740px) {\n      article {\n        margin-left: 15px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-55",
+      "title": "works inside @responsive with q string",
+      "config": 2,
+      "input": "\n    article {\n      @responsive >=tablet {\n        @space margin-top xl;\n      }\n    }\n  ",
+      "expected": "\n    @media (width >= 740px) {\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: 50px;\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: 75px;\n        }\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-56",
+      "title": "works inside @responsive as dbl parent",
+      "config": 2,
+      "input": "\n    @responsive mobile {\n      article {\n        @space margin-top xl;\n      }\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-top:25px}}",
+      "note": "Avoid redundant identical responsive wrappers."
+    },
+    {
+      "id": "space-57",
+      "title": "fails with bp query inside @responsive",
+      "config": 2,
+      "input": "\n    article {\n      @responsive mobile {\n        @space margin-top xl >=tablet;\n      }\n    }\n  ",
+      "error": "EU_RESPONSIVE",
+      "note": "Retains error for invalid input."
+    },
+    {
+      "id": "space-58",
+      "title": "can run from @responsive root",
+      "config": 2,
+      "input": "\n    @responsive desktop {\n      .alert-yellow {\n        @space margin-top xs;\n      }\n    }\n  ",
+      "expected": "@media (min-width:1024px){.alert-yellow{margin-top:30px}}",
+      "note": "Avoid redundant identical responsive wrappers."
+    },
+    {
+      "id": "space-59",
+      "title": "parses @space with breakpointCollection",
+      "config": 2,
+      "input": "\n    body article .test {\n      @space margin-top xl $test;\n      font-size: 18px;\n    }\n  ",
+      "expected": "@media (max-width:739px){body article .test{margin-top:25px}}@media (min-width:740px) and (max-width:1023px){body article .test{margin-top:50px}}body article .test{font-size:18px}",
+      "note": "Authored order replaces global media hoisting."
+    },
+    {
+      "id": "space-60",
+      "title": "parses @space with > * under responsive!",
+      "config": 2,
+      "input": "\n    article {\n      @responsive tablet {\n        display: flex;\n        flex-wrap: nowrap;\n\n        > * {\n          @space margin-left 2;\n\n          &:first-of-type {\n            margin-left: 0;\n          }\n        }\n      }\n    }\n  ",
+      "expected": "@media (min-width:740px) and (max-width:1023px){article{flex-wrap:nowrap;display:flex}article>*{margin-left:60px}article{>*{&:first-of-type{margin-left:0}}}}",
+      "note": "Native child nesting and authored order, without global media hoisting or redundant wrappers."
+    },
+    {
+      "id": "space-61",
+      "title": "parses @space with var(--)",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left var(--my-variable);\n    }\n  ",
+      "expected": "\n    article {\n      margin-left: var(--my-variable);\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-62",
+      "title": "parses @space with var(--) and specified breakpoint",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left var(--my-variable) tablet;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        margin-left: var(--my-variable)\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-63",
+      "title": "parses @space auto",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left auto;\n    }\n  ",
+      "expected": "\n    article {\n      margin-left: auto;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-64",
+      "title": "does not create breakpoints for hard coded values",
+      "config": 2,
+      "input": "\n    article {\n      @space margin-left 10px;\n      @space margin-top 10em;\n    }\n  ",
+      "expected": "\n    article {\n      margin-top: 10em;\n      margin-left: 10px;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-65",
+      "title": "optimizes partially identical values across breakpoints",
+      "config": 11,
+      "input": "\n    article {\n      @space margin-left partially_equal;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-left:10px}}@media (min-width:740px) and (max-width:1023px),(min-width:1024px) and (max-width:1279px){article{margin-left:15px}}@media (min-width:1280px){article{margin-left:20px}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-66",
+      "title": "optimizes equal values across breakpoints",
+      "config": 11,
+      "input": "\n    article {\n      @space margin-left equal;\n    }\n  ",
+      "expected": "@media (max-width:739px){article{margin-left:10px}}@media (min-width:740px) and (max-width:1023px),(min-width:1024px) and (max-width:1279px),(min-width:1280px){article{margin-left:15px}}",
+      "note": "Retain exact inclusive breakpoint conditions, including fractional gaps, when combining equal values."
+    },
+    {
+      "id": "space-67",
+      "title": "Negative spacing values / should handle negative named spacing values",
+      "config": 2,
+      "input": "\n      article {\n        @space margin-top -block;\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: -20px;\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: -30px;\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: -40px;\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-68",
+      "title": "Negative spacing values / should handle negative named spacing values for specific breakpoints",
+      "config": 2,
+      "input": "\n      article {\n        @space margin-top -block mobile;\n        @space margin-right -xl desktop;\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: -20px;\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-right: -75px;\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-69",
+      "title": "Negative spacing values / should not affect direct negative values",
+      "config": 2,
+      "input": "\n      article {\n        @space margin-top -20px;\n        @space margin-left -20vw;\n      }\n    ",
+      "expected": "\n      article {\n        margin-top: -20px;\n        margin-left: -20vw;\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-70",
+      "title": "Negative spacing values / should handle negative multipliers correctly for named spacing",
+      "config": 2,
+      "input": "\n      article {\n        @space margin-top block*-2;\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(20px * -2);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(30px * -2);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(40px * -2);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-71",
+      "title": "parses container references with \"*\" padding and minimum",
+      "config": 12,
+      "input": "\n    article {\n      @space padding-left container large;\n      @space margin-left -container large;\n      @space padding-right container/2 large;\n      @space margin-right -container/2 large;\n    }\n  ",
+      "expected": "\n    @media (width >= 1440px) {\n      article {\n        padding-left: max(30px, calc((100vw - 1372px) / 2));\n        margin-left: calc(-1 * max(30px, calc((100vw - 1372px) / 2)));\n        padding-right: calc(max(30px, calc((100vw - 1372px) / 2)) / 2);\n        margin-right: calc(-1 * (max(30px, calc((100vw - 1372px) / 2)) / 2));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-72",
+      "title": "parses container references with \"*\" padding values",
+      "config": 13,
+      "input": "\n    article {\n      @space padding-left container large;\n      @space margin-left -container large;\n      @space padding-right container/2 large;\n      @space margin-right -container/2 large;\n    }\n  ",
+      "expected": "\n    @media (width >= 1440px) {\n      article {\n        padding-left: calc((100vw - 1372px) / 2);\n        margin-left: calc(-1 * ((100vw - 1372px) / 2));\n        padding-right: calc(((100vw - 1372px) / 2) / 2);\n        margin-right: calc(-1 * (((100vw - 1372px) / 2) / 2));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-73",
+      "title": "negate() / resolves absolute value per breakpoint",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, 25px);\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(-20px + 25px);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 25px);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 25px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-74",
+      "title": "negate() / resolves named spacing as desired gap",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, xs);\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(-20px + 10px);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 20px);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 30px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-75",
+      "title": "negate() / resolves addition expression",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, block+xs);\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(-20px + 20px + 10px);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 30px + 20px);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 40px + 30px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-76",
+      "title": "negate() / resolves subtraction expression",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, block-2vw);\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(-20px + 20px - 2vw);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 30px - 2vw);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 40px - 2vw);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-77",
+      "title": "negate() / handles single breakpoint query",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, 25px) desktop;\n      }\n    ",
+      "expected": "\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 25px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-78",
+      "title": "negate() / handles advanced breakpoint query",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, 25px) >=tablet;\n      }\n    ",
+      "expected": "\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 25px);\n        }\n      }\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 25px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-79",
+      "title": "negate() / handles breakpoint collection",
+      "config": 2,
+      "input": "\n      article {\n        @space negate(block, 25px) $test;\n      }\n    ",
+      "expected": "\n      @media (width <= 739px) {\n        article {\n          margin-top: calc(-20px + 25px);\n        }\n      }\n      @media (width >= 740px) and (width <= 1023px) {\n        article {\n          margin-top: calc(-30px + 25px);\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-80",
+      "title": "negate() / handles important flag",
+      "config": 2,
+      "input": "\n      article {\n        @space! negate(block, 25px) desktop;\n      }\n    ",
+      "expected": "\n      @media (width >= 1024px) {\n        article {\n          margin-top: calc(-40px + 25px) !important;\n        }\n      }\n    ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-81",
+      "title": "parses @space breakout without media query",
+      "config": 2,
+      "input": "\n    article {\n      @space breakout;\n    }\n  ",
+      "expected": "\n    article {\n      width: 100vw;\n      margin-left: calc(50% - 50vw);\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-82",
+      "title": "parses @space breakout with single breakpoint",
+      "config": 2,
+      "input": "\n    article {\n      @space breakout mobile;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article {\n        width: 100vw;\n        margin-left: calc(50% - 50vw);\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-83",
+      "title": "parses @space breakout with range query",
+      "config": 2,
+      "input": "\n    article {\n      @space breakout >=tablet;\n    }\n  ",
+      "expected": "\n    @media (width >= 740px) {\n      article {\n        width: 100vw;\n        margin-left: calc(50% - 50vw);\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-84",
+      "title": "parses @space! breakout with important flag",
+      "config": 2,
+      "input": "\n    article {\n      @space! breakout;\n    }\n  ",
+      "expected": "\n    article {\n      width: 100vw !important;\n      margin-left: calc(50% - 50vw) !important;\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "space-85",
+      "title": "parses @space breakout nested in @responsive",
+      "config": 2,
+      "input": "\n    article {\n      @responsive tablet {\n        @space breakout;\n      }\n    }\n  ",
+      "expected": "@media (min-width:740px) and (max-width:1023px){article{width:100vw;margin-left:calc(50% - 50vw)}}",
+      "note": "Avoid redundant identical responsive wrappers."
+    },
+    {
+      "id": "space-86",
+      "title": "parses @space with slash notation for nested spacing config",
+      "config": 14,
+      "input": "\n    article {\n      @space margin-top block/sm;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        margin-top: 10px\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px){\n      article{\n        margin-top: 20px\n      }\n    }\n    @media (width >= 1024px){\n      article{\n        margin-top: 30px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-01",
+      "title": "parses @fontsize dpx",
+      "config": 15,
+      "input": "\n    article {\n      h1 {\n        @fontsize h0;\n      }\n\n      h2 {\n        @fontsize h2 mobile;\n        @fontsize h2 tablet;\n        @fontsize h2 desktop;\n      }\n    }\n  ",
+      "expected": "@media (max-width:739px){article h1{font-size:calc(3.47222vw * var(--ec-zoom));line-height:1.2}}@media (min-width:740px) and (max-width:1023px),(min-width:1024px){article h1{font-size:calc(6.59722vw * var(--ec-zoom));line-height:1.2}}@media (max-width:739px){article h2{font-size:calc(1.73611vw * var(--ec-zoom))}}@media (min-width:740px) and (max-width:1023px){article h2{font-size:calc(2.43056vw * var(--ec-zoom))}}@media (min-width:1024px){article h2{font-size:calc(3.125vw * var(--ec-zoom))}}",
+      "note": "Keep selectors in authored order instead of globally regrouping their media rules; retain exact breakpoint conditions."
+    },
+    {
+      "id": "fontsize-02",
+      "title": "parses @fontsize dpx (single config)",
+      "config": 16,
+      "input": "\n    article {\n      h1 {\n        @fontsize h0;\n      }\n\n      h2 {\n        @fontsize h2 mobile;\n        @fontsize h2 tablet;\n        @fontsize h2 desktop;\n      }\n    }\n  ",
+      "expected": "@media (max-width:739px){article h1{font-size:calc(3.47222vw * var(--ec-zoom));line-height:1.2}}@media (min-width:740px) and (max-width:1023px),(min-width:1024px){article h1{font-size:calc(6.59722vw * var(--ec-zoom));line-height:1.2}}@media (max-width:739px){article h2{font-size:20px}}@media (min-width:740px) and (max-width:1023px),(min-width:1024px){article h2{font-size:calc(2.43056vw * var(--ec-zoom))}}",
+      "note": "Keep selectors in authored order instead of globally regrouping their media rules; retain exact breakpoint conditions."
+    },
+    {
+      "id": "fontsize-03",
+      "title": "parses @fontsize dpx (single config, same dpx for multiple breakpoints)",
+      "config": 17,
+      "input": "\n    article {\n      h2 {\n        @fontsize h2 mobile;\n        @fontsize h2 tablet;\n        @fontsize h2 desktop;\n      }\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article h2 {\n        font-size: calc(2.43056vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article h2 {\n        font-size: calc(2.43056vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      article h2 {\n        font-size: calc(2.43056vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-04",
+      "title": "parses @fontsize with per-collection reference viewport widths",
+      "config": 18,
+      "input": "\n    article {\n      h2 {\n        @fontsize 20dpx mobile;\n        @fontsize 20dpx tablet;\n        @fontsize 20dpx desktop;\n      }\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article h2 {\n        font-size: calc(5.33333vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article h2 {\n        font-size: calc(2.60417vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      article h2 {\n        font-size: calc(1.38889vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-05",
+      "title": "parses @fontsize with dpx units using breakpoint collections",
+      "config": 19,
+      "input": "\n    article {\n      h2 {\n        @fontsize 20dpx $test;\n      }\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      article h2 {\n        font-size: calc(2.60417vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article h2 {\n        font-size: calc(2.60417vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-06",
+      "title": "fails on root",
+      "config": 20,
+      "input": "\n    @fontsize base;\n  ",
+      "error": "EU_CONTEXT",
+      "note": "Retains error for invalid input."
+    },
+    {
+      "id": "fontsize-07",
+      "title": "parses @fontsize config with line-height",
+      "config": 21,
+      "input": "\n    article {\n      @fontsize h0;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(8vw * var(--ec-zoom));\n        line-height: calc(12vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom));\n        line-height: 1.2\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom));\n        line-height: 1.2\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-08",
+      "title": "parses @fontsize config with wildcards and regular prop",
+      "config": 21,
+      "input": "\n    article {\n      @fontsize h1;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: calc(3.5vw * var(--ec-zoom))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-09",
+      "title": "parses @fontsize config with only wildcards",
+      "config": 21,
+      "input": "\n    article {\n      @fontsize h2;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-10",
+      "title": "parses @fontsize config with a wildcard",
+      "config": 22,
+      "input": "\n    article {\n      @fontsize header_text;\n    }\n  ",
+      "expected": "\n    @media (width <= 449px) {\n      article {\n        font-size: 17px;\n      }\n    }\n    @media (width >= 450px) and (width <= 739px) {\n      article {\n        font-size: 17px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      article {\n        font-size: 17px;\n      }\n    }\n    @media (width >= 1024px) and (width <= 1279px) {\n      article {\n        font-size: calc(1vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1280px) and (width <= 1439px) {\n      article {\n        font-size: calc(1vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1440px) and (width <= 1599px) {\n      article {\n        font-size: calc(1vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1600px) {\n      article {\n        font-size: calc(1vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-11",
+      "title": "parses @fontsize config with max px",
+      "config": 23,
+      "input": "\n    article {\n      @fontsize lg;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: 57.599999999999994px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-12",
+      "title": "parses @fontsize config with max px for largest coll",
+      "config": 23,
+      "input": "\n    article {\n      @fontsize lg $lg;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: 57.599999999999994px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-13",
+      "title": "parses @fontsize vw with max px",
+      "config": 23,
+      "input": "\n    article {\n      @fontsize 4vw;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: 76.8px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-14",
+      "title": "parses @fontsize vw with max px and vw lineheight",
+      "config": 23,
+      "input": "\n    article {\n      @fontsize 4vw/4vw;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom));\n        line-height: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom));\n        line-height: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: 76.8px;\n        line-height: 76.8px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-15",
+      "title": "fails @fontsize with max px and percentage based max container size",
+      "config": 24,
+      "input": "\n    article {\n      @fontsize lg;\n    }\n  ",
+      "error": "EU_SIZE",
+      "note": "Retains error for invalid input."
+    },
+    {
+      "id": "fontsize-16",
+      "title": "parses @fontsize without max px",
+      "config": 25,
+      "input": "\n    article {\n      @fontsize lg;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 1024px){\n      article{\n        font-size: calc(3vw * var(--ec-zoom))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-17",
+      "title": "parses regular @fontsize for all breakpoints",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 19px\n      }\n    }\n\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: 21px\n      }\n    }\n\n    @media (min-width: 1024px) and (max-width: 1398px){\n      article{\n        font-size: 21px\n      }\n    }\n\n    @media (min-width: 1399px) and (max-width: 1899px){\n      article{\n        font-size: 21px\n      }\n    }\n\n    @media (min-width: 1900px){\n      article{\n        font-size: 22px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-18",
+      "title": "parses regular @fontsize for single breakpoint",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 19px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-19",
+      "title": "parses hardcoded @fontsize for single breakpoint",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize 50px xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 50px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-20",
+      "title": "parses regular @fontsize for single breakpoint with line-height",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg/2.0 xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 19px;\n        line-height: 2.0\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-21",
+      "title": "parses regular @fontsize for single breakpoint with line-height and modifier",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg(2.0)/2.0 xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 38px;\n        line-height: 2.0\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-22",
+      "title": "parses regular @fontsize for all breakpoints with line-height and modifier",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg(2.0)/2.0;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 38px;\n        line-height: 2.0\n      }\n    }\n\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: 42px;\n        line-height: 2.0\n      }\n    }\n\n    @media (min-width: 1024px) and (max-width: 1398px){\n      article{\n        font-size: 42px;\n        line-height: 2.0\n      }\n    }\n\n    @media (min-width: 1399px) and (max-width: 1899px){\n      article{\n        font-size: 42px;\n        line-height: 2.0\n      }\n    }\n\n    @media (min-width: 1900px){\n      article{\n        font-size: 44px;\n        line-height: 2.0\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-23",
+      "title": "parses regular @fontsize for all breakpoints with modifier and no line-height",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg(2.0);\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 38px\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: 42px\n      }\n    }\n    @media (min-width: 1024px) and (max-width: 1398px){\n      article{\n        font-size: 42px\n      }\n    }\n    @media (min-width: 1399px) and (max-width: 1899px){\n      article{\n        font-size: 42px\n      }\n    }\n    @media (min-width: 1900px){\n      article{\n        font-size: 44px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-24",
+      "title": "parses regular @fontsize for single breakpoint with modifier and no line-height",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize lg(2.0) xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 38px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-25",
+      "title": "parses @fontsize correctly inside @responsive",
+      "config": 26,
+      "input": "\n    @responsive >=sm {\n      h1 {\n        @fontsize base/1;\n        font-family: theme(typography.families.serif);\n      }\n    }\n  ",
+      "expected": "@media (min-width:740px){@media (min-width:740px) and (max-width:1023px){h1{font-size:17px;line-height:1}}@media (min-width:1024px){h1{font-size:19px;line-height:1}}h1{font-family:SerifFont,serif}}",
+      "note": "Explicit /1 line-height overrides the object value 1.3; warn during migration. Ordinary declarations remain in authored order."
+    },
+    {
+      "id": "fontsize-26",
+      "title": "parses object @fontsize for single breakpoint",
+      "config": 27,
+      "input": "\n    article {\n      @fontsize base xs;\n      @fontsize base sm;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 17px;\n        line-height: 24px;\n        letter-spacing: 0.98px\n      }\n    }\n\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: 19px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-27",
+      "title": "parses between() @fontsize for single breakpoint",
+      "config": 28,
+      "input": "\n    article {\n      @fontsize variable sm;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(20px + 10 * ((100vw - 740px) / 283))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-28",
+      "title": "parses vw fonts to add scale var",
+      "config": 29,
+      "input": "\n    article {\n      @fontsize variable sm;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-29",
+      "title": "parses fontsize objects with vw to use scale var",
+      "config": 30,
+      "input": "\n    article {\n      @fontsize variable sm;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(4vw * var(--ec-zoom));\n        line-height: calc(4vw * var(--ec-zoom))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-30",
+      "title": "runs correctly inside @responsive",
+      "config": 20,
+      "input": "\n    article {\n      @responsive xs {\n        @fontsize lg;\n      }\n    }\n  ",
+      "expected": "@media (max-width:739px){article{font-size:19px}}",
+      "note": "Avoid redundant identical responsive wrappers."
+    },
+    {
+      "id": "fontsize-31",
+      "title": "fails inside @responsive with own breakpointQuery",
+      "config": 20,
+      "input": "\n    article {\n      @responsive xs {\n        @fontsize lg >=md;\n      }\n    }\n  ",
+      "error": "EU_RESPONSIVE",
+      "note": "Retains error for invalid input."
+    },
+    {
+      "id": "fontsize-32",
+      "title": "parses a selector path",
+      "config": 31,
+      "input": "\n    article {\n      @fontsize product.name xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 14px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-33",
+      "title": "parses between() with line height",
+      "config": 32,
+      "input": "\n    article {\n      @fontsize between(12px-16px)/2.0 sm;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(12px + 4 * ((100vw - 740px) / 283));\n        line-height: 2.0\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-34",
+      "title": "parses between() without line height",
+      "config": 32,
+      "input": "\n    article {\n      @fontsize between(12px-16px) sm;\n    }\n  ",
+      "expected": "\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: calc(12px + 4 * ((100vw - 740px) / 283))\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-35",
+      "title": "can mix @fontsize with and without breakpoint",
+      "config": 20,
+      "input": "\n    article {\n      @fontsize xl;\n      @fontsize 8vw xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 20px;\n        font-size: calc(8vw * var(--ec-zoom))\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px){\n      article{\n        font-size: 25px\n      }\n    }\n    @media (min-width: 1024px) and (max-width: 1398px){\n      article{\n        font-size: 28px\n      }\n    }\n    @media (min-width: 1399px) and (max-width: 1899px){\n      article{\n        font-size: 28px\n      }\n    }\n    @media (min-width: 1900px){\n      article{\n        font-size: 38px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-36",
+      "title": "can mix @fontsize with and without breakpoint",
+      "config": 20,
+      "input": "\n    [b-tpl=\"case text | list\"] {\n      @space container;\n\n      .inner {\n        @display flex lg;\n        @display flex sm;\n        @space gap 1;\n        align-items: flex-start;\n\n        > .text {\n          @column 8/12 lg;\n          @column 7:1/12 sm;\n          @space padding-right 3:1/12 lg;\n          @column-offset 1:1/12 lg;\n          @fontsize body;\n\n          &[data-large-text] {\n            @font main h3;\n            @responsive sm {\n              font-size: 20px;\n            }\n            @space padding-right 1:3/12 lg;\n\n            [data-script=\"article\"] & {\n              @font main artikkel_ingress;\n              @responsive sm {\n                font-size: 20px;\n              }\n            }\n          }\n        }\n\n        .list {\n          @column 2.75/12 lg;\n          @column 3/12 sm;\n          /* background: var(--White, #FFF);\n          box-shadow: 1px 2px 5px 0px rgba(69, 69, 61, 0.10); */\n          /* background: var(--Off-White, #fffefb);\n          box-shadow: 0px 4px 10px 0px rgba(69, 69, 61, 0.05); */\n          background-color: #f7f5ed;\n          @space padding-top 20px;\n          @space padding-bottom 24px;\n          @space padding-left 20px;\n          @space padding-right 28px;\n          border-radius: 8px;\n          @space margin-top 20px sm;\n\n          .paragraph {\n            @display flex/column;\n            @space row-gap 10px;\n          }\n\n          ul {\n            @display flex/column;\n            @space row-gap 15px;\n            @fontsize 16px;\n            padding-top: 10px;\n\n            &:first-child {\n              padding-top: 0;\n            }\n          }\n        }\n      }\n    }\n  ",
+      "error": "EU_SIZE",
+      "note": "Legacy mixed-layout fixture emits undefined body/h3/artikkel_ingress font names as invalid CSS. Native compilation rejects them; valid mixed-layout coverage is in typography.rs."
+    },
+    {
+      "id": "fontsize-37",
+      "title": "parses hierarchical @fontsize with slash notation",
+      "config": 33,
+      "input": "\n    h1 {\n      @fontsize header/large;\n    }\n    h6 {\n      @fontsize header/xsmall;\n    }\n    p {\n      @fontsize body/regular;\n    }\n  ",
+      "expected": "@media (max-width:739px){h1{font-size:24px}}@media (min-width:740px) and (max-width:1023px){h1{font-size:28px}}@media (min-width:1024px) and (max-width:1398px){h1{font-size:32px}}@media (min-width:1399px) and (max-width:1899px){h1{font-size:36px}}@media (min-width:1900px){h1{font-size:40px}}@media (max-width:739px){h6{font-size:10px}}@media (min-width:740px) and (max-width:1023px){h6{font-size:11px}}@media (min-width:1024px) and (max-width:1398px){h6{font-size:12px}}@media (min-width:1399px) and (max-width:1899px){h6{font-size:13px}}@media (min-width:1900px){h6{font-size:14px}}@media (max-width:739px){p{font-size:14px}}@media (min-width:740px) and (max-width:1023px){p{font-size:15px}}@media (min-width:1024px) and (max-width:1398px){p{font-size:16px}}@media (min-width:1399px) and (max-width:1899px){p{font-size:17px}}@media (min-width:1900px){p{font-size:18px}}",
+      "note": "Keep selectors in authored order instead of globally regrouping their media rules; retain exact breakpoint conditions."
+    },
+    {
+      "id": "fontsize-38",
+      "title": "supports slash notation path traversal for @fontsize",
+      "config": 34,
+      "input": "\n    h1 {\n      @fontsize header/large;\n    }\n    h6 {\n      @fontsize header/small;\n    }\n    p {\n      @fontsize body/text;\n    }\n  ",
+      "expected": "@media (max-width:739px){h1{font-size:24px}}@media (min-width:740px) and (max-width:1023px){h1{font-size:28px}}@media (min-width:1024px){h1{font-size:32px}}@media (max-width:739px){h6{font-size:14px}}@media (min-width:740px) and (max-width:1023px){h6{font-size:16px}}@media (min-width:1024px){h6{font-size:18px}}@media (max-width:739px){p{font-size:14px}}@media (min-width:740px) and (max-width:1023px){p{font-size:15px}}@media (min-width:1024px){p{font-size:16px}}",
+      "note": "Keep selectors in authored order instead of globally regrouping their media rules; retain exact breakpoint conditions."
+    },
+    {
+      "id": "fontsize-39",
+      "title": "prioritizes literal string keys over path traversal for @fontsize",
+      "config": 35,
+      "input": "\n    h1 {\n      @fontsize header/large;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      h1 {\n        font-size: 30px;\n      }\n    }\n    @media (width >= 740px) {\n      h1 {\n        font-size: 35px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-40",
+      "title": "parses hierarchical @fontsize with line-height",
+      "config": 36,
+      "input": "\n    h1 {\n      @fontsize header/large/1.5;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      h1 {\n        font-size: 24px;\n        line-height: 1.5;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      h1 {\n        font-size: 28px;\n        line-height: 1.5;\n      }\n    }\n    @media (width >= 1024px) {\n      h1 {\n        font-size: 32px;\n        line-height: 1.5;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-41",
+      "title": "applies __base__ properties to parent rule outside media queries",
+      "config": 37,
+      "input": "\n    h2 {\n      @fontsize body-large;\n    }\n  ",
+      "expected": "\n    h2 {\n      line-height: 135.2%;\n      letter-spacing: -0.02em;\n    }\n    @media (width <= 739px) {\n      h2 {\n        font-size: 33px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      h2 {\n        font-size: 33px;\n      }\n    }\n    @media (width >= 1024px) {\n      h2 {\n        font-size: 33px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-42",
+      "title": "__base__ properties can be overridden in breakpoint-specific configs",
+      "config": 38,
+      "input": "\n    h2 {\n      @fontsize my-example;\n    }\n  ",
+      "expected": "\n    h2 {\n      line-height: 135%;\n    }\n    @media (width <= 739px) {\n      h2 {\n        font-size: 20px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      h2 {\n        font-size: 25px;\n        line-height: 140%;\n      }\n    }\n    @media (width >= 1024px) {\n      h2 {\n        font-size: 30px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-43",
+      "title": "supports slash notation path traversal for @fontsize",
+      "config": 34,
+      "input": "\n    h1 {\n      @fontsize header/large;\n    }\n    h6 {\n      @fontsize header/small;\n    }\n    p {\n      @fontsize body/text;\n    }\n  ",
+      "expected": "@media (max-width:739px){h1{font-size:24px}}@media (min-width:740px) and (max-width:1023px){h1{font-size:28px}}@media (min-width:1024px){h1{font-size:32px}}@media (max-width:739px){h6{font-size:14px}}@media (min-width:740px) and (max-width:1023px){h6{font-size:16px}}@media (min-width:1024px){h6{font-size:18px}}@media (max-width:739px){p{font-size:14px}}@media (min-width:740px) and (max-width:1023px){p{font-size:15px}}@media (min-width:1024px){p{font-size:16px}}",
+      "note": "Keep selectors in authored order instead of globally regrouping their media rules; retain exact breakpoint conditions."
+    },
+    {
+      "id": "fontsize-44",
+      "title": "prioritizes literal string keys over path traversal for @fontsize",
+      "config": 35,
+      "input": "\n    h1 {\n      @fontsize header/large;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px) {\n      h1 {\n        font-size: 30px;\n      }\n    }\n    @media (width >= 740px) {\n      h1 {\n        font-size: 35px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-45",
+      "title": "supports function callbacks in __base__ for font-family array",
+      "config": 39,
+      "input": "\n    p {\n      @fontsize body-text;\n    }\n  ",
+      "expected": "p{letter-spacing:.01em;font-family:Inter,system-ui,sans-serif}@media (max-width:739px){p{font-size:14px}}@media (min-width:740px) and (max-width:1023px){p{font-size:15px}}@media (min-width:1024px){p{font-size:16px}}",
+      "note": "Lightning keeps native system-ui instead of the expanded fallback font list supplied by postcss-preset-env. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-46",
+      "title": "supports function callbacks with hierarchical font family references",
+      "config": 40,
+      "input": "\n    h1 {\n      @fontsize heading;\n    }\n  ",
+      "expected": "\n    h1 {\n      font-family: Georgia, Times, serif;\n      text-transform: uppercase;\n    }\n    @media (width <= 739px) {\n      h1 {\n        font-size: 24px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      h1 {\n        font-size: 28px;\n      }\n    }\n    @media (width >= 1024px) {\n      h1 {\n        font-size: 32px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-47",
+      "title": "supports function callbacks with mixed static and function values",
+      "config": 41,
+      "input": "\n    .small {\n      @fontsize body-mini;\n    }\n  ",
+      "expected": "\n    .small {\n      font-family: Inter, sans-serif;\n      font-size: 15px;\n      letter-spacing: 0.05em;\n      line-height: 141.3%;\n    }\n    @media (width <= 739px) {\n      .small {\n        font-size: calc(1.04167vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      .small {\n        font-size: calc(1.04167vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      .small {\n        font-size: calc(1.04167vw * var(--ec-zoom));\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-48",
+      "title": "fails with clear error for unsupported array property in __base__",
+      "config": 42,
+      "input": "\n    p {\n      @fontsize test;\n    }\n  ",
+      "error": "EU_CONFIG",
+      "note": "Retains error for invalid input. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-49",
+      "title": "supports function returning string value in __base__",
+      "config": 43,
+      "input": "\n    p {\n      @fontsize test;\n    }\n  ",
+      "expected": "\n    p {\n      font-family: Inter, sans-serif;\n    }\n    @media (width <= 739px) {\n      p {\n        font-size: 14px;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      p {\n        font-size: 16px;\n      }\n    }\n    @media (width >= 1024px) {\n      p {\n        font-size: 18px;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-50",
+      "title": "fails with clear error when function returns undefined in __base__",
+      "config": 44,
+      "input": "\n    p {\n      @fontsize body-mini;\n    }\n  ",
+      "error": "EU_CONFIG",
+      "note": "Undefined callback reference becomes a missing JSON5 token reference and fails during config resolution. Callback replaced with static JSON5 data or a typed token reference."
+    },
+    {
+      "id": "fontsize-51",
+      "title": "outputs literal px value inline when nested under @responsive",
+      "config": 23,
+      "input": "\n    @responsive >=tablet {\n      h1 {\n        @fontsize 13px/1.3;\n      }\n    }\n  ",
+      "expected": "\n    @media (width >= 740px) {\n      h1 {\n        font-size: 13px;\n        line-height: 1.3;\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    },
+    {
+      "id": "fontsize-52",
+      "title": "parses @fontsize with slash notation for nested config path",
+      "config": 31,
+      "input": "\n    article {\n      @fontsize product/name xs;\n    }\n  ",
+      "expected": "\n    @media (width <= 739px){\n      article{\n        font-size: 14px\n      }\n    }\n  ",
+      "note": "Original expected CSS, normalized through the same backend."
+    }
+  ]
+}

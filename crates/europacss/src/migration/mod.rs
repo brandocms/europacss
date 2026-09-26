@@ -5,7 +5,7 @@ mod order;
 mod review;
 mod selectors;
 
-pub use review::apply_acceptances;
+pub use review::{apply_acceptances, reviewed_edits};
 
 use crate::{
     config::Config,
@@ -18,7 +18,7 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
-pub const REPORT_VERSION: u32 = 4;
+pub const REPORT_VERSION: u32 = 5;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -45,6 +45,8 @@ pub struct Finding {
     pub help: String,
     /// Explicitly reviewed semantic change; syntax errors cannot be accepted.
     pub accepted: bool,
+    /// Explicit opt-in to the proposed edit when replaying a reviewed report.
+    pub apply_fix: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fix: Option<Fix>,
 }
@@ -109,6 +111,7 @@ fn report(
         seen: HashSet::new(),
         selector_work: 0,
         fix_bytes: 0,
+        order_fixes: std::collections::HashMap::new(),
     };
     // Collect authored syntax fixes before expansion, so edits never target generated text.
     for index in 0..sources.files.len() {
@@ -124,6 +127,7 @@ fn report(
         }
         shift(&mut file_nodes, sources.files[index].start);
         fixes::collect(&file_nodes, false, &mut audit)?;
+        fixes::order_candidates(&file_nodes, &mut audit)?;
     }
     let origins = order::origins(&nodes, &config)?;
     match transform::for_migration(nodes, &config) {
@@ -197,6 +201,7 @@ struct Audit<'a> {
     seen: HashSet<(String, usize, String)>,
     selector_work: usize,
     fix_bytes: usize,
+    order_fixes: std::collections::HashMap<(usize, usize), Fix>,
 }
 impl Audit<'_> {
     fn has(&self, code: &str, offset: usize) -> bool {
@@ -223,6 +228,7 @@ impl Audit<'_> {
                     )),
                     help: "Resolve findings and rerun, or audit smaller entry points.".into(),
                     accepted: false,
+                    apply_fix: false,
                     fix: None,
                 });
             }
@@ -236,6 +242,7 @@ impl Audit<'_> {
             diagnostic: self.sources.locate(Error::new(code, message, offset)),
             help: help.into(),
             accepted: false,
+            apply_fix: false,
             fix,
         });
     }

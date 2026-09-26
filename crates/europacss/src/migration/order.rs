@@ -294,8 +294,24 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                                 } else {
                                     "legacy media packing can favor"
                                 };
+                                let fix = audit
+                                    .order_fixes
+                                    .get(&(previous.offset, current.offset))
+                                    .filter(|fix| {
+                                        let bytes: usize = fix
+                                            .edits
+                                            .iter()
+                                            .map(|e| e.expected.len() + e.replacement.len())
+                                            .sum();
+                                        if audit.fix_bytes.saturating_add(bytes) > 8 * 1024 * 1024 {
+                                            return false;
+                                        }
+                                        audit.fix_bytes += bytes;
+                                        true
+                                    })
+                                    .cloned();
                                 audit.add("EU_MIGRATION_ORDER", format!("Within {condition}, {behavior} `{}` from {label} at {}:{}; source-order expansion places `{}` later", old.text, origin.filename.as_deref().unwrap_or("source"), origin.line, new.text), current.offset,
-                                "Accept the later authored value if that is the intended result. To preserve the old appearance, move this fallback before the earlier directive/conditional, then review other affected properties and breakpoints. This appearance change is never applied by --fix.", None);
+                                "Accept the later authored value if that is intended. To preserve the earlier override, move this fallback before the directive/conditional and review all affected widths. When a proposal is available, set apply_fix:true on this finding and use --apply-fixes with the reviewed report. --fix never makes this appearance choice.", fix);
                             }
                         }
                     }

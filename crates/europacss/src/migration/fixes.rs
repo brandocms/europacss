@@ -5,6 +5,87 @@ use crate::{
     Error,
 };
 
+/// Propose only adjacent authored directive/declaration swaps. These are choices
+/// requiring review, not syntax autofixes or proof of whole-site equivalence.
+pub(super) fn order_candidates(nodes: &[Node], audit: &mut Audit<'_>) -> Result<(), Error> {
+    for node in nodes {
+        if node.text.starts_with('%') || node.at_rule().is_some_and(|(n, _)| n == "iterate") {
+            continue;
+        }
+        let Some(children) = &node.children else {
+            continue;
+        };
+        if node.at_rule().is_none() {
+            for pair in children.windows(2) {
+                let (earlier, later) = (&pair[0], &pair[1]);
+                if !earlier.at_rule().is_some_and(|(name, _)| {
+                    matches!(
+                        name,
+                        "space"
+                            | "space!"
+                            | "fontsize"
+                            | "font"
+                            | "column"
+                            | "column-offset"
+                            | "unpack"
+                            | "display"
+                            | "order"
+                            | "color"
+                            | "color!"
+                    )
+                }) || earlier.children.is_some()
+                    || later.children.is_some()
+                    || later.at_rule().is_some()
+                    || later.text.starts_with("/*")
+                    || !later.text.contains(':')
+                {
+                    continue;
+                }
+                let index = audit.sources.index(earlier.offset);
+                if index != audit.sources.index(later.offset) {
+                    continue;
+                }
+                let file = &audit.sources.files[index];
+                let source = audit.sources.content(index);
+                let start = earlier.offset - file.start;
+                let middle = later.offset - file.start;
+                let first_end = start + earlier.text.len();
+                let end = middle + later.text.len();
+                if source.get(first_end..first_end + 1) != Some(";")
+                    || source.get(end..end + 1) != Some(";")
+                    || !source[first_end + 1..middle]
+                        .chars()
+                        .all(char::is_whitespace)
+                {
+                    continue;
+                }
+                let end = end + 1;
+                let replacement = format!(
+                    "{}{}{}",
+                    &source[middle..end],
+                    &source[first_end + 1..middle],
+                    &source[start..first_end + 1]
+                );
+                let bytes = end - start + replacement.len();
+                if audit.fix_bytes.saturating_add(bytes) > 8 * 1024 * 1024 {
+                    continue;
+                }
+                audit.fix_bytes += bytes;
+                audit.order_fixes.insert((earlier.offset, later.offset), Fix {
+                    kind: "preserve-appearance".into(),
+                    description: "Move this adjacent fallback before the Europa directive so the directive overrides it; review all affected properties and widths".into(),
+                    edits: vec![Edit { filename: file.name.clone(), start, end,
+                        expected: source[start..end].into(), replacement }],
+                });
+            }
+        }
+        // Do not propose edits in generated/placeholder bodies: their effects
+        // depend on each use site and the original offsets refer to definitions.
+        order_candidates(children, audit)?;
+    }
+    Ok(())
+}
+
 fn simple_selector(selector: &str) -> bool {
     selector.starts_with(['.', '#'])
         && selector.len() <= 256

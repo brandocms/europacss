@@ -42,6 +42,50 @@ fn static_javascript_config_migration_preserves_comments_strings_and_token_data(
 }
 
 #[test]
+fn constant_theme_callbacks_become_data_without_losing_comments() {
+    let source = r#"module.exports = {
+        theme: {
+            'colors': () /* resolver */ => (/* palette */ {
+                100: 'red', nested: { text: '() => (literal)'  },
+            } /* result */),
+            extend: { colors: () => ({ ink: '#123' }) },
+        },
+    };"#;
+    let output = europacss::migrate_config(source, "cjs").unwrap();
+    for comment in ["/* resolver */", "/* palette */", "/* result */"] {
+        assert!(output.contains(comment));
+    }
+    let cfg = resolve_config(json5::from_str(&output).unwrap()).unwrap();
+    assert_eq!(cfg["theme"]["colors"]["100"], "red");
+    assert_eq!(cfg["theme"]["colors"]["nested"]["text"], "() => (literal)");
+    assert_eq!(cfg["theme"]["colors"]["ink"], "#123");
+}
+
+#[test]
+fn callback_conversion_rejects_dynamic_bodies_and_non_resolver_positions() {
+    for source in [
+        "module.exports = { theme: { colors: () => ({ ink: load() }) } };",
+        "module.exports = { theme: { colors: () => ({ ...palette }) } };",
+        "module.exports = { theme: { colors: () => ({ [key]: 'red' }) } };",
+        "module.exports = { theme: { colors: () => ({ ink: value }) } };",
+        "module.exports = { theme: { colors: async () => ({ ink: 'red' }) } };",
+        "module.exports = { theme: { colors: () => { return { ink: 'red' }; } } };",
+        "module.exports = { theme: { colors: () => ({ ink: 'red' }, execute()) } };",
+        "module.exports = { theme: { colors: () => ({ ink: 'red' })() } };",
+        "module.exports = { theme: { colors: () = > ({ ink: 'red' }) } };",
+        "module.exports = { theme: { colors: ()\n=> ({ ink: 'red' }) } };",
+        "module.exports = { theme: { colors: () => ({ ink: () => ({ x: 'red' }) }) } };",
+        "module.exports = { colors: () => ({ ink: 'red' }) };",
+        "module.exports = { theme: { nested: { colors: () => ({ ink: 'red' }) } } };",
+    ] {
+        assert!(
+            europacss::migrate_config(source, "cjs").is_err(),
+            "{source}"
+        );
+    }
+}
+
+#[test]
 fn static_config_migration_declines_executable_and_semantically_ambiguous_inputs() {
     for source in [
         "module.exports = loadConfig();",

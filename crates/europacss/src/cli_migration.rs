@@ -7,6 +7,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut config_path = None;
     let mut from = None;
     let mut accept = None;
+    let mut apply_fixes = None;
     let mut fix = false;
     let mut check = false;
     let mut json = false;
@@ -18,11 +19,17 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             "--accept" => {
                 accept = Some(args.next().ok_or("--accept needs a reviewed JSON report")?)
             }
+            "--apply-fixes" => {
+                apply_fixes = Some(
+                    args.next()
+                        .ok_or("--apply-fixes needs a reviewed JSON report")?,
+                )
+            }
             "--fix" => fix = true,
             "--check" => check = true,
             "--json" => json = true,
             "--help" | "-h" => {
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json] [--accept review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json] [--accept review.json | --apply-fixes review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply-fixes applies only proposals marked apply_fix:true in a saved report, then reruns analysis.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(());
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
@@ -42,6 +49,9 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     if fix && accept.is_some() {
         return Err("Apply syntax fixes first, then review a fresh report with --accept".into());
     }
+    if apply_fixes.is_some() && (fix || check || accept.is_some()) {
+        return Err("Use --apply-fixes separately from --check, --fix, and --accept".into());
+    }
     let input = input.ok_or("migrate requires an entry stylesheet")?;
     let from = from.ok_or("migrate requires --from: the installed version does not prove which semantics these files were authored against")?;
     let config = match config_path {
@@ -56,14 +66,19 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut report = migration::analyze_file(&request, &from)
         .map_err(|e| ui.diagnostic(&e, &input, None, false))?;
     let mut changed = 0;
-    if fix {
-        let edits: Vec<_> = report
-            .findings
-            .iter()
-            .filter_map(|f| f.fix.as_ref())
-            .filter(|f| f.kind == "syntax")
-            .flat_map(|f| f.edits.clone())
-            .collect();
+    if fix || apply_fixes.is_some() {
+        let edits: Vec<_> = if let Some(path) = apply_fixes {
+            let source = fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+            migration::reviewed_edits(&report, &source).map_err(|e| e.to_string())?
+        } else {
+            report
+                .findings
+                .iter()
+                .filter_map(|f| f.fix.as_ref())
+                .filter(|f| f.kind == "syntax")
+                .flat_map(|f| f.edits.clone())
+                .collect()
+        };
         // Prepare and validate every rewrite before any file is replaced.
         let mut prepared = Vec::new();
         for filename in &report.files {
