@@ -66,6 +66,78 @@ pub fn arguments(source: &str) -> Result<Vec<&str>, Error> {
     Ok(args)
 }
 
+/// Expand iteration placeholders without editing comments, escapes, or longer names.
+/// Strings are intentional interpolation sites (e.g. content: '$key').
+pub fn interpolate(source: &str, key: &str, value: Option<&str>) -> Result<String, Error> {
+    let mut scanner = Scanner { source, pos: 0 };
+    let mut result = String::new();
+    let mut quote = None;
+    while let Some(c) = scanner.byte() {
+        let start = scanner.pos;
+        if c == b'\\' || quote.is_none() && scanner.rest().starts_with("/*") {
+            scanner.opaque(0)?;
+        } else if matches!(c, b'\'' | b'"') && (quote.is_none() || quote == Some(c)) {
+            quote = if quote.is_some() { None } else { Some(c) };
+            scanner.pos += 1;
+        } else if let Some(name) = ["$key", "$value"].into_iter().find(|name| {
+            scanner
+                .rest()
+                .strip_prefix(name)
+                .is_some_and(|rest| !rest.starts_with(|c: char| c.is_alphanumeric() || c == '_'))
+        }) {
+            let replacement = if name == "$key" {
+                key
+            } else {
+                value.ok_or_else(|| {
+                    scanner.error("$value requires a string, number, or boolean iteration value")
+                })?
+            };
+            for c in replacement.chars() {
+                match (quote, c) {
+                    (Some(_), '\n') => result.push_str("\\a "),
+                    (Some(_), '\r') => result.push_str("\\d "),
+                    (Some(_), '\u{c}') => result.push_str("\\c "),
+                    (Some(q), c) if c == '\\' || c as u32 == u32::from(q) => {
+                        result.push('\\');
+                        result.push(c);
+                    }
+                    _ => result.push(c),
+                }
+            }
+            scanner.pos += name.len();
+            continue;
+        } else {
+            scanner.advance();
+        }
+        result.push_str(&source[start..scanner.pos]);
+    }
+    Ok(result)
+}
+
+/// Interpolation may change a value or selector, but cannot introduce more rules.
+pub fn validate_interpolation(text: &str, block: bool) -> Result<(), Error> {
+    let source = format!(
+        ".interpolation {{ {text}{} }}",
+        if block { " {}" } else { ";" }
+    );
+    let nodes = parse(&source)?;
+    let valid = nodes.len() == 1
+        && nodes[0].children.as_ref().is_some_and(|children| {
+            children.len() == 1
+                && children[0].children.is_some() == block
+                && children[0].text == text.trim()
+        });
+    if valid {
+        Ok(())
+    } else {
+        Err(Error::new(
+            "EU_PARSE",
+            "Iteration substitution must not introduce new rules or declarations",
+            0,
+        ))
+    }
+}
+
 /// Find unported Europa functions without matching quoted text or comments.
 pub fn unsupported_function(source: &str) -> Result<Option<(usize, &str)>, Error> {
     let mut scanner = Scanner { source, pos: 0 };
