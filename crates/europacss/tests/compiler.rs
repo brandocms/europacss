@@ -156,13 +156,12 @@ fn error_positions_handle_unicode_and_crlf() {
 
 #[test]
 fn unsupported_features_fail_explicitly() {
-    for css in ["@import './a.css';", ".x { @at-root {color:red} }"] {
-        assert_eq!(
-            compile(&request(css)).unwrap_err().code,
-            "EU_UNSUPPORTED",
-            "{css}"
-        );
-    }
+    assert_eq!(
+        compile(&request(".x { @at-root {color:red} }"))
+            .unwrap_err()
+            .code,
+        "EU_UNSUPPORTED"
+    );
 }
 
 #[test]

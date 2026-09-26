@@ -53,7 +53,7 @@ fn validate_values(nodes: &mut [Node], config: &Value) -> Result<(), Error> {
     for node in nodes {
         if let Some(children) = &mut node.children {
             validate_values(children, config)?;
-        } else if !node.text.starts_with("/*") {
+        } else if !node.text.starts_with("/*") && node.at_rule().is_none() {
             if let Some((property, value)) = node.text.split_once(':') {
                 let value = crate::value_functions::resolve(value, config, node.offset)?;
                 let text = format!("{property}:{value}");
@@ -146,35 +146,80 @@ impl Compiler<'_, '_> {
                 match name.as_str() {
                     "europa" => {
                         arity(&node, &args, 1, 1)?;
-                        if ctx.style || node.children.is_some() { return Err(error(&node, "EU_CONTEXT", "@europa must be a statement at root or inside a layer/conditional group")); }
+                        if ctx.style || node.children.is_some() {
+                            return Err(error(&node, "EU_CONTEXT", "@europa must be a statement at root or inside a layer/conditional group"));
+                        }
                         let sources: &[&str] = match args[0] {
-                            "base" => &[include_str!("../assets/normalize.css"), include_str!("../assets/base.css")],
+                            "base" => &[
+                                include_str!("../assets/normalize.css"),
+                                include_str!("../assets/base.css"),
+                            ],
                             "arrows" => &[include_str!("../assets/arrows.css")],
-                            _ => return Err(error(&node, "EU_ARGUMENTS", "Unknown Europa bundle; expected base or arrows")),
+                            _ => {
+                                return Err(error(
+                                    &node,
+                                    "EU_ARGUMENTS",
+                                    "Unknown Europa bundle; expected base or arrows",
+                                ))
+                            }
                         };
                         fn origin(nodes: &mut [Node], offset: usize) {
-                            for node in nodes { node.offset = offset; if let Some(children) = &mut node.children { origin(children, offset); } }
+                            for node in nodes {
+                                node.offset = offset;
+                                if let Some(children) = &mut node.children {
+                                    origin(children, offset);
+                                }
+                            }
                         }
                         for source in sources {
-                            let mut nodes = crate::parser::parse(source).map_err(|e| error(&node, &e.code, e.message))?;
+                            let mut nodes = crate::parser::parse(source)
+                                .map_err(|e| error(&node, &e.code, e.message))?;
                             origin(&mut nodes, node.offset);
                             result.extend(self.nodes(nodes, ctx, depth + 1)?);
                         }
                     }
                     "iterate" => {
                         arity(&node, &args, 1, 1)?;
-                        if !ctx.style { return Err(error(&node, "EU_CONTEXT", "@iterate must be inside a style rule")); }
-                        let children = node.children.as_ref().ok_or_else(|| error(&node, "EU_ARGUMENTS", "@iterate requires a block"))?;
-                        let values = lookup(self.config.value, args[0]).ok_or_else(|| error(&node, "EU_CONFIG", format!("Unknown iterable `{}`", args[0])))?;
+                        if !ctx.style {
+                            return Err(error(
+                                &node,
+                                "EU_CONTEXT",
+                                "@iterate must be inside a style rule",
+                            ));
+                        }
+                        let children = node.children.as_ref().ok_or_else(|| {
+                            error(&node, "EU_ARGUMENTS", "@iterate requires a block")
+                        })?;
+                        let values = lookup(self.config.value, args[0]).ok_or_else(|| {
+                            error(
+                                &node,
+                                "EU_CONFIG",
+                                format!("Unknown iterable `{}`", args[0]),
+                            )
+                        })?;
                         let entries: Box<dyn Iterator<Item = (String, &Value)>> = match values {
-                            Value::Object(values) => Box::new(values.iter().map(|(k, v)| (k.clone(), v))),
-                            Value::Array(values) => Box::new(values.iter().enumerate().map(|(i, v)| (i.to_string(), v))),
-                            _ => return Err(error(&node, "EU_ITERATE", "@iterate requires an object or array")),
+                            Value::Object(values) => {
+                                Box::new(values.iter().map(|(k, v)| (k.clone(), v)))
+                            }
+                            Value::Array(values) => {
+                                Box::new(values.iter().enumerate().map(|(i, v)| (i.to_string(), v)))
+                            }
+                            _ => {
+                                return Err(error(
+                                    &node,
+                                    "EU_ITERATE",
+                                    "@iterate requires an object or array",
+                                ))
+                            }
                         };
                         for (key, value) in entries {
                             self.visit(&node)?;
-                            let value = scalar(value).or_else(|| value.as_bool().map(|v| v.to_string()));
-                            let child_ctx = Context { iteration: Some((key, value)), ..ctx.clone() };
+                            let value =
+                                scalar(value).or_else(|| value.as_bool().map(|v| v.to_string()));
+                            let child_ctx = Context {
+                                iteration: Some((key, value)),
+                                ..ctx.clone()
+                            };
                             result.extend(self.nodes(children.clone(), &child_ctx, depth + 1)?);
                         }
                     }
@@ -184,52 +229,156 @@ impl Compiler<'_, '_> {
                         let generated = self.unpack(&node, args[0])?;
                         // Interpolation has already happened at the use site; config values
                         // must not accidentally acquire bindings from a surrounding iterator.
-                        let child_ctx = Context { iteration: None, ..ctx.clone() };
+                        let child_ctx = Context {
+                            iteration: None,
+                            ..ctx.clone()
+                        };
                         result.extend(self.nodes(generated, &child_ctx, depth + 1)?);
                     }
                     "responsive" => {
                         arity(&node, &args, 1, 1)?;
-                        if ctx.responsive.is_some() { return Err(error(&node, "EU_RESPONSIVE", "Nested @responsive is not supported; combine the breakpoint query")); }
+                        if ctx.responsive.is_some() {
+                            return Err(error(
+                                &node,
+                                "EU_RESPONSIVE",
+                                "Nested @responsive is not supported; combine the breakpoint query",
+                            ));
+                        }
                         let media = self.config.media(args[0], node.offset)?;
-                        let children = node.children.clone().ok_or_else(|| error(&node, "EU_ARGUMENTS", "@responsive requires a block"))?;
-                        let child_ctx = Context { responsive: Some(args[0].into()), ..ctx.clone() };
+                        let children = node.children.clone().ok_or_else(|| {
+                            error(&node, "EU_ARGUMENTS", "@responsive requires a block")
+                        })?;
+                        let child_ctx = Context {
+                            responsive: Some(args[0].into()),
+                            ..ctx.clone()
+                        };
                         let children = self.nodes(children, &child_ctx, depth + 1)?;
-                        result.push(Node::block(format!("@media {media}"), children, node.offset));
+                        result.push(Node::block(
+                            format!("@media {media}"),
+                            children,
+                            node.offset,
+                        ));
                     }
                     "if" => {
                         arity(&node, &args, 1, 1)?;
-                        let value = lookup(self.config.value, args[0]).ok_or_else(|| error(&node, "EU_CONFIG", format!("Unknown config key `{}`", args[0])))?;
-                        let children = node.children.clone().ok_or_else(|| error(&node, "EU_ARGUMENTS", "@if requires a block"))?;
-                        let truthy = match value { Value::Null => false, Value::Bool(v) => *v, Value::Number(v) => v.as_f64() != Some(0.0), Value::String(v) => !v.is_empty(), _ => true };
-                        if truthy { result.extend(self.nodes(children, ctx, depth + 1)?); }
+                        let value = lookup(self.config.value, args[0]).ok_or_else(|| {
+                            error(
+                                &node,
+                                "EU_CONFIG",
+                                format!("Unknown config key `{}`", args[0]),
+                            )
+                        })?;
+                        let children = node
+                            .children
+                            .clone()
+                            .ok_or_else(|| error(&node, "EU_ARGUMENTS", "@if requires a block"))?;
+                        let truthy = match value {
+                            Value::Null => false,
+                            Value::Bool(v) => *v,
+                            Value::Number(v) => v.as_f64() != Some(0.0),
+                            Value::String(v) => !v.is_empty(),
+                            _ => true,
+                        };
+                        if truthy {
+                            result.extend(self.nodes(children, ctx, depth + 1)?);
+                        }
                     }
                     "extend" => {
                         self.statement(&node, ctx)?;
                         arity(&node, &args, 1, 1)?;
-                        if !placeholder(args[0]) { return Err(error(&node, "EU_EXTEND", "@extend supports named %placeholders only")); }
-                        if self.expanding.iter().any(|s| s == args[0]) { return Err(error(&node, "EU_EXTEND", format!("Cyclic placeholder expansion: {} -> {}", self.expanding.join(" -> "), args[0]))); }
-                        let children = self.placeholders.get(args[0]).cloned().ok_or_else(|| error(&node, "EU_EXTEND", format!("Unknown placeholder `{}`", args[0])))?;
+                        if !placeholder(args[0]) {
+                            return Err(error(
+                                &node,
+                                "EU_EXTEND",
+                                "@extend supports named %placeholders only",
+                            ));
+                        }
+                        if self.expanding.iter().any(|s| s == args[0]) {
+                            return Err(error(
+                                &node,
+                                "EU_EXTEND",
+                                format!(
+                                    "Cyclic placeholder expansion: {} -> {}",
+                                    self.expanding.join(" -> "),
+                                    args[0]
+                                ),
+                            ));
+                        }
+                        let children =
+                            self.placeholders.get(args[0]).cloned().ok_or_else(|| {
+                                error(
+                                    &node,
+                                    "EU_EXTEND",
+                                    format!("Unknown placeholder `{}`", args[0]),
+                                )
+                            })?;
                         self.expanding.push(args[0].into());
                         result.extend(self.nodes(children, ctx, depth + 1)?);
                         self.expanding.pop();
                     }
-                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space" | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive" | "grid" | "column" => {
+                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space"
+                    | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive"
+                    | "grid" | "column" => {
                         self.statement(&node, ctx)?;
                         let mut generated = self.directive(&node, &name, &args, ctx)?;
                         result.append(&mut generated);
                     }
-                    "nest" => return Err(error(&node, "EU_LEGACY_NEST", "Replace legacy @nest with a native nested selector")),
-                    "import" => return Err(error(&node, "EU_UNSUPPORTED", "Import resolution is not implemented in the experimental compiler; supply a bundled stylesheet")),
-                    "row" => return Err(error(&node, "EU_DEPRECATED", "@row is deprecated; use @display flex/row/wrap and @space gap 1")),
+                    "nest" => {
+                        return Err(error(
+                            &node,
+                            "EU_LEGACY_NEST",
+                            "Replace legacy @nest with a native nested selector",
+                        ))
+                    }
+                    "import" => {
+                        if depth != 0
+                            || node.children.is_some()
+                            || !crate::imports::external_import(&params, node.offset)?
+                        {
+                            return Err(error(&node, "EU_IMPORT", "Local @imports require compile_file; external @imports must be root statements"));
+                        }
+                        result.push(node);
+                        continue;
+                    }
+                    "row" => {
+                        return Err(error(
+                            &node,
+                            "EU_DEPRECATED",
+                            "@row is deprecated; use @display flex/row/wrap and @space gap 1",
+                        ))
+                    }
                     "at-root" => {
-                        return Err(error(&node, "EU_UNSUPPORTED", format!("@{name} is not implemented in the experimental compiler yet")));
+                        return Err(error(
+                            &node,
+                            "EU_UNSUPPORTED",
+                            format!("@{name} is not implemented in the experimental compiler yet"),
+                        ));
                     }
                     _ => {
                         if name.ends_with('!') {
-                            return Err(error(&node, "EU_UNSUPPORTED", format!("Unsupported important directive @{name}")));
+                            return Err(error(
+                                &node,
+                                "EU_UNSUPPORTED",
+                                format!("Unsupported important directive @{name}"),
+                            ));
                         }
                         if let Some(children) = node.children.take() {
-                            let child_ctx = Context { style: ctx.style || matches!(name.as_str(), "font-face" | "page" | "property" | "counter-style" | "font-palette-values" | "font-feature-values" | "position-try" | "view-transition" | "color-profile"), ..ctx.clone() };
+                            let child_ctx = Context {
+                                style: ctx.style
+                                    || matches!(
+                                        name.as_str(),
+                                        "font-face"
+                                            | "page"
+                                            | "property"
+                                            | "counter-style"
+                                            | "font-palette-values"
+                                            | "font-feature-values"
+                                            | "position-try"
+                                            | "view-transition"
+                                            | "color-profile"
+                                    ),
+                                ..ctx.clone()
+                            };
                             node.children = Some(self.nodes(children, &child_ctx, depth + 1)?);
                         }
                         result.push(node);

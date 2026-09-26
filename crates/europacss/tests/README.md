@@ -29,7 +29,8 @@ These 22 legacy cases are represented by Rust assertions, sometimes grouped in o
 1. Continue the systematic spacing/container/column/typography case audit. The shared size engine and grid/column helpers are now implemented; [sizing.rs](sizing.rs) and [typography.rs](typography.rs) cover representative legacy calculations, wildcard/negative/hierarchical tokens, modifiers, viewport reference precedence, nested scope, and failures. These table-driven checks do not yet represent every old case. Equivalent values are not yet grouped across breakpoint ranges.
 2. Value functions are now covered in [functions.rs](functions.rs): the three legacy function cases, every easing table entry, lazy/nested fallbacks, scalar arrays, literal exclusions, cycle detection, and source locations.
 3. Bundled `@europa` styles are covered in [bundles.rs](bundles.rs): both legacy bundle cases, config overrides, conditional scope, directive ordering, embedded asset consistency, and diagnostics at the authored directive.
-4. Import resolution and dependency tracking with source provenance across files, then watch mode.
+4. Import resolution and dependency tracking are covered in [imports.rs](imports.rs) and [cli.rs](cli.rs): repeated/nested imports, import conditions and layers, escaping/BOMs, URL rebasing, per-file frontend/backend diagnostics and maps, remote import ordering, cycles/limits, and protecting source dependencies from output writes. These are native Rust cases; package/glob resolution and namespaces remain unsupported.
+5. Continue the rule audit, nested responsive scopes, migration diagnostics, and watch/build integration.
 
 Sizing corrections to include in migration analysis:
 

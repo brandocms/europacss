@@ -1,4 +1,4 @@
-use crate::{parser::Node, Output, Request};
+use crate::{parser::Node, sources::Sources, Output};
 use std::collections::HashMap;
 
 /// CSS source locations count CRLF once, and columns use UTF-16 for source-map consumers.
@@ -67,7 +67,7 @@ fn vlq(n: i64, out: &mut String) {
     }
 }
 
-pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
+pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
     // Resolve all origin locations in one scan, including when most source is on one line.
     // Re-scanning the source for each emitted node makes source maps quadratic.
     fn collect(nodes: &[Node], offsets: &mut Vec<usize>) {
@@ -86,8 +86,14 @@ pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
     offsets.dedup();
     let mut locations = HashMap::new();
     let (mut last, mut line, mut column, mut cr) = (0, 0, 0, false);
+    let mut source_index = 0;
     for offset in offsets {
-        for c in request.source[last..offset].chars() {
+        let index = sources.index(offset);
+        if index != source_index {
+            (last, line, column, cr) = (sources.files[index].start, 0, 0, false);
+            source_index = index;
+        }
+        for c in sources.text[last..offset].chars() {
             match c {
                 '\r' | '\u{c}' => {
                     line += 1;
@@ -104,12 +110,13 @@ pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
             cr = c == '\r';
         }
         last = offset;
-        locations.insert(offset, (line, column));
+        locations.insert(offset, (source_index, line, column));
     }
     struct Emitter {
         css: String,
         mappings: String,
-        locations: HashMap<usize, (usize, usize)>,
+        locations: HashMap<usize, (usize, usize, usize)>,
+        last_source: i64,
         map: bool,
         last_line: i64,
         last_column: i64,
@@ -118,9 +125,10 @@ pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
         fn line(&mut self, text: &str, offset: usize) {
             let text = text.replace("\r\n", "\n").replace(['\r', '\u{c}'], "\n");
             if self.map {
-                let (line, column) = self.locations[&offset];
+                let (source, line, column) = self.locations[&offset];
                 vlq(0, &mut self.mappings); // generated column
-                vlq(0, &mut self.mappings); // single original source
+                vlq(source as i64 - self.last_source, &mut self.mappings);
+                self.last_source = source as i64;
                 vlq(line as i64 - self.last_line, &mut self.mappings);
                 vlq(column as i64 - self.last_column, &mut self.mappings);
                 self.last_line = line as i64;
@@ -152,13 +160,15 @@ pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
         mappings: String::new(),
         locations,
         map: source_map,
+        last_source: 0,
         last_line: 0,
         last_column: 0,
     };
     emitter.nodes(nodes);
     let map = source_map.then(|| {
         serde_json::json!({
-            "version": 3, "sources": [request.filename], "sourcesContent": [request.source],
+            "version": 3, "sources": sources.files.iter().map(|file| &file.name).collect::<Vec<_>>(),
+            "sourcesContent": (0..sources.files.len()).map(|i| sources.content(i)).collect::<Vec<_>>(),
             "names": [], "mappings": emitter.mappings
         })
         .to_string()
@@ -167,5 +177,6 @@ pub fn emit(nodes: &[Node], request: &Request, source_map: bool) -> Output {
         css: emitter.css,
         map,
         warnings: Vec::new(),
+        dependencies: Vec::new(),
     }
 }

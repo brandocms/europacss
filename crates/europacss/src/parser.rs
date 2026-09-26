@@ -34,7 +34,11 @@ impl Node {
 }
 
 pub fn parse(source: &str) -> Result<Vec<Node>, Error> {
-    Scanner { source, pos: 0 }.nodes(false, 0)
+    Scanner {
+        source,
+        pos: if source.starts_with('\u{feff}') { 3 } else { 0 },
+    }
+    .nodes(false, 0)
 }
 
 pub fn arguments(source: &str) -> Result<Vec<&str>, Error> {
@@ -94,10 +98,68 @@ pub fn rewrite_value(
     source: &str,
     mapper: &mut impl FnMut(&str, Option<&str>) -> Result<Option<String>, Error>,
 ) -> Result<String, Error> {
+    rewrite_components(source, mapper, false)
+}
+
+pub(crate) fn rewrite_urls(
+    source: &str,
+    mapper: &mut impl FnMut(&str) -> Result<String, Error>,
+) -> Result<String, Error> {
+    rewrite_components(
+        source,
+        &mut |name, args| {
+            let Some(args) = args else {
+                return Ok(None);
+            };
+            let decoded = decode_string(name, 0)?;
+            if decoded.eq_ignore_ascii_case("url") {
+                Ok(Some(format!("url({})", mapper(args)?)))
+            } else if decoded.eq_ignore_ascii_case("image-set")
+                || decoded.eq_ignore_ascii_case("-webkit-image-set")
+            {
+                let mut items = Vec::new();
+                for item in split_top_level(args, ',')? {
+                    let mut scanner = Scanner {
+                        source: item,
+                        pos: 0,
+                    };
+                    while scanner.byte().is_some_and(space) || scanner.rest().starts_with("/*") {
+                        if !scanner.opaque(0)? {
+                            scanner.pos += 1;
+                        }
+                    }
+                    if matches!(scanner.byte(), Some(b'\'' | b'"')) {
+                        let start = scanner.pos;
+                        scanner.opaque(0)?;
+                        items.push(format!(
+                            "{}{}{}",
+                            &item[..start],
+                            mapper(&item[start..scanner.pos])?,
+                            rewrite_urls(&item[scanner.pos..], mapper)?
+                        ));
+                    } else {
+                        items.push(rewrite_urls(item, mapper)?);
+                    }
+                }
+                Ok(Some(format!("{name}({})", items.join(", "))))
+            } else {
+                Ok(None)
+            }
+        },
+        true,
+    )
+}
+
+fn rewrite_components(
+    source: &str,
+    mapper: &mut impl FnMut(&str, Option<&str>) -> Result<Option<String>, Error>,
+    urls: bool,
+) -> Result<String, Error> {
     fn rewrite(
         source: &str,
         mapper: &mut impl FnMut(&str, Option<&str>) -> Result<Option<String>, Error>,
         depth: usize,
+        urls: bool,
     ) -> Result<String, Error> {
         if depth > 128 {
             return Err(Error::new(
@@ -110,12 +172,26 @@ pub fn rewrite_value(
         let mut result = String::new();
         while let Some(c) = scanner.byte() {
             let start = scanner.pos;
-            if c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-' | b'.' | b'+') || c >= 128 {
-                scanner.advance();
-                while scanner.rest().chars().next().is_some_and(|c| {
-                    c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | '+' | '%')
-                }) {
+            if c.is_ascii_alphanumeric()
+                || matches!(c, b'_' | b'-' | b'.' | b'+')
+                || c >= 128
+                || urls && c == b'\\'
+            {
+                if c == b'\\' {
+                    scanner.escape()?;
+                } else {
                     scanner.advance();
+                }
+                loop {
+                    if urls && scanner.byte() == Some(b'\\') {
+                        scanner.escape()?;
+                    } else if scanner.rest().chars().next().is_some_and(|c| {
+                        c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | '+' | '%')
+                    }) {
+                        scanner.advance();
+                    } else {
+                        break;
+                    }
                 }
                 let name = &source[start..scanner.pos];
                 if scanner.byte() == Some(b'(') || name == "var" && scanner.byte() == Some(b'[') {
@@ -123,7 +199,7 @@ pub fn rewrite_value(
                     let inner = scanner.pos + 1;
                     scanner.component(depth + 1)?;
                     let args = &source[inner..scanner.pos - 1];
-                    if name.eq_ignore_ascii_case("url") {
+                    if name.eq_ignore_ascii_case("url") && !urls {
                         result.push_str(&source[start..scanner.pos]);
                     } else if let Some(value) =
                         mapper(if bracket { "var[]" } else { name }, Some(args))?
@@ -132,7 +208,7 @@ pub fn rewrite_value(
                     } else {
                         result.push_str(name);
                         result.push(if bracket { '[' } else { '(' });
-                        result.push_str(&rewrite(args, mapper, depth + 1)?);
+                        result.push_str(&rewrite(args, mapper, depth + 1, urls)?);
                         result.push(if bracket { ']' } else { ')' });
                     }
                 } else {
@@ -145,6 +221,7 @@ pub fn rewrite_value(
                     &source[start + 1..scanner.pos - 1],
                     mapper,
                     depth + 1,
+                    urls,
                 )?);
                 result.push(if c == b'(' { ')' } else { ']' });
             } else if scanner.opaque(depth)? {
@@ -156,7 +233,7 @@ pub fn rewrite_value(
         }
         Ok(result)
     }
-    rewrite(source, mapper, 0)
+    rewrite(source, mapper, 0, urls)
 }
 
 /// Expand iteration placeholders without editing comments, escapes, or longer names.
@@ -471,4 +548,66 @@ impl Scanner<'_> {
             }
         }
     }
+}
+
+pub(crate) fn decode_string(raw: &str, offset: usize) -> Result<String, Error> {
+    let raw = raw.trim();
+    let quoted = raw.starts_with(['\'', '"']);
+    let raw = if quoted {
+        if raw.len() < 2 || raw.as_bytes().last() != raw.as_bytes().first() {
+            return Err(Error::new("EU_URL", "Invalid quoted CSS URL", offset));
+        }
+        &raw[1..raw.len() - 1]
+    } else {
+        raw
+    };
+    let mut chars = raw.chars().peekable();
+    let mut result = String::new();
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            if !quoted && (c.is_whitespace() || matches!(c, '\'' | '"' | '(' | ')')) {
+                return Err(Error::new("EU_URL", "Invalid unquoted CSS URL", offset));
+            }
+            result.push(c);
+            continue;
+        }
+        let Some(c) = chars.next() else {
+            return Err(Error::new("EU_URL", "Incomplete CSS escape", offset));
+        };
+        if c.is_ascii_hexdigit() {
+            let mut digits = c.to_string();
+            while digits.len() < 6 && chars.peek().is_some_and(|c| c.is_ascii_hexdigit()) {
+                digits.push(chars.next().unwrap());
+            }
+            if chars
+                .peek()
+                .is_some_and(|c| matches!(c, ' ' | '\t' | '\r' | '\n' | '\u{c}'))
+            {
+                let whitespace = chars.next();
+                if whitespace == Some('\r') && chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+            }
+            let number = u32::from_str_radix(&digits, 16).unwrap();
+            result.push(
+                char::from_u32(number)
+                    .filter(|c| *c != '\0')
+                    .unwrap_or('\u{fffd}'),
+            );
+        } else if matches!(c, '\r' | '\n' | '\u{c}') {
+            if !quoted {
+                return Err(Error::new(
+                    "EU_URL",
+                    "Unquoted URL cannot contain a line continuation",
+                    offset,
+                ));
+            }
+            if c == '\r' && chars.peek() == Some(&'\n') {
+                chars.next();
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    Ok(result)
 }

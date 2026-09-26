@@ -228,3 +228,86 @@ fn cli_rejects_unknown_flags_and_refuses_input_overwrite() {
         ".x {color:red}"
     );
 }
+
+#[test]
+fn file_imports_maps_and_rebased_assets_work_without_node() {
+    let dir = Temp::new();
+    fs::create_dir(dir.0.join("parts")).unwrap();
+    fs::create_dir(dir.0.join("dist")).unwrap();
+    fs::write(
+        dir.0.join("input.css"),
+        "@import 'parts/card.css';\n.entry{color:blue}",
+    )
+    .unwrap();
+    fs::write(
+        dir.0.join("parts/card.css"),
+        ".card { @color fg red; background:url(pic.svg) }",
+    )
+    .unwrap();
+    let result = dir
+        .command()
+        .args([
+            "input.css",
+            "--source-map",
+            "--targets",
+            "chrome 100",
+            "-o",
+            "dist/app.css",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let css = fs::read_to_string(dir.0.join("dist/app.css")).unwrap();
+    assert!(css.contains("../parts/pic.svg"));
+    let map: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.0.join("dist/app.css.map")).unwrap()).unwrap();
+    let sources = map["sources"].as_array().unwrap();
+    assert!(sources.contains(&serde_json::json!("../input.css")));
+    assert!(sources.contains(&serde_json::json!("../parts/card.css")));
+    assert_eq!(map["sourcesContent"].as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn imported_file_errors_are_reported_and_outputs_cannot_clobber_dependencies() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("input.css"), "@import 'nested.css';").unwrap();
+    fs::write(dir.0.join("nested.css"), "\n.card {@font no-such-font;}").unwrap();
+    let result = dir
+        .command()
+        .args(["input.css", "-o", "out.css"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("nested.css:2:"));
+    assert!(!dir.0.join("out.css").exists());
+    fs::write(dir.0.join("nested.css"), ".card{color:red}").unwrap();
+    let result = dir
+        .command()
+        .args(["input.css", "-o", "nested.css"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("must not overwrite"));
+    assert_eq!(
+        fs::read_to_string(dir.0.join("nested.css")).unwrap(),
+        ".card{color:red}"
+    );
+    // Adjacent maps receive the same protection, before either output is written.
+    fs::write(dir.0.join("input.css"), "@import 'out.css.map';").unwrap();
+    fs::write(dir.0.join("out.css.map"), ".card{color:red}").unwrap();
+    let result = dir
+        .command()
+        .args(["input.css", "--source-map", "-o", "out.css"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(!dir.0.join("out.css").exists());
+    assert_eq!(
+        fs::read_to_string(dir.0.join("out.css.map")).unwrap(),
+        ".card{color:red}"
+    );
+}

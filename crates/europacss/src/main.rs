@@ -1,4 +1,4 @@
-use europacss::{compile, Request};
+use europacss::{compile, compile_file, Request};
 use std::{
     env, fs,
     io::{self, Read, Write},
@@ -92,9 +92,9 @@ fn run() -> Result<(), String> {
             .map_err(|e| e.to_string())?;
         source
     } else {
-        fs::read_to_string(&input).map_err(|e| format!("{input}: {e}"))?
+        String::new()
     };
-    let config = match config_path {
+    let config = match &config_path {
         Some(path) => europacss::load_config(&PathBuf::from(path))?,
         None => europacss::resolve_config(serde_json::json!({})).map_err(|e| e.to_string())?,
     };
@@ -111,29 +111,52 @@ fn run() -> Result<(), String> {
         minify,
         browsers,
     };
-    let mut result = compile(&request).map_err(|e| format!("{filename}:{e}"))?;
+    let mut result = if input == "-" {
+        compile(&request)
+    } else {
+        compile_file(&request, output.as_deref())
+    }
+    .map_err(|e| format!("{}:{e}", e.filename.as_deref().unwrap_or(&filename)))?;
     for warning in result.warnings {
-        eprintln!("{filename}: warning: {warning}");
+        eprintln!(
+            "{}: warning: {warning}",
+            warning.filename.as_deref().unwrap_or(&filename)
+        );
     }
     if let Some(output) = output {
-        if input != "-" && output.canonicalize().ok() == fs::canonicalize(&input).ok() {
-            return Err("Output must not overwrite the input stylesheet".into());
+        let mut protected: Vec<PathBuf> = result.dependencies.iter().map(PathBuf::from).collect();
+        if let Some(path) = config_path {
+            protected.push(fs::canonicalize(path).map_err(|e| e.to_string())?);
+        }
+        let mut map_path = output.as_os_str().to_owned();
+        map_path.push(".map");
+        let map_path = PathBuf::from(map_path);
+        for target in std::iter::once(&output).chain(source_map.then_some(&map_path)) {
+            if target
+                .canonicalize()
+                .ok()
+                .is_some_and(|path| protected.contains(&path))
+            {
+                return Err("Output must not overwrite an input stylesheet, imported dependency, or config file".into());
+            }
         }
         if let Some(map) = result.map {
-            let mut map_path = output.as_os_str().to_owned();
-            map_path.push(".map");
-            let map_path = PathBuf::from(map_path);
             let mut map: serde_json::Value =
                 serde_json::from_str(&map).map_err(|e| e.to_string())?;
             if input != "-" {
-                let original = fs::canonicalize(&input).map_err(|e| e.to_string())?;
                 let parent = output
                     .parent()
                     .filter(|p| !p.as_os_str().is_empty())
                     .unwrap_or_else(|| std::path::Path::new("."));
                 let parent = fs::canonicalize(parent).map_err(|e| e.to_string())?;
-                let relative = pathdiff::diff_paths(&original, &parent).unwrap_or(original);
-                map["sources"] = serde_json::json!([relative.to_string_lossy().replace('\\', "/")]);
+                if let Some(sources) = map["sources"].as_array_mut() {
+                    for source in sources {
+                        let original =
+                            PathBuf::from(source.as_str().ok_or("Invalid source map path")?);
+                        let relative = pathdiff::diff_paths(&original, &parent).unwrap_or(original);
+                        *source = relative.to_string_lossy().replace('\\', "/").into();
+                    }
+                }
             }
             fs::write(&map_path, map.to_string())
                 .map_err(|e| format!("{}: {e}", map_path.display()))?;

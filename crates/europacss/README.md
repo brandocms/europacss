@@ -15,6 +15,7 @@ The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitt
 
 ## Implemented
 
+- Local `@import` resolution with dependency tracking, repeated imports in source order, media/supports/layer qualifiers, cycle and expansion limits, and per-file source maps and diagnostics. Relative `url()` and `image-set()` assets are rebased for the output directory. Leading external imports stay browser-loaded.
 - Own parser for Europa block/statement structure, strings, comments, escapes, functions, balanced component values, and custom properties containing blocks. CSS selector/property grammar is validated by Lightning.
 - `@color`, `@color!`, `@display`, `@order`, `@font`, `@if`, and root `%placeholder` definitions expanded with `@extend %name`. Extensions support forward references, nested rules, and cycle detection.
 - `@iterate` over config objects and arrays, with scoped `$key` / `$value` substitution in declarations, selectors, strings, and directive arguments. Comments, escapes, and longer names such as `$keyboard` are preserved. Nested iterators bind their own variables; all expansions stay at the directive's source position and have a bounded node budget.
@@ -79,7 +80,7 @@ A future [config studio](../../research/config-studio.md) could provide visual t
 
 ## Remaining work before migrating a site
 
-This does not yet compile all of Site A or replace the published package. Still to port: imports and dependency tracking; watch/build integration; and release packaging. Full case-by-case parity and output-size optimization of the legacy spacing/typography suites remain ongoing. Nested `@responsive` blocks are not supported yet. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
+This does not yet compile all of Site A or replace the published package. Still to port: watch/build integration and release packaging. Full case-by-case parity and output-size optimization of the legacy spacing/typography suites remain ongoing. Nested `@responsive` blocks are not supported yet. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
 
 The migration linter, version-aware specificity/order warnings, suffix autofixes, JavaScript config exporter, and rendered-page comparisons remain separate work. `&__suffix` and `@nest` currently fail with actionable diagnostics. Recognized unported directives and sizing expressions fail explicitly. Unknown CSS at-rules are passed to Lightning, which can issue warnings. This structural parser is not yet a complete CSS Syntax conformance implementation.
 
@@ -100,5 +101,9 @@ let request = Request {
 };
 let output = compile(&request)?;
 ```
+
+Use `compile_file(&request, output_path)` for local import resolution. Set `request.filename` to the entry path and leave `request.source` empty. The optional output path determines the base for asset URLs; omitting it uses the entry directory. `Output.dependencies` contains canonical source paths in first-visit order. The CLI uses this API automatically for file inputs. In-memory input and stdin cannot load local imports.
+
+Imports require exact relative file paths, including extensions. Package resolution, globs, and stylesheet-local `@namespace` bundling are not implemented. Remote/root-relative imports are retained without fetching; a remote import that would land after bundled style rules or inside a conditional/layer wrapper fails explicitly instead of being moved. Imported files must be UTF-8. Import conditions wrap the imported layer, following the [CSS import rules](https://drafts.csswg.org/css-cascade-5/#at-import). The bundler rebases assets but does not copy them. Symlinks resolve to canonical file locations.
 
 `compile_frontend` exposes the intermediate standard CSS for transform development. `compile` also performs native nesting lowering, target transforms, optional compact printing, and source-map composition using [Lightning's Rust API](https://docs.rs/lightningcss/1.0.0-alpha.72/lightningcss/stylesheet/struct.StyleSheet.html).

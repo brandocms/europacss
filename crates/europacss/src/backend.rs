@@ -1,4 +1,4 @@
-use crate::{Error, Output, Request};
+use crate::{sources::Sources, Error, Output, Request};
 use lightningcss::{
     error::ErrorLocation,
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
@@ -7,7 +7,7 @@ use lightningcss::{
 use parcel_sourcemap::SourceMap;
 use std::sync::{Arc, RwLock};
 
-pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
+pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result<Output, Error> {
     let mut original_map = frontend
         .map
         .as_deref()
@@ -42,7 +42,7 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
             e.kind.to_string(),
             e.loc.as_ref(),
             &mut original_map,
-            request,
+            sources,
         )
     })?;
     sheet
@@ -56,7 +56,7 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
                 e.kind.to_string(),
                 e.loc.as_ref(),
                 &mut original_map,
-                request,
+                sources,
             )
         })?;
     let mut map = request.source_map.then(|| SourceMap::new("/"));
@@ -73,7 +73,7 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
                 e.kind.to_string(),
                 e.loc.as_ref(),
                 &mut original_map,
-                request,
+                sources,
             )
         })?;
     let map = if let Some(mut map) = map {
@@ -81,10 +81,23 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
             map.extends(original)
                 .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?;
         }
-        Some(
-            map.to_json(None)
-                .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?,
-        )
+        let json = map
+            .to_json(None)
+            .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?;
+        let mut json: serde_json::Value = serde_json::from_str(&json)
+            .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?;
+        if let Some(names) = json["sources"].as_array_mut() {
+            for name in names {
+                if let Some(file) = sources.files.iter().find(|file| {
+                    name.as_str().is_some_and(|name| {
+                        file.name == name || file.name.strip_prefix('/') == Some(name)
+                    })
+                }) {
+                    *name = file.name.clone().into();
+                }
+            }
+        }
+        Some(json.to_string())
     } else {
         None
     };
@@ -98,7 +111,7 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
                 e.kind.to_string(),
                 e.loc.as_ref(),
                 &mut original_map,
-                request,
+                sources,
             )
         })
         .collect();
@@ -106,6 +119,7 @@ pub fn compile(request: &Request, frontend: Output) -> Result<Output, Error> {
         css: printed.code,
         map,
         warnings,
+        dependencies: Vec::new(),
     })
 }
 
@@ -114,19 +128,24 @@ fn diagnostic(
     message: String,
     loc: Option<&ErrorLocation>,
     map: &mut Option<SourceMap>,
-    request: &Request,
+    sources: &Sources,
 ) -> Error {
     if let Some(original) = loc.and_then(|loc| {
         map.as_mut()?
             .find_closest_mapping(loc.line, loc.column.saturating_sub(1))?
             .original
     }) {
-        let offset = crate::emit::offset(
-            &request.source,
+        let name = map
+            .as_ref()
+            .and_then(|map| map.get_source(original.source).ok())
+            .unwrap_or("");
+        return sources.mapped_error(
+            code,
+            message,
+            name,
             original.original_line as usize,
             original.original_column as usize,
         );
-        return Error::new(code, message, offset).locate(&request.source);
     }
-    Error::new(code, message, 0).locate(&request.source)
+    sources.locate(Error::new(code, message, 0))
 }
