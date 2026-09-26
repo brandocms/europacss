@@ -42,6 +42,9 @@ def main():
         shutil.copy2(ROOT / "crates/europacss/assets/normalize.LICENSE.md", stage / "normalize.LICENSE.md")
         shutil.copy2(ROOT / "crates/europacss/BINARY-README.md", stage / "README.md")
         shutil.copytree(ROOT / "crates/europacss/examples", stage / "examples")
+        # The editor is already bundled into the binary; preserve its MIT notices.
+        for editor_notice in ["editor.LICENSES.txt", "editor.dependencies.json"]:
+            shutil.copy2(ROOT / "crates/europacss/studio" / editor_notice, stage / editor_notice)
         shutil.copy2(ROOT / "Cargo.lock", stage / "Cargo.lock")
         # Retain available upstream notices and a precise source/license inventory.
         # Some published crate archives omit their license file; record those gaps.

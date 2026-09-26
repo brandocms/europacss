@@ -1,0 +1,82 @@
+[
+  {
+    "name": "@codemirror/autocomplete",
+    "version": "6.18.6",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/commands",
+    "version": "6.8.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/lang-javascript",
+    "version": "6.2.4",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/language",
+    "version": "6.11.3",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/search",
+    "version": "6.5.11",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/state",
+    "version": "6.5.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@codemirror/view",
+    "version": "6.38.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@lezer/common",
+    "version": "1.5.3",
+    "license": "MIT"
+  },
+  {
+    "name": "@lezer/highlight",
+    "version": "1.2.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@lezer/javascript",
+    "version": "1.5.5",
+    "license": "MIT"
+  },
+  {
+    "name": "@lezer/lr",
+    "version": "1.4.10",
+    "license": "MIT"
+  },
+  {
+    "name": "@marijn/find-cluster-break",
+    "version": "1.0.4",
+    "license": "MIT"
+  },
+  {
+    "name": "crelt",
+    "version": "1.0.7",
+    "license": "MIT"
+  },
+  {
+    "name": "json5",
+    "version": "2.2.3",
+    "license": "MIT"
+  },
+  {
+    "name": "style-mod",
+    "version": "4.1.4",
+    "license": "MIT"
+  },
+  {
+    "name": "w3c-keyname",
+    "version": "2.2.8",
+    "license": "MIT"
+  }
+]

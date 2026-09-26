@@ -162,8 +162,10 @@ fn handle(
     let (status, mime, body) = match (parts[0].as_str(), parts[1].as_str()) {
         ("GET", "/") => (200, "text/html; charset=utf-8", include_str!("../studio/index.html").into()),
         ("GET", "/studio.css") => (200, "text/css; charset=utf-8", include_str!("../studio/studio.css").into()),
+        ("GET", "/editor.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/editor.bundle.js").into()),
+        ("GET", "/editor.LICENSES.txt") => (200, "text/plain; charset=utf-8", include_str!("../studio/editor.LICENSES.txt").into()),
         ("GET", "/studio.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/studio.js").into()),
-        ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),
+        ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),
         ("GET", "/api/fonts") => (200, "application/json", serde_json::to_string(fonts).unwrap()),
         ("GET", "/api/config") => (200, "application/json", initial.into()),
         ("POST", "/api/preview") => {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/studio.js" defer></script>
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/studio.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -14,8 +14,9 @@
     <div class="panel-heading"><div><span class="eyebrow">YOUR CONFIGURATION</span><h1 id="filename">europa.json5</h1></div><span class="file-icon" aria-hidden="true">{ }</span></div>
     <p class="hint">Edit the rules. See how they feel.</p>
     <div class="editor-tools"><button id="wrap" aria-pressed="false" title="Wrap long lines without changing the JSON5">Wrap lines</button><button id="expand" aria-pressed="false">Expand editor ↗</button></div>
-    <label class="sr-only" for="editor">JSON5 configuration</label><textarea id="editor" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-    <div class="editor-footer"><span>Comments stay intact</span><button id="compile" title="Compile preview (⌘/Ctrl + Enter)">Update preview <kbd>⌘ ↵</kbd></button></div>
+    <div id="source-context" class="source-context" role="status">Hover a preview to trace its config · click to edit</div>
+    <div id="editor" aria-label="Configuration code editor"></div>
+    <div class="editor-footer"><span>Tab indents · Esc, Tab leaves</span><button id="compile" title="Compile preview (⌘/Ctrl + Enter)">Update preview <kbd>⌘ ↵</kbd></button></div>
     <p class="save-note">Edits stay in this browser tab. Export to keep a copy.</p>
   </aside>
   <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
@@ -28,7 +29,7 @@
     <div class="font-controls"><label for="family">Font family</label><select id="family" aria-label="Preview font family"></select><span id="font-status" role="status">Checking project fonts…</span></div>
     <details class="font-help"><summary>Project fonts</summary><p id="font-info"></p></details>
     <div id="errors" role="alert" hidden></div>
-    <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin"></iframe></div></div>
+    <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin allow-scripts"></iframe></div></div>
     <div class="preview-caption"><span id="active">Waiting for a valid config</span><span id="scale"></span></div>
     <p class="notes" id="notes"></p>
     <details class="inspector"><summary>Inspect resolved tokens &amp; generated CSS</summary><label for="token">Token</label><select id="token"></select><pre id="resolved"></pre></details>

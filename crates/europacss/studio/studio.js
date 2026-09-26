@@ -1,16 +1,17 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
-const editor = $('#editor'), frame = $('#preview');
+const editor = EuropaEditor.create($('#editor')), frame = $('#preview');
 let latest, tab = 'typography', fit = true, timer, revision = 0, filename = 'europa.json5', initialSource = '';
 let projectFonts = {css:'',faces:[],warnings:[]};
 let fontsDocument;
+let editingPath = [], hoveredSpecimen = null;
 const headings = {
   typography: ['Type, with intention.', 'Read the scale together. Look for a rhythm that holds at every width.'],
   spacing: ['Room to breathe.', 'See the distances your tokens create, from the smallest detail to a whole section.'],
   grid: ['A place for everything.', 'Inspect your container, column widths and gutter arithmetic at the actual viewport.'],
 };
 // dpx calculations use the zoom variable normally provided by @europa base.
-const baseStyle = `:root{--ec-zoom:1}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#2d263a;font-family:system-ui,sans-serif}body{overflow-x:hidden}.sample{border-bottom:1px solid #eeedf2;padding:27px 32px}.sample:last-child{border:0}.label{display:flex;justify-content:space-between;gap:20px;font:11px/1.5 ui-monospace,monospace;color:#857b96;margin-bottom:18px}.name{color:#695793;font-weight:500}.value{margin:0}.type .value{overflow-wrap:anywhere}.spacing .demo{background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 7px,#f1eff6 7px,#f1eff6 8px);height:36px;border-radius:4px}.spacing .value{height:36px;min-width:0;background:#aca0e5;border-radius:4px}.grid{padding-left:0;padding-right:0}.grid .label{padding:0 32px}.grid .demo{display:flex;background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 31px,#e9e6f0 31px,#e9e6f0 32px);min-height:64px}.grid .value{min-height:64px;background:#c4bae9;border:1px solid #aa9bdc;display:flex;align-items:center}.grid .inside{height:40px;width:100%;background:#eeebfa;border:1px dashed #998bbf}.error{color:#a23f32;font:12px/1.6 system-ui;white-space:pre-wrap}.measure{font-variant-numeric:tabular-nums;text-align:right}.empty{padding:40px;color:#91869f;font:13px system-ui}`;
+const baseStyle = `:root{--ec-zoom:1}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#2d263a;font-family:system-ui,sans-serif}body{overflow-x:hidden}.sample{border-bottom:1px solid #eeedf2;padding:27px 32px}.sample:last-child{border:0}.sample{cursor:pointer;transition:background-color .1s}.sample.is-editing{background:#f5f1ff;box-shadow:inset 3px 0 #8a71d5}.sample.is-hovered,.sample:focus-visible{background:#eee7ff;box-shadow:inset 3px 0 #6554cf;outline:none}.label{display:flex;justify-content:space-between;gap:20px;font:11px/1.5 ui-monospace,monospace;color:#857b96;margin-bottom:18px}.name{color:#695793;font-weight:500}.value{margin:0}.type .value{overflow-wrap:anywhere}.spacing .demo{background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 7px,#f1eff6 7px,#f1eff6 8px);height:36px;border-radius:4px}.spacing .value{height:36px;min-width:0;background:#aca0e5;border-radius:4px}.grid{padding-left:0;padding-right:0}.grid .label{padding:0 32px}.grid .demo{display:flex;background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 31px,#e9e6f0 31px,#e9e6f0 32px);min-height:64px}.grid .value{min-height:64px;background:#c4bae9;border:1px solid #aa9bdc;display:flex;align-items:center}.grid .inside{height:40px;width:100%;background:#eeebfa;border:1px dashed #998bbf}.error{color:#a23f32;font:12px/1.6 system-ui;white-space:pre-wrap}.measure{font-variant-numeric:tabular-nums;text-align:right}.empty{padding:40px;color:#91869f;font:13px system-ui}`;
 function element(doc, tag, className, text) {
   const node = doc.createElement(tag);
   if (className) node.className = className;
@@ -28,6 +29,47 @@ function inspect(id) {
   const computed = css ? Object.fromEntries(properties.map(p => [p, css.getPropertyValue(p)])) : {};
   $('#resolved').textContent = `Computed at ${frame.contentWindow.innerWidth}px\n${JSON.stringify(computed, null, 2)}\n\nResolved token\n${JSON.stringify(specimen.token, null, 2)}\n\nGenerated CSS\n${specimen.error || specimen.css}`;
 }
+const isPrefix = (prefix, path) => prefix.length <= path.length && prefix.every((key, i) => key === path[i]);
+const overlaps = (a, b) => isPrefix(a, b) || isPrefix(b, a);
+function matchingSpecimens() {
+  if(!latest || !editingPath.length) return [];
+  const general = ['dpxViewportSize', 'dpxViewportSizes', 'setMaxForVw'].includes(editingPath[0]) || [['theme','breakpoints'],['theme','extend','breakpoints'],['theme','breakpointCollections']].some(path => overlaps(path, editingPath));
+  const family = [['theme','typography','families'],['theme','extend','typography','families']].some(path => isPrefix(path, editingPath));
+  return latest.specimens.filter(s => general || family && s.kind === 'typography' || [...s.config_paths,...s.dependency_paths].some(path => overlaps(path, editingPath)));
+}
+function sourceContext(path, line, fallback = 'Hover a preview to trace its config · click to edit') {
+  const text = path?.length ? `${path.join(' › ')}${line ? ` · line ${line}` : ''}` : fallback;
+  $('#source-context').textContent = text; $('#source-context').title = text;
+}
+function highlightEditingSource() {
+  const found = editor.highlight(editingPath.length ? [editingPath] : []);
+  sourceContext(editingPath, found?.line);
+}
+function paintPreview() {
+  const ids = new Set(matchingSpecimens().map(s => s.id));
+  frame.contentDocument?.querySelectorAll('[data-specimen]').forEach(node => {
+    node.classList.toggle('is-editing', ids.has(node.dataset.specimen));
+    node.classList.toggle('is-hovered', hoveredSpecimen === node.dataset.specimen);
+  });
+}
+function chooseTab(kind) {
+  tab = kind;
+  document.querySelectorAll('[data-tab]').forEach(button => {const selected=button.dataset.tab===tab;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',selected);});
+}
+function syncFromEditor() {
+  hoveredSpecimen = null; editingPath = editor.pathAtCursor();
+  const kinds = new Set(matchingSpecimens().map(s => s.kind));
+  if(kinds.size === 1 && !kinds.has(tab)) {chooseTab([...kinds][0]); render();}
+  highlightEditingSource(); paintPreview();
+}
+function tracePreview(specimen, reveal) {
+  hoveredSpecimen = reveal ? null : specimen.id;
+  const found = editor.highlight(specimen.config_paths, {reveal});
+  sourceContext(found?.path, found?.line, `${specimen.name} · no authored entry in this config`);
+  inspect(specimen.id); paintPreview();
+}
+// WebKit needs allow-scripts for parent-installed event listeners in the iframe.
+// Its own CSP still blocks scripts; all specimen content is created as text/DOM.
 function render() {
   if (!latest || !frame.contentDocument?.body) return;
   const doc = frame.contentDocument;
@@ -54,12 +96,18 @@ function render() {
       if (tab === 'typography') sample.append(value);
       else { const demo = element(doc, 'div', 'demo'); demo.append(value); sample.append(demo); }
     }
-    sample.addEventListener('click', () => inspect(s.id));
+    sample.dataset.specimen = s.id;
+    sample.tabIndex = 0; sample.setAttribute('role', 'button'); sample.setAttribute('aria-label', `Edit ${s.name} configuration`);
+    sample.addEventListener('pointerenter', () => tracePreview(s, false));
+    sample.addEventListener('pointerleave', () => { if(hoveredSpecimen === s.id) {hoveredSpecimen = null; highlightEditingSource(); paintPreview();} });
+    sample.addEventListener('click', () => tracePreview(s, true));
+    sample.addEventListener('keydown', event => { if(event.key === 'Enter' || event.key === ' ') {event.preventDefault(); tracePreview(s, true);} });
     doc.body.append(sample);
     const option = element(document, 'option', null, s.name); option.value = s.id; $('#token').append(option);
   }
   if (!items.length) doc.body.append(element(doc, 'p', 'empty', 'No tokens in this category yet. Add some in the JSON5 editor.'));
   inspect(items[0]?.id);
+  paintPreview();
   $('#notes').textContent = latest.notes.join(' ');
   loadFonts();
   layout();
@@ -102,7 +150,7 @@ async function compile() {
     if (current !== revision) return;
     if (!response.ok) throw Error(data.error || 'Preview failed');
     const hadPreview = !!latest;
-    latest = data;
+    latest = data; hoveredSpecimen = null;
     const family = $('#family').value;
     $('#family').replaceChildren(element(document, 'option', null, 'System default'));
     $('#family').firstChild.value = '';
@@ -121,6 +169,7 @@ async function compile() {
       button.addEventListener('click', () => { $('#width').value = Math.max(280, px); layout(); });
       $('#breakpoints').append(button);
     }
+    syncFromEditor();
     render();
   } catch(error) {
     if (current !== revision) return;
@@ -188,6 +237,7 @@ divider.addEventListener('keydown', event => {
 });
 window.addEventListener('resize', () => resizeEditor(editorWidth));
 resizeEditor(editorWidth);
+editor.addEventListener('cursorchange', syncFromEditor);
 editor.addEventListener('input', () => { ++revision; $('#export').disabled = true; status('Uncompiled edits', 'loading'); clearTimeout(timer); timer = setTimeout(compile, 400); });
 editor.addEventListener('keydown', event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); compile(); } });
 $('#compile').addEventListener('click', compile);
@@ -199,8 +249,7 @@ $('#family').addEventListener('change', render);
 $('#token').addEventListener('change', event => inspect(event.target.value));
 $('.tabs').addEventListener('click', event => {
   if (!event.target.dataset.tab) return;
-  tab = event.target.dataset.tab;
-  document.querySelectorAll('[data-tab]').forEach(button => { const selected = button.dataset.tab === tab; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
+  chooseTab(event.target.dataset.tab);
   render();
 });
 $('#export').addEventListener('click', () => {

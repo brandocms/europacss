@@ -1,6 +1,7 @@
 //! Config Studio previews use the same resolver and compiler as normal builds.
 use crate::{compile, config::Config, config_file::ConfigValue, resolve_config, Request};
 pub mod fonts;
+mod source_paths;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -10,6 +11,8 @@ pub struct Specimen {
     pub name: String,
     pub id: String,
     pub token: Value,
+    pub config_paths: Vec<Vec<String>>,
+    pub dependency_paths: Vec<Vec<String>>,
     pub css: String,
     pub error: Option<String>,
 }
@@ -37,7 +40,7 @@ pub fn preview(source: &str) -> Result<Preview, String> {
     let authored = json5::from_str::<ConfigValue>(source)
         .map_err(|e| e.to_string())?
         .0;
-    let config = resolve_config(authored).map_err(|e| e.to_string())?;
+    let config = resolve_config(authored.clone()).map_err(|e| e.to_string())?;
     let checked = Config::new(&config).map_err(|e| e.to_string())?;
     let mut result = Preview {
         breakpoints: checked.breakpoints.clone(),
@@ -148,11 +151,20 @@ pub fn preview(source: &str) -> Result<Preview, String> {
             }
             Err(error) => (String::new(), Some(error)),
         };
+        let (base, key): (&[&str], _) = match kind {
+            "typography" => (&["theme", "typography", "sizes"], Some(name.as_str())),
+            "spacing" => (&["theme", "spacing"], Some(name.as_str())),
+            _ if name == "container" => (&["theme", "container"], None),
+            _ => (&["theme", "columns"], None),
+        };
+        let (config_paths, dependency_paths) = source_paths::locate(&authored, &config, base, key);
         result.specimens.push(Specimen {
             kind,
             name,
             id,
             token,
+            config_paths,
+            dependency_paths,
             css,
             error,
         });

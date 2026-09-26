@@ -197,3 +197,58 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     assert!(send("GET", "/../../etc/passwd", "", "").starts_with("HTTP/1.1 404"));
     assert_eq!(fs::read_to_string(config).unwrap(), source);
 }
+
+#[test]
+fn studio_source_links_follow_literal_keys_overrides_references_and_defaults() {
+    let preview = studio::preview(r#"{
+      theme: {
+        spacing: {base: '12px', alias: '{spacing.base}', nested: {small: '4px'}, 'literal/slash': '6px'},
+        typography: {sizes: {old: {'*': '16px'}}},
+        extend: {
+          spacing: {base: '20px'},
+          typography: {sizes: {'title/slash': {'*': '40px'}}},
+        },
+      },
+    }"#).unwrap();
+    let find = |name: &str| preview.specimens.iter().find(|s| s.name == name).unwrap();
+    assert_eq!(
+        find("base").config_paths,
+        vec![vec!["theme", "extend", "spacing", "base"]]
+    );
+    assert_eq!(
+        find("alias").config_paths,
+        vec![vec!["theme", "spacing", "alias"]]
+    );
+    assert_eq!(
+        find("alias").dependency_paths,
+        vec![vec!["theme", "extend", "spacing", "base"]]
+    );
+    assert_eq!(
+        find("nested/small").config_paths,
+        vec![vec!["theme", "spacing", "nested", "small"]]
+    );
+    assert_eq!(
+        find("literal/slash").config_paths,
+        vec![vec!["theme", "spacing", "literal/slash"]]
+    );
+    assert_eq!(
+        find("title/slash").config_paths,
+        vec![vec![
+            "theme",
+            "extend",
+            "typography",
+            "sizes",
+            "title/slash"
+        ]]
+    );
+    assert!(find("container").config_paths.is_empty());
+    assert!(!preview.specimens.iter().any(|s| s.name == "old"));
+    let preview = studio::preview("{theme:{spacing:'{scales}',scales:{small:'4px'}}}").unwrap();
+    let small = preview
+        .specimens
+        .iter()
+        .find(|s| s.name == "small")
+        .unwrap();
+    assert_eq!(small.config_paths, vec![vec!["theme", "spacing"]]);
+    assert_eq!(small.dependency_paths, vec![vec!["theme", "scales"]]);
+}
