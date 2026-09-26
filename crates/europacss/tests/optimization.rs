@@ -77,3 +77,62 @@ fn merged_media_retain_each_distinct_rules_source_mapping() {
         .unwrap();
     assert_eq!((origin.original_line, origin.original_column), (4, 1));
 }
+
+#[test]
+fn repeated_queries_can_cross_proven_disjoint_widths_in_one_scope() {
+    let mut cfg = config();
+    cfg["theme"]["spacing"] = json!({"gap":{"mobile":"12px","tablet":"20px","desktop":"24px"}});
+    let source = ".card{@space padding gap;@space margin gap;}";
+    let expected = ".card{@media (width <= 739px){padding:12px;margin:12px}@media (width >= 740px) and (width <= 1023px){padding:20px;margin:20px}@media (width >= 1024px){padding:24px;margin:24px}}";
+    assert_css(source, expected, cfg.clone());
+    let result = compile(&request(source, cfg)).unwrap();
+    assert_eq!(result.css.matches("@media").count(), 3);
+    assert_eq!(result.css.matches(".card").count(), 3);
+    assert_css("@media (width <= 739px), (width >= 1024px){.a{color:red}} @media (width >= 740px) and (width <= 1023px){.b{color:blue}} @media (width <= 739px), (width >= 1024px){.c{color:green}}", "@media (width <= 739px), (width >= 1024px){.a{color:red}.c{color:green}} @media (width >= 740px) and (width <= 1023px){.b{color:blue}}", config());
+}
+
+#[test]
+fn overlap_inclusive_endpoints_and_unproven_conditions_block_movement() {
+    for middle in [
+        "(width >= 500px)",
+        "(width >= 739px)",
+        "(width >= 740px), (width <= 100px)",
+        "(height >= 1000px)",
+        "(width >= 740px) and (orientation: landscape)",
+        "print",
+        "(width < 100px)",
+    ] {
+        let source = format!("@media (width <= 739px){{.a{{color:red}}}} @media {middle}{{.b{{color:blue}}}} @media (width <= 739px){{.c{{color:green}}}}");
+        let result = compile(&request(&source, config())).unwrap();
+        assert_eq!(
+            result.css.matches("@media").count(),
+            3,
+            "{middle}: {}",
+            result.css
+        );
+        assert!(result.css.find(".a").unwrap() < result.css.find(".b").unwrap());
+        assert!(result.css.find(".b").unwrap() < result.css.find(".c").unwrap());
+    }
+}
+
+#[test]
+fn disjoint_packing_keeps_later_rule_source_origins() {
+    let source = "@media (width <= 739px) { .a{color:red} }\n@media (width >= 740px) { .b{color:blue} }\n@media (width <= 739px) { .c{color:green} }";
+    let mut req = request(source, config());
+    req.minify = false;
+    let result = compile(&req).unwrap();
+    assert_eq!(result.css.matches("@media").count(), 2);
+    let generated = result
+        .css
+        .lines()
+        .position(|line| line.contains(".c"))
+        .unwrap();
+    let mut map =
+        parcel_sourcemap::SourceMap::from_json("/", result.map.as_ref().unwrap()).unwrap();
+    let origin = map
+        .find_closest_mapping(generated as u32, 2)
+        .unwrap()
+        .original
+        .unwrap();
+    assert_eq!(origin.original_line, 2);
+}
