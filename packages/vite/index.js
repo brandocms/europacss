@@ -53,7 +53,8 @@ export default function europa(options = {}) {
   let config;
   let server;
   const entries = new Map();
-  const pending = new Map();
+  const pending = new Set();
+  const generations = new Map();
 
   const affectedModules = (file, graph) => {
     const modules = new Set();
@@ -100,16 +101,19 @@ export default function europa(options = {}) {
           (options.include && !options.include(filename))) return null;
 
       const promise = compile(binary, { version: 1, filename, source, config, browsers: options.targets ?? [] }, root);
-      pending.set(id, promise);
+      const generation = Symbol();
+      generations.set(id, generation);
+      pending.add(promise);
       let response;
       try { response = await promise; }
       catch (error) { this.error(error); }
-      finally { if (pending.get(id) === promise) pending.delete(id); }
+      finally { pending.delete(promise); }
       const watched = new Set(response.watchFiles.map(normalize));
       // Keep the last complete graph on failure, so edits to later imports can
       // also recover a broken entry. Successful builds discard obsolete paths.
       if (response.error) for (const file of entries.get(id) ?? []) watched.add(file);
-      entries.set(id, watched);
+      // A superseded compilation must not replace the latest dependency graph.
+      if (generations.get(id) === generation) entries.set(id, watched);
       // Vite already watches the entry. Adding it as its own dependency creates
       // an import cycle in Vite's CSS graph and forces full reloads.
       for (const file of watched) {
