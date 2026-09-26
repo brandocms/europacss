@@ -1,6 +1,28 @@
 use europacss::parser::{arguments, interpolate, parse, validate_interpolation};
 
 #[test]
+fn value_visiting_skips_literals_and_preserves_nested_component_structure() {
+    use europacss::parser::{rewrite_value, split_top_level};
+    let source = r#"calc((10dpx) + var[gap]) '10dpx' url(10dpx.png) /* 10dpx */ var(--my-dpx) 🙂"#;
+    let result = rewrite_value(source, &mut |name, args| {
+        Ok(match (name, args) {
+            ("10dpx", None) => Some("1vw".into()),
+            ("var[]", Some("gap")) => Some("20px".into()),
+            _ => None,
+        })
+    })
+    .unwrap();
+    assert_eq!(
+        result,
+        r#"calc((1vw) + 20px) '10dpx' url(10dpx.png) /* 10dpx */ var(--my-dpx) 🙂"#
+    );
+    assert_eq!(
+        split_top_level("md, calc(1px + var(--x, 2px)), 'a,b'", ',').unwrap(),
+        ["md", "calc(1px + var(--x, 2px))", "'a,b'"]
+    );
+}
+
+#[test]
 fn interpolation_respects_comments_escapes_and_placeholder_boundaries() {
     assert_eq!(
         interpolate(

@@ -171,14 +171,15 @@ impl Compiler<'_, '_> {
                         result.extend(self.nodes(children, ctx, depth + 1)?);
                         self.expanding.pop();
                     }
-                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space" | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive" => {
+                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space" | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive" | "grid" | "column" => {
                         self.statement(&node, ctx)?;
                         let mut generated = self.directive(&node, &name, &args, ctx)?;
                         result.append(&mut generated);
                     }
                     "nest" => return Err(error(&node, "EU_LEGACY_NEST", "Replace legacy @nest with a native nested selector")),
                     "import" => return Err(error(&node, "EU_UNSUPPORTED", "Import resolution is not implemented in the experimental compiler; supply a bundled stylesheet")),
-                    "europa" | "column" | "row" | "grid" | "at-root" => {
+                    "row" => return Err(error(&node, "EU_DEPRECATED", "@row is deprecated; use @display flex/row/wrap and @space gap 1")),
+                    "europa" | "at-root" => {
                         return Err(error(&node, "EU_UNSUPPORTED", format!("@{name} is not implemented in the experimental compiler yet")));
                     }
                     _ => {
@@ -268,20 +269,25 @@ impl Compiler<'_, '_> {
                         format!("Expected a CSS size at `{path}.{query}`"),
                     )
                 })?;
-                if value.ends_with("dpx") {
-                    for index in self.config.select(query, node.offset)? {
-                        let size =
-                            crate::size::design_pixels(&value, self.config, index, node.offset)?;
-                        result.push(Node::block(
-                            format!("@media {}", self.config.media_indices(&[index])),
-                            vec![decl(property, &size, node, false)],
-                            node.offset,
-                        ));
+                let sizes = crate::size::Sizes {
+                    config: self.config,
+                    offset: node.offset,
+                };
+                match sizes.css(&value, None, false) {
+                    Ok(value) => vec![decl(property, &value, node, false)],
+                    Err(e) if e.code == "EU_SIZE_CONTEXT" => {
+                        for index in self.config.select(query, node.offset)? {
+                            let value = sizes.css(&value, Some(index), false)?;
+                            result.push(Node::block(
+                                format!("@media {}", self.config.media_indices(&[index])),
+                                vec![decl(property, &value, node, false)],
+                                node.offset,
+                            ));
+                        }
+                        continue;
                     }
-                    continue;
+                    Err(e) => return Err(e),
                 }
-                self.check_size(node, &value)?;
-                vec![decl(property, &value, node, false)]
             } else {
                 value
                     .as_object()
@@ -367,6 +373,53 @@ impl Compiler<'_, '_> {
     ) -> Result<Vec<Node>, Error> {
         let important = name.ends_with('!');
         match name {
+            "grid" => {
+                arity(node, args, 0, 0)?;
+                let mut nodes = vec![
+                    decl("display", "grid", node, false),
+                    decl("grid-template-columns", "repeat(12, 1fr)", node, false),
+                ];
+                nodes.extend(self.spacing(node, &["grid-column-gap", "1"], ctx, false)?);
+                Ok(nodes)
+            }
+            "column" => {
+                arity(node, args, 1, 2)?;
+                if args[0].contains('@') {
+                    return Err(error(
+                        node,
+                        "EU_ARGUMENTS",
+                        "Replace size@breakpoint with size breakpoint",
+                    ));
+                }
+                let sizes = crate::size::Sizes {
+                    config: self.config,
+                    offset: node.offset,
+                };
+                self.size_rules(node, args.get(1).copied(), ctx, |index| {
+                    let value = sizes.spacing(args[0], index)?;
+                    let mut has_vw = false;
+                    crate::parser::rewrite_value(&value, &mut |word, args| {
+                        if args.is_none()
+                            && crate::size::dimension(word).is_some_and(|(_, unit)| unit == "vw")
+                        {
+                            has_vw = true;
+                        }
+                        Ok(None)
+                    })?;
+                    let max = if has_vw {
+                        format!("calc({value} - 0.002vw)")
+                    } else {
+                        value.clone()
+                    };
+                    Ok(vec![
+                        decl("position", "relative", node, false),
+                        decl("flex-grow", "0", node, false),
+                        decl("flex-shrink", "0", node, false),
+                        decl("flex-basis", &value, node, false),
+                        decl("max-width", &max, node, false),
+                    ])
+                })
+            }
             "abs100" | "abs100!" => {
                 arity(node, args, 0, 1)?;
                 let nodes = [
@@ -519,11 +572,212 @@ impl Compiler<'_, '_> {
         font: bool,
         important: bool,
     ) -> Result<Vec<Node>, Error> {
-        let start = usize::from(!font);
-        arity(node, args, start + 1, start + 2)?;
-        let prop = if font { "font-size" } else { args[0] };
-        let size = args[start];
-        let query = args.get(start + 1).copied();
+        if !font {
+            return self.spacing(node, args, ctx, important);
+        }
+        arity(node, args, 1, 2)?;
+        if args.len() > 1 && ctx.responsive.is_some() {
+            return Err(error(
+                node,
+                "EU_RESPONSIVE",
+                "A directive inside @responsive cannot have its own breakpoint query",
+            ));
+        }
+        let (name, multiplier, line_height) = self.font_query(node, args[0])?;
+        let token = self.config.get("/theme/typography/sizes", &name);
+        let sizes = crate::size::Sizes {
+            config: self.config,
+            offset: node.offset,
+        };
+        let mut result = Vec::new();
+        if let Some(base) = token.and_then(|v| v.get("__base__")) {
+            if !base.is_object() {
+                return Err(error(
+                    node,
+                    "EU_CONFIG",
+                    "Typography __base__ must be a property object",
+                ));
+            }
+            // Keep shared properties at the use site before the breakpoint overrides.
+            result.extend(self.size_rules(node, None, ctx, |index| {
+                self.font_properties(node, base, index, 1.0, None)
+            })?);
+        }
+        result.extend(self.size_rules(node, args.get(1).copied(), ctx, |index| {
+            let value = token.map(|v| sizes.at(v, index)).transpose()?;
+            match value {
+                Some(value) => {
+                    self.font_properties(node, value, index, multiplier, line_height.as_deref())
+                }
+                None => self.font_properties(
+                    node,
+                    &Value::String(name.clone()),
+                    index,
+                    multiplier,
+                    line_height.as_deref(),
+                ),
+            }
+        })?);
+        Ok(result)
+    }
+
+    fn font_query(&self, node: &Node, value: &str) -> Result<(String, f64, Option<String>), Error> {
+        if self.config.get("/theme/typography/sizes", value).is_some() {
+            return Ok((value.into(), 1.0, None));
+        }
+        let parts = crate::parser::split_top_level(value, '/')
+            .map_err(|e| error(node, "EU_SIZE", e.message))?;
+        let modifier_only = value
+            .strip_suffix(')')
+            .and_then(|v| v.rsplit_once('('))
+            .is_some_and(|(key, _)| {
+                self.config.get("/theme/typography/sizes", key).is_some()
+                    || crate::size::dimension(key).is_some()
+            });
+        let (name, line) = if parts.len() > 1 && !modifier_only {
+            (
+                parts[..parts.len() - 1].join("/"),
+                Some(parts.last().unwrap().to_string()),
+            )
+        } else {
+            (value.to_string(), None)
+        };
+        if line.as_ref().is_some_and(|v| v.is_empty()) {
+            return Err(error(node, "EU_SIZE", "Missing line height after /"));
+        }
+        if let Some((key, factor)) = name.strip_suffix(')').and_then(|s| s.rsplit_once('(')) {
+            if self.config.get("/theme/typography/sizes", key).is_some()
+                || crate::size::dimension(key).is_some()
+            {
+                let factor = factor
+                    .parse::<f64>()
+                    .ok()
+                    .filter(|n| n.is_finite() && *n > 0.0)
+                    .ok_or_else(|| {
+                        error(
+                            node,
+                            "EU_SIZE",
+                            "Font size modifier must be a positive number",
+                        )
+                    })?;
+                return Ok((key.into(), factor, line));
+            }
+        }
+        Ok((name, 1.0, line))
+    }
+
+    fn font_properties(
+        &self,
+        node: &Node,
+        value: &Value,
+        index: Option<usize>,
+        multiplier: f64,
+        line_height: Option<&str>,
+    ) -> Result<Vec<Node>, Error> {
+        let sizes = crate::size::Sizes {
+            config: self.config,
+            offset: node.offset,
+        };
+        let mut result = Vec::new();
+        if let Some(properties) = value.as_object() {
+            for (property, value) in properties {
+                let raw = css_value(value, property, node)?;
+                let value = if property == "font-size" {
+                    sizes.css(
+                        &crate::size::scale(&raw, multiplier, node.offset)?,
+                        index,
+                        true,
+                    )?
+                } else if crate::size::dimension(&raw)
+                    .is_some_and(|(_, unit)| matches!(unit, "vw" | "dpx"))
+                {
+                    sizes.css(&raw, index, true)?
+                } else {
+                    raw
+                };
+                let declaration = decl(property, &value, node, false);
+                if property.trim_start().starts_with('@') {
+                    return Err(error(
+                        node,
+                        "EU_CONFIG",
+                        "Typography entries must be CSS properties",
+                    ));
+                }
+                validate_interpolation(&declaration.text, false)
+                    .map_err(|e| error(node, "EU_CONFIG", e.message))?;
+                result.push(declaration);
+            }
+        } else {
+            let raw = scalar(value).ok_or_else(|| {
+                error(
+                    node,
+                    "EU_CONFIG",
+                    "Font sizes must be CSS values or property objects",
+                )
+            })?;
+            let parts = crate::parser::split_top_level(&raw, '/')
+                .map_err(|e| error(node, "EU_SIZE", e.message))?;
+            if parts.len() > 2 {
+                return Err(error(
+                    node,
+                    "EU_SIZE",
+                    "Font size values accept one line-height suffix",
+                ));
+            }
+            let height = line_height.or_else(|| parts.get(1).copied());
+            if parts[0].ends_with("dpx") && height.is_some_and(|v| v.ends_with("vw")) {
+                return Err(error(
+                    node,
+                    "EU_SIZE",
+                    "Do not mix dpx font sizes with vw line heights",
+                ));
+            }
+            let raw = crate::size::scale(parts[0], multiplier, node.offset)?;
+            result.push(decl(
+                "font-size",
+                &sizes.css(&raw, index, true)?,
+                node,
+                false,
+            ));
+            if let Some(height) = height {
+                result.push(decl(
+                    "line-height",
+                    &self.line_height(node, height, index)?,
+                    node,
+                    false,
+                ));
+            }
+            return Ok(result);
+        }
+        if let Some(height) = line_height {
+            result.push(decl(
+                "line-height",
+                &self.line_height(node, height, index)?,
+                node,
+                false,
+            ));
+        }
+        Ok(result)
+    }
+
+    fn line_height(&self, node: &Node, value: &str, index: Option<usize>) -> Result<String, Error> {
+        if crate::size::dimension(value).is_some_and(|(n, unit)| n >= 0.0 && unit.is_empty()) {
+            return Ok(value.into());
+        }
+        crate::size::Sizes {
+            config: self.config,
+            offset: node.offset,
+        }
+        .css(value, index, true)
+    }
+
+    fn size_rules(
+        &self,
+        node: &Node,
+        query: Option<&str>,
+        ctx: &Context,
+        mut render: impl FnMut(Option<usize>) -> Result<Vec<Node>, Error>,
+    ) -> Result<Vec<Node>, Error> {
         if query.is_some() && ctx.responsive.is_some() {
             return Err(error(
                 node,
@@ -531,120 +785,135 @@ impl Compiler<'_, '_> {
                 "A directive inside @responsive cannot have its own breakpoint query",
             ));
         }
+        match render(None) {
+            Ok(nodes) => return self.wrap(node, nodes, query, ctx),
+            Err(e) if e.code == "EU_SIZE_CONTEXT" => {}
+            Err(e) => return Err(e),
+        }
+        if self.config.breakpoints.is_empty() {
+            return Err(error(
+                node,
+                "EU_CONFIG",
+                "Responsive sizes require configured breakpoints",
+            ));
+        }
+        let scope = query.or(ctx.responsive.as_deref());
+        let arrow = scope.is_some_and(|q| q.contains("->"));
+        let indices = match scope {
+            Some(q) if !arrow => self.config.select(q, node.offset)?,
+            _ => (0..self.config.breakpoints.len()).collect(),
+        };
+        let mut result = Vec::new();
+        for index in &indices {
+            let nodes = render(Some(*index))?;
+            if ctx.responsive.is_some() && indices.len() == 1 && !arrow {
+                result.extend(nodes);
+            } else {
+                result.push(Node::block(
+                    format!("@media {}", self.config.media_indices(&[*index])),
+                    nodes,
+                    node.offset,
+                ));
+            }
+        }
+        if arrow && query.is_some() {
+            self.wrap(node, result, query, ctx)
+        } else {
+            Ok(result)
+        }
+    }
+
+    fn spacing(
+        &self,
+        node: &Node,
+        args: &[&str],
+        ctx: &Context,
+        important: bool,
+    ) -> Result<Vec<Node>, Error> {
+        arity(node, args, 1, 3)?;
+        let prop = args[0];
+        if prop == "breakout" {
+            arity(node, args, 1, 2)?;
+            return self.wrap(
+                node,
+                vec![
+                    decl("width", "100vw", node, important),
+                    decl("margin-left", "calc(50% - 50vw)", node, important),
+                ],
+                args.get(1).copied(),
+                ctx,
+            );
+        }
+        let sizes = crate::size::Sizes {
+            config: self.config,
+            offset: node.offset,
+        };
+        if let Some(inner) = prop
+            .strip_prefix("negate(")
+            .and_then(|s| s.strip_suffix(')'))
+        {
+            arity(node, args, 1, 2)?;
+            let params = crate::parser::split_top_level(inner, ',')
+                .map_err(|e| error(node, "EU_ARGUMENTS", e.message))?;
+            if params.len() != 2 || params.iter().any(|s| s.is_empty()) {
+                return Err(error(
+                    node,
+                    "EU_ARGUMENTS",
+                    "negate() expects a current gap and desired gap",
+                ));
+            }
+            return self.size_rules(node, args.get(1).copied(), ctx, |index| {
+                let current = sizes.spacing(params[0], index)?;
+                let desired = sizes.gap(params[1], index)?;
+                Ok(vec![decl(
+                    "margin-top",
+                    &format!("calc({desired} - {current})"),
+                    node,
+                    important,
+                )])
+            });
+        }
+        if prop == "container" {
+            arity(node, args, 1, 2)?;
+            return self.size_rules(node, args.get(1).copied(), ctx, |index| {
+                Ok(sizes
+                    .container(index)?
+                    .iter()
+                    .map(|(p, v)| decl(p, v, node, important))
+                    .collect())
+            });
+        }
+        arity(node, args, 2, 3)?;
         let props = match prop {
             "padding-x" => vec!["padding-left", "padding-right"],
             "padding-y" => vec!["padding-top", "padding-bottom"],
             "margin-x" => vec!["margin-left", "margin-right"],
             "margin-y" => vec!["margin-top", "margin-bottom"],
-            "container" | "breakout" | "translateX" | "translateY" => {
-                return Err(error(
-                    node,
-                    "EU_UNSUPPORTED",
-                    format!("@space {prop} is not implemented yet"),
-                ))
-            }
             _ => vec![prop],
         };
-        if !props
-            .iter()
-            .all(|p| p.chars().all(|c| c.is_ascii_alphabetic() || c == '-') && !p.is_empty())
+        if !prop.starts_with(|c: char| c.is_alphabetic() || matches!(c, '-' | '_'))
+            || !prop
+                .chars()
+                .all(|c| c.is_alphanumeric() || matches!(c, '-' | '_'))
         {
             return Err(error(node, "EU_ARGUMENTS", "Invalid CSS property"));
         }
-        let base = if font {
-            "/theme/typography/sizes"
-        } else {
-            "/theme/spacing"
-        };
-        let token = self.config.get(base, size);
-        let make_decls = |value: &Value| -> Result<Vec<Node>, Error> {
-            if font && value.is_object() {
-                return value
-                    .as_object()
-                    .unwrap()
+        self.size_rules(node, args.get(2).copied(), ctx, |index| {
+            let value = sizes.spacing(args[1], index)?;
+            if matches!(prop, "translateX" | "translateY" | "translateZ" | "scale") {
+                Ok(vec![decl(
+                    "transform",
+                    &format!("{prop}({value})"),
+                    node,
+                    important,
+                )])
+            } else {
+                Ok(props
                     .iter()
-                    .map(|(p, v)| {
-                        let value = css_value(v, p, node)?;
-                        if p == "font-size" {
-                            self.check_size(node, &value)?;
-                        }
-                        Ok(decl(p, &value, node, important))
-                    })
-                    .collect();
+                    .map(|p| decl(p, &value, node, important))
+                    .collect())
             }
-            let value = scalar(value)
-                .ok_or_else(|| error(node, "EU_CONFIG", "A size must resolve to a CSS value"))?;
-            self.check_size(node, &value)?;
-            Ok(props
-                .iter()
-                .map(|p| decl(p, &value, node, important))
-                .collect())
-        };
-        if let Some(token) = token {
-            if let Some(values) = token.as_object() {
-                let mut result = Vec::new();
-                if font {
-                    if let Some(base) = values.get("__base__") {
-                        result.extend(make_decls(base)?);
-                    }
-                }
-                let indices = match query.or(ctx.responsive.as_deref()) {
-                    Some(q) => self.config.select(q, node.offset)?,
-                    None => (0..self.config.breakpoints.len()).collect(),
-                };
-                if indices.is_empty() && self.config.breakpoints.is_empty() {
-                    return Err(error(
-                        node,
-                        "EU_CONFIG",
-                        "Named responsive sizes require breakpoints",
-                    ));
-                }
-                for index in indices {
-                    let key = &self.config.breakpoints[index].0;
-                    let value = values.get(key).ok_or_else(|| {
-                        error(
-                            node,
-                            "EU_CONFIG",
-                            format!("Size `{size}` has no value for breakpoint `{key}`"),
-                        )
-                    })?;
-                    let decls = make_decls(value)?;
-                    result.push(Node::block(
-                        format!("@media {}", self.config.media_indices(&[index])),
-                        decls,
-                        node.offset,
-                    ));
-                }
-                return Ok(result);
-            }
-            return self.wrap(node, make_decls(token)?, query, ctx);
-        }
-        self.wrap(node, make_decls(&Value::String(size.into()))?, query, ctx)
-    }
-
-    fn check_size(&self, node: &Node, value: &str) -> Result<(), Error> {
-        if !literal_size(value) {
-            return Err(error(
-                node,
-                "EU_UNSUPPORTED",
-                format!("Size expression `{value}` is not implemented yet"),
-            ));
-        }
-        if self
-            .config
-            .value
-            .get("setMaxForVw")
-            .and_then(Value::as_bool)
-            == Some(true)
-            && value.contains("vw")
-        {
-            return Err(error(
-                node,
-                "EU_UNSUPPORTED",
-                "setMaxForVw sizing is not implemented yet",
-            ));
-        }
-        Ok(())
+        })
     }
 }
 
@@ -683,68 +952,4 @@ fn css_value(value: &Value, property: &str, node: &Node) -> Result<String, Error
             .map(|v| v.join(sep));
     }
     scalar(value).ok_or_else(|| error(node, "EU_CONFIG", format!("Invalid value for `{property}`")))
-}
-
-fn literal_size(value: &str) -> bool {
-    if matches!(
-        value,
-        "0" | "auto"
-            | "inherit"
-            | "initial"
-            | "unset"
-            | "revert"
-            | "revert-layer"
-            | "none"
-            | "normal"
-            | "min-content"
-            | "max-content"
-            | "fit-content"
-    ) {
-        return true;
-    }
-    if ["var(", "calc(", "min(", "max(", "clamp(", "env("]
-        .iter()
-        .any(|p| value.starts_with(p))
-    {
-        return !["dpx", "theme(", "between(", "vertical-rhythm(", "negate("]
-            .iter()
-            .any(|p| value.contains(p));
-    }
-    let end = value
-        .find(|c: char| !(c.is_ascii_digit() || matches!(c, '.' | '+' | '-')))
-        .unwrap_or(value.len());
-    if value[..end].parse::<f64>().is_err() {
-        return false;
-    }
-    matches!(
-        &value[end..],
-        "px" | "rem"
-            | "em"
-            | "%"
-            | "vw"
-            | "vh"
-            | "vmin"
-            | "vmax"
-            | "svh"
-            | "lvh"
-            | "dvh"
-            | "svw"
-            | "lvw"
-            | "dvw"
-            | "ch"
-            | "ex"
-            | "lh"
-            | "rlh"
-            | "cm"
-            | "mm"
-            | "in"
-            | "pt"
-            | "pc"
-            | "cqw"
-            | "cqh"
-            | "cqi"
-            | "cqb"
-            | "cqmin"
-            | "cqmax"
-    )
 }

@@ -1,12 +1,12 @@
 //! Shared sizing primitives, ported incrementally from parseSize.js.
 use crate::{
     config::{scalar, Config},
+    parser::{arguments, rewrite_value, split_top_level},
     Error,
 };
 use serde_json::Value;
 
 /// Design pixels use a reference viewport and retain Europa's zoom variable.
-/// Initially used by @unpack; expression and spacing integration follows separately.
 pub fn design_pixels(
     value: &str,
     config: &Config<'_>,
@@ -66,6 +66,18 @@ pub fn design_pixels(
     }
     // Match the legacy five-decimal vw conversion before applying a maximum.
     let vw: f64 = format!("{vw:.5}").parse().unwrap();
+    viewport(vw, config, index, offset, true)
+}
+
+fn viewport(
+    vw: f64,
+    config: &Config<'_>,
+    index: usize,
+    offset: usize,
+    zoom: bool,
+) -> Result<String, Error> {
+    let error = |message| Error::new("EU_SIZE", message, offset);
+    let breakpoint = &config.breakpoints[index].0;
     if config.value.get("setMaxForVw").and_then(Value::as_bool) == Some(true)
         && index + 1 == config.breakpoints.len()
     {
@@ -91,5 +103,484 @@ pub fn design_pixels(
         }
         return Ok(format!("{capped}{unit}"));
     }
-    Ok(format!("calc({vw}vw * var(--ec-zoom))"))
+    Ok(if zoom {
+        format!("calc({vw}vw * var(--ec-zoom))")
+    } else {
+        format!("{vw}vw")
+    })
+}
+
+/// Parse a finite CSS number and optional dimension without guessing from substrings.
+pub fn dimension(value: &str) -> Option<(f64, &str)> {
+    let bytes = value.as_bytes();
+    let mut end = usize::from(matches!(bytes.first(), Some(b'+' | b'-')));
+    let first = end;
+    while bytes.get(end).is_some_and(u8::is_ascii_digit) {
+        end += 1;
+    }
+    if bytes.get(end) == Some(&b'.') {
+        end += 1;
+        while bytes.get(end).is_some_and(u8::is_ascii_digit) {
+            end += 1;
+        }
+    }
+    if end == first || &value[first..end] == "." {
+        return None;
+    }
+    if matches!(bytes.get(end), Some(b'e' | b'E')) {
+        let mut exponent = end + 1;
+        if matches!(bytes.get(exponent), Some(b'+' | b'-')) {
+            exponent += 1;
+        }
+        let digits = exponent;
+        while bytes.get(exponent).is_some_and(u8::is_ascii_digit) {
+            exponent += 1;
+        }
+        if exponent > digits {
+            end = exponent;
+        }
+    }
+    let unit = &value[end..];
+    if !unit.bytes().all(|c| c.is_ascii_alphabetic() || c == b'%') {
+        return None;
+    }
+    let number = value[..end].parse::<f64>().ok()?;
+    number.is_finite().then_some((number, unit))
+}
+
+pub fn scale(value: &str, factor: f64, offset: usize) -> Result<String, Error> {
+    if !factor.is_finite() {
+        return Err(Error::new(
+            "EU_SIZE",
+            "Size multiplier must be finite",
+            offset,
+        ));
+    }
+    if let Some((number, unit)) = dimension(value) {
+        let product = number * factor;
+        if !product.is_finite() {
+            return Err(Error::new(
+                "EU_SIZE",
+                "Size multiplication overflowed",
+                offset,
+            ));
+        }
+        return Ok(format!("{product}{unit}"));
+    }
+    Ok(if factor == 1.0 {
+        value.into()
+    } else {
+        format!("calc({value} * {factor})")
+    })
+}
+
+pub struct Sizes<'a, 'b> {
+    pub config: &'a Config<'b>,
+    pub offset: usize,
+}
+
+impl Sizes<'_, '_> {
+    pub fn gap(&self, value: &str, index: Option<usize>) -> Result<String, Error> {
+        match self.spacing(value, index) {
+            Ok(value) => return Ok(value),
+            Err(e) if e.code == "EU_SIZE_CONTEXT" => return Err(e),
+            Err(_) => {}
+        }
+        for op in ['+', '-'] {
+            let parts = split_top_level(value, op).map_err(|e| self.error(e.message))?;
+            if parts.len() > 1 && parts.iter().all(|p| !p.is_empty()) {
+                let values = parts
+                    .into_iter()
+                    .map(|p| self.spacing(p, index))
+                    .collect::<Result<Vec<_>, _>>()?;
+                return Ok(format!("calc({})", values.join(&format!(" {op} "))));
+            }
+        }
+        self.spacing(value, index)
+    }
+    fn error(&self, message: impl Into<String>) -> Error {
+        Error::new("EU_SIZE", message, self.offset)
+    }
+    fn index(&self, index: Option<usize>) -> Result<usize, Error> {
+        index.ok_or_else(|| {
+            Error::new(
+                "EU_SIZE_CONTEXT",
+                "This size requires a named breakpoint",
+                self.offset,
+            )
+        })
+    }
+    pub fn at<'v>(&self, value: &'v Value, index: Option<usize>) -> Result<&'v Value, Error> {
+        if let Some(values) = value.as_object() {
+            let key = &self.config.breakpoints[self.index(index)?].0;
+            values
+                .get(key)
+                .or_else(|| values.get("*"))
+                .ok_or_else(|| self.error(format!("Size has no value for breakpoint `{key}`")))
+        } else {
+            Ok(value)
+        }
+    }
+    fn config_size(&self, path: &str, index: Option<usize>) -> Result<String, Error> {
+        let value = self
+            .config
+            .value
+            .pointer(path)
+            .ok_or_else(|| self.error(format!("Missing config `{path}`")))?;
+        scalar(self.at(value, index)?)
+            .ok_or_else(|| self.error(format!("Expected a size in `{path}`")))
+    }
+    pub fn spacing(&self, value: &str, index: Option<usize>) -> Result<String, Error> {
+        self.spacing_inner(value.trim(), index, 0)
+    }
+    fn spacing_inner(
+        &self,
+        value: &str,
+        index: Option<usize>,
+        depth: usize,
+    ) -> Result<String, Error> {
+        if depth > 64 {
+            return Err(self.error("Cyclic or excessively nested size expression"));
+        }
+        if let Some(token) = self.config.get("/theme/spacing", value) {
+            let token = scalar(self.at(token, index)?)
+                .ok_or_else(|| self.error("Spacing tokens must contain CSS sizes"))?;
+            return self.spacing_inner(&token, index, depth + 1);
+        }
+        if value == "container" {
+            return self.container_padding(index, depth + 1);
+        }
+        if let Some(rest) = value.strip_prefix('-') {
+            if dimension(value).is_none() {
+                return scale(
+                    &self.spacing_inner(rest, index, depth + 1)?,
+                    -1.0,
+                    self.offset,
+                );
+            }
+        }
+        for op in ['*', '/'] {
+            let parts = split_top_level(value, op).map_err(|e| self.error(e.message))?;
+            if parts.len() == 2 {
+                if op == '/'
+                    && parts[0]
+                        .split(':')
+                        .next()
+                        .and_then(|v| v.parse::<f64>().ok())
+                        .is_some()
+                {
+                    return self.fraction(parts[0], parts[1], index);
+                }
+                let factor = parts[1]
+                    .parse::<f64>()
+                    .ok()
+                    .filter(|n| n.is_finite() && (op != '/' || *n != 0.0))
+                    .ok_or_else(|| {
+                        self.error(
+                            "Size arithmetic requires a finite multiplier or nonzero divisor",
+                        )
+                    })?;
+                let value = self.spacing_inner(parts[0], index, depth + 1)?;
+                return scale(
+                    &value,
+                    if op == '/' { 1.0 / factor } else { factor },
+                    self.offset,
+                );
+            }
+            if parts.len() > 2 {
+                return Err(self.error("Use calc() for compound size arithmetic"));
+            }
+        }
+        if let Some((number, "")) = dimension(value) {
+            if number == 0.0 {
+                return Ok("0".into());
+            }
+            let gutter = self.config_size("/theme/columns/gutters", index)?;
+            // Multiply before conversion to avoid compounding dpx rounding.
+            return self.css(&scale(&gutter, number, self.offset)?, index, false);
+        }
+        self.css_inner(value, index, false, depth + 1)
+    }
+    pub fn css(&self, value: &str, index: Option<usize>, zoom: bool) -> Result<String, Error> {
+        self.css_inner(value, index, zoom, 0)
+    }
+    fn css_inner(
+        &self,
+        value: &str,
+        index: Option<usize>,
+        zoom: bool,
+        depth: usize,
+    ) -> Result<String, Error> {
+        if depth > 64 {
+            return Err(self.error("Cyclic or excessively nested size expression"));
+        }
+        if let Some((number, unit)) = dimension(value) {
+            return match unit {
+                "dpx" => design_pixels(value, self.config, self.index(index)?, self.offset),
+                "vw" => {
+                    if self
+                        .config
+                        .value
+                        .get("setMaxForVw")
+                        .and_then(Value::as_bool)
+                        == Some(true)
+                    {
+                        viewport(number, self.config, self.index(index)?, self.offset, zoom)
+                    } else {
+                        Ok(if zoom {
+                            format!("calc({value} * var(--ec-zoom))")
+                        } else {
+                            value.into()
+                        })
+                    }
+                }
+                "" if number != 0.0 => Err(self.error("A CSS length needs a unit")),
+                "" | "px" | "rem" | "em" | "%" | "vh" | "vmin" | "vmax" | "svh" | "lvh" | "dvh"
+                | "svw" | "lvw" | "dvw" | "ch" | "ex" | "lh" | "rlh" | "cm" | "mm" | "in"
+                | "pt" | "pc" | "cqw" | "cqh" | "cqi" | "cqb" | "cqmin" | "cqmax" => {
+                    Ok(value.into())
+                }
+                _ => Err(self.error(format!("Unknown size unit `{unit}`"))),
+            };
+        }
+        if matches!(
+            value,
+            "auto"
+                | "inherit"
+                | "initial"
+                | "unset"
+                | "revert"
+                | "revert-layer"
+                | "none"
+                | "normal"
+                | "min-content"
+                | "max-content"
+                | "fit-content"
+        ) {
+            return Ok(value.into());
+        }
+        if ![
+            "var(",
+            "calc(",
+            "min(",
+            "max(",
+            "clamp(",
+            "env(",
+            "fit-content(",
+            "between(",
+            "vertical-rhythm(",
+        ]
+        .iter()
+        .any(|name| value.starts_with(name))
+        {
+            return Err(self.error(format!("Unknown size expression `{value}`")));
+        }
+        rewrite_value(value, &mut |name, args| {
+            if let Some(args) = args {
+                match name {
+                    "var[]" => return self.spacing_inner(args.trim(), index, depth + 1).map(Some),
+                    "between" => return self.between(args, index).map(Some),
+                    "vertical-rhythm" => return self.rhythm(args, index, depth + 1).map(Some),
+                    _ => {}
+                }
+            } else if dimension(name).is_some_and(|(_, unit)| unit == "dpx") {
+                return design_pixels(name, self.config, self.index(index)?, self.offset).map(Some);
+            }
+            Ok(None)
+        })
+        .map_err(|e| {
+            if e.code == "EU_PARSE" {
+                self.error(e.message)
+            } else {
+                e
+            }
+        })
+    }
+    fn fraction(
+        &self,
+        numerator: &str,
+        denominator: &str,
+        index: Option<usize>,
+    ) -> Result<String, Error> {
+        let parse = |part: &str| -> Result<(f64, Option<f64>), Error> {
+            let mut parts = part.split(':');
+            let number = parts
+                .next()
+                .unwrap()
+                .parse::<f64>()
+                .ok()
+                .filter(|n| n.is_finite() && *n >= 0.0)
+                .ok_or_else(|| self.error("Invalid column count"))?;
+            let gutter = parts
+                .next()
+                .map(|v| {
+                    v.parse::<f64>()
+                        .ok()
+                        .filter(|n| n.is_finite())
+                        .ok_or_else(|| self.error("Invalid gutter modifier"))
+                })
+                .transpose()?;
+            if parts.next().is_some() {
+                return Err(self.error("Invalid column fraction"));
+            }
+            Ok((number, gutter))
+        };
+        let (wanted, added) = parse(numerator)?;
+        let (total, total_added) = parse(denominator)?;
+        if total == 0.0
+            || wanted > total
+            || wanted == total && added.unwrap_or(0.0) > total_added.unwrap_or(0.0)
+        {
+            return Err(self.error("Column fraction overflows or has a zero denominator"));
+        }
+        self.index(index)?;
+        let ratio = wanted / total;
+        let coefficient = added.unwrap_or(0.0) - total_added.unwrap_or(1.0 - ratio);
+        let percentage = format!("{}%", ratio * 100.0);
+        if coefficient == 0.0 {
+            return Ok(percentage);
+        }
+        let gutter = self.css(
+            &self.config_size("/theme/columns/gutters", index)?,
+            index,
+            false,
+        )?;
+        let amount = scale(&gutter, coefficient.abs(), self.offset)?;
+        Ok(format!(
+            "calc({percentage} {} {amount})",
+            if coefficient < 0.0 { "-" } else { "+" }
+        ))
+    }
+    fn container_padding(&self, index: Option<usize>, depth: usize) -> Result<String, Error> {
+        if depth > 64 {
+            return Err(self.error("Cyclic container size"));
+        }
+        let padding = self.config_size("/theme/container/padding", index)?;
+        if padding.starts_with('*') {
+            let args = arguments(&padding).map_err(|e| self.error(e.message))?;
+            if args[0] != "*" || args.len() > 2 {
+                return Err(
+                    self.error("Dynamic container padding expects * and an optional minimum")
+                );
+            }
+            let maximum = self.config_size("/theme/container/maxWidth", index)?;
+            let maximum = self.css_inner(&maximum, index, false, depth + 1)?;
+            let dynamic = format!("calc((100vw - {maximum}) / 2)");
+            return if args.len() == 2 {
+                Ok(format!(
+                    "max({}, {dynamic})",
+                    self.css_inner(args[1], index, false, depth + 1)?
+                ))
+            } else {
+                Ok(dynamic)
+            };
+        }
+        self.css_inner(&padding, index, false, depth + 1)
+    }
+    pub fn container(&self, index: Option<usize>) -> Result<Vec<(&'static str, String)>, Error> {
+        let padding = self.container_padding(index, 0)?;
+        let dynamic = self
+            .config_size("/theme/container/padding", index)?
+            .starts_with('*');
+        let mut values = vec![
+            ("padding-left", padding.clone()),
+            ("padding-right", padding),
+        ];
+        if !dynamic {
+            values.push((
+                "max-width",
+                self.css(
+                    &self.config_size("/theme/container/maxWidth", index)?,
+                    index,
+                    false,
+                )?,
+            ));
+        }
+        values.extend([
+            ("margin-left", if dynamic { "0" } else { "auto" }.into()),
+            ("margin-right", if dynamic { "0" } else { "auto" }.into()),
+            ("width", if dynamic { "100vw" } else { "100%" }.into()),
+        ]);
+        Ok(values)
+    }
+    fn between(&self, args: &str, index: Option<usize>) -> Result<String, Error> {
+        let index = self.index(index)?;
+        let pair = args
+            .char_indices()
+            .filter(|(_, c)| *c == '-')
+            .find_map(|(i, _)| {
+                Some((
+                    dimension(args[..i].trim())?,
+                    dimension(args[i + 1..].trim())?,
+                ))
+            })
+            .ok_or_else(|| self.error("between() expects two lengths, such as 16px-24px"))?;
+        let ((min, unit), (max, max_unit)) = pair;
+        if unit != max_unit || !matches!(unit, "px" | "rem") {
+            return Err(self.error("between() lengths must have matching px or rem units"));
+        }
+        if min == max {
+            return Ok(format!("{max}{unit}"));
+        }
+        let mut low = self.config.breakpoints[index].1;
+        let mut high = self
+            .config
+            .breakpoints
+            .get(index + 1)
+            .map(|(_, n)| n - 1.0)
+            .unwrap_or(low + 200.0);
+        if low == 0.0 {
+            low = 320.0;
+        }
+        if unit == "rem" {
+            let root = self
+                .config
+                .value
+                .pointer("/theme/typography/rootSize")
+                .and_then(scalar)
+                .unwrap_or_else(|| "18px".into());
+            let root = dimension(&root)
+                .filter(|(n, u)| *n > 0.0 && *u == "px")
+                .ok_or_else(|| {
+                    self.error("Fluid rem sizing requires a positive px typography.rootSize")
+                })?
+                .0;
+            low /= root;
+            high /= root;
+        }
+        if high <= low {
+            return Err(self.error("between() requires a positive viewport range"));
+        }
+        Ok(format!(
+            "calc({min}{unit} + {} * ((100vw - {low}{unit}) / {}))",
+            max - min,
+            high - low
+        ))
+    }
+    fn rhythm(&self, args: &str, index: Option<usize>, depth: usize) -> Result<String, Error> {
+        let args = split_top_level(args, ',').map_err(|e| self.error(e.message))?;
+        if args.is_empty() || args.len() > 2 {
+            return Err(
+                self.error("vertical-rhythm() expects a font token path and optional line height")
+            );
+        }
+        let token = crate::config::lookup(self.config.value, args[0])
+            .ok_or_else(|| self.error(format!("Unknown typography path `{}`", args[0])))?;
+        let token = self.at(token, index)?;
+        let size = scalar(token.get("font-size").unwrap_or(token))
+            .ok_or_else(|| self.error("vertical-rhythm() requires a font size"))?;
+        let size = self.css_inner(&size, index, true, depth + 1)?;
+        let line = match args.get(1) {
+            Some(v) => v.to_string(),
+            None => self.config_size("/theme/typography/lineHeight", index)?,
+        };
+        let line = line
+            .parse::<f64>()
+            .ok()
+            .filter(|n| n.is_finite() && *n > 0.0)
+            .ok_or_else(|| {
+                self.error("vertical-rhythm() requires a positive unitless line height")
+            })?;
+        scale(&size, line, self.offset)
+    }
 }

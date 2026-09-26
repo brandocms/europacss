@@ -66,6 +66,99 @@ pub fn arguments(source: &str) -> Result<Vec<&str>, Error> {
     Ok(args)
 }
 
+/// Split only at the current component-value level, retaining nested CSS intact.
+pub fn split_top_level(source: &str, separator: char) -> Result<Vec<&str>, Error> {
+    let mut scanner = Scanner { source, pos: 0 };
+    let mut start = 0;
+    let mut parts = Vec::new();
+    while scanner.byte().is_some() {
+        if scanner.rest().starts_with(separator) {
+            parts.push(source[start..scanner.pos].trim());
+            scanner.pos += separator.len_utf8();
+            start = scanner.pos;
+        } else if !scanner.opaque(0)? {
+            if matches!(scanner.byte(), Some(b')' | b']' | b'}' | b';')) {
+                return Err(scanner.error("Unexpected delimiter in value"));
+            }
+            scanner.advance();
+        }
+    }
+    parts.push(source[start..].trim());
+    Ok(parts)
+}
+
+/// Visit words and functions in CSS values, excluding strings, comments, escapes,
+/// and URL payloads. A handled function owns its arguments; other functions recurse.
+/// Europa var[...] references are surfaced as functions named "var[]".
+pub fn rewrite_value(
+    source: &str,
+    mapper: &mut impl FnMut(&str, Option<&str>) -> Result<Option<String>, Error>,
+) -> Result<String, Error> {
+    fn rewrite(
+        source: &str,
+        mapper: &mut impl FnMut(&str, Option<&str>) -> Result<Option<String>, Error>,
+        depth: usize,
+    ) -> Result<String, Error> {
+        if depth > 128 {
+            return Err(Error::new(
+                "EU_LIMIT",
+                "Maximum value nesting depth exceeded",
+                0,
+            ));
+        }
+        let mut scanner = Scanner { source, pos: 0 };
+        let mut result = String::new();
+        while let Some(c) = scanner.byte() {
+            let start = scanner.pos;
+            if c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-' | b'.' | b'+') || c >= 128 {
+                scanner.advance();
+                while scanner.rest().chars().next().is_some_and(|c| {
+                    c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | '+' | '%')
+                }) {
+                    scanner.advance();
+                }
+                let name = &source[start..scanner.pos];
+                if scanner.byte() == Some(b'(') || name == "var" && scanner.byte() == Some(b'[') {
+                    let bracket = scanner.byte() == Some(b'[');
+                    let inner = scanner.pos + 1;
+                    scanner.component(depth + 1)?;
+                    let args = &source[inner..scanner.pos - 1];
+                    if name.eq_ignore_ascii_case("url") {
+                        result.push_str(&source[start..scanner.pos]);
+                    } else if let Some(value) =
+                        mapper(if bracket { "var[]" } else { name }, Some(args))?
+                    {
+                        result.push_str(&value);
+                    } else {
+                        result.push_str(name);
+                        result.push(if bracket { '[' } else { '(' });
+                        result.push_str(&rewrite(args, mapper, depth + 1)?);
+                        result.push(if bracket { ']' } else { ')' });
+                    }
+                } else {
+                    result.push_str(&mapper(name, None)?.unwrap_or_else(|| name.into()));
+                }
+            } else if matches!(c, b'(' | b'[') {
+                scanner.component(depth + 1)?;
+                result.push(char::from(c));
+                result.push_str(&rewrite(
+                    &source[start + 1..scanner.pos - 1],
+                    mapper,
+                    depth + 1,
+                )?);
+                result.push(if c == b'(' { ')' } else { ']' });
+            } else if scanner.opaque(depth)? {
+                result.push_str(&source[start..scanner.pos]);
+            } else {
+                scanner.advance();
+                result.push_str(&source[start..scanner.pos]);
+            }
+        }
+        Ok(result)
+    }
+    rewrite(source, mapper, 0)
+}
+
 /// Expand iteration placeholders without editing comments, escapes, or longer names.
 /// Strings are intentional interpolation sites (e.g. content: '$key').
 pub fn interpolate(source: &str, key: &str, value: Option<&str>) -> Result<String, Error> {

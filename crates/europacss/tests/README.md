@@ -26,10 +26,15 @@ These 22 legacy cases are represented by Rust assertions, sometimes grouped in o
 
 ## Next feature families
 
-1. Shared size-expression parsing: integrate the design-pixel primitive into spacing and typography, then gutter multipliers, fractions, container values, `var[...]`, and calculations. Use the existing space/container/column cases as the specification.
-2. Typography queries and wildcard expansion, including responsive base properties and scoped overrides.
-3. Grid/column helpers and remaining shortcuts, reusing the size engine. Keep deprecated `@row` as a migration diagnostic.
+1. Continue the systematic spacing/container/column/typography case audit. The shared size engine and grid/column helpers are now implemented; [sizing.rs](sizing.rs) and [typography.rs](typography.rs) cover representative legacy calculations, wildcard/negative/hierarchical tokens, modifiers, viewport reference precedence, nested scope, and failures. These table-driven checks do not yet represent every old case. Equivalent values are not yet grouped across breakpoint ranges.
 4. CSS value functions (`theme`, `ease`) with token-aware parsing and diagnostics.
 5. Import resolution and dependency tracking with source provenance across files, then bundled `@europa` styles and watch mode.
+
+Sizing corrections to include in migration analysis:
+
+- `between()` uses the same viewport interval for its lower endpoint and slope. In the smallest breakpoint, spacing previously substituted 320px after calculating the slope from zero, while typography already used 320px in the slope. The shared formula follows typography and requires a positive interval. Fluid endpoints must use matching px or rem units.
+- An overflowing column fraction or zero denominator is an error. Negative gutter adjustments remain supported. The previous overflow check could be bypassed by its surrounding condition.
+- Multiplying an object-based typography style retains its other properties; only font size is multiplied. Conversions still apply after multiplication, including design pixels and viewport maximums.
+- `var[...]` replacements stay grouped inside calculations, including negative/subtracted expressions and nested native math. Strings, comments, URL payloads, and custom-property names are excluded from dimension rewriting.
 
 Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss --all-targets -- -D warnings` and `cargo fmt --all -- --check` before committing.

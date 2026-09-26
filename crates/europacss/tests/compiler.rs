@@ -158,9 +158,8 @@ fn error_positions_handle_unicode_and_crlf() {
 fn unsupported_features_fail_explicitly() {
     for css in [
         "@import './a.css';",
-        ".x { @column 3; }",
-        ".x { @space width 20dpx; }",
-        ".x { @fontsize md(1.2)/1.5; }",
+        "@europa;",
+        ".x { @at-root {color:red} }",
     ] {
         assert_eq!(
             compile(&request(css)).unwrap_err().code,
@@ -200,12 +199,12 @@ fn unported_functions_cannot_leak_into_output() {
 }
 
 #[test]
-fn unported_size_options_and_object_values_fail_explicitly() {
+fn missing_size_configuration_and_invalid_font_units_fail_explicitly() {
     let mut req = request(".x { @space width 20vw; }");
     req.config["setMaxForVw"] = json!(true);
-    assert_eq!(compile(&req).unwrap_err().code, "EU_UNSUPPORTED");
+    assert_eq!(compile(&req).unwrap_err().code, "EU_SIZE");
     let mut req = request(".x { @fontsize special mobile; }");
     req.config["theme"]["typography"] =
-        json!({"sizes":{"special":{"mobile":{"font-size":"20dpx"}}}});
-    assert_eq!(compile(&req).unwrap_err().code, "EU_UNSUPPORTED");
+        json!({"sizes":{"special":{"mobile":{"font-size":"20wrong"}}}});
+    assert_eq!(compile(&req).unwrap_err().code, "EU_SIZE");
 }
