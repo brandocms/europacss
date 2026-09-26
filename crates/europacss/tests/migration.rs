@@ -8,6 +8,136 @@ fn analyze(source: &str) -> migration::Report {
 }
 
 #[test]
+fn pseudo_element_parent_diagnostics_show_the_explicit_legacy_selector() {
+    let source = "@layer components { .swiper { .bullet { &::before { .paused & { animation-play-state:paused } } } } }";
+    let report = migration::analyze(&request(source, config()), migration::LEGACY_BETA6).unwrap();
+    assert!(!report.analysis_complete);
+    let finding = report
+        .findings
+        .iter()
+        .find(|f| f.diagnostic.code == "EU_MIGRATION_MATCHING")
+        .unwrap();
+    assert!(
+        finding.help.contains(".paused .swiper .bullet::before"),
+        "{}",
+        finding.help
+    );
+    assert!(finding.help.contains("preserving all enclosing"));
+    assert!(finding.fix.is_none());
+}
+
+#[test]
+fn beta6_profile_reports_verified_feature_and_container_changes() {
+    let mut cfg = config();
+    cfg["theme"]["typography"] =
+        json!({"sizes":{"body":{"__base__":{"font-weight":700},"*":"16px"}}});
+    cfg["theme"]["container"] = json!({"padding":{"mobile":"calc(100px + 20px)","tablet":"30px","desktop":"40px"},"maxWidth":{"mobile":"500px","tablet":"700px","desktop":"1000px"}});
+    for (source, explanation) in [
+        (".x{@color fg red tablet}", "ignored the breakpoint"),
+        (".x{@color fg rgb(1, 2, 3)}", "truncating CSS functions"),
+        (".x{@mq tablet{color:red}}", "not a Europa directive"),
+        (".x{@fontsize body}", "__base__"),
+        (
+            ".x{@space padding-left container/2 mobile}",
+            "whole container padding",
+        ),
+        (".x{@space container $sm}", "first breakpoint"),
+        (".x{@responsive $sm{@fontsize 20px}}", "Literal font sizes"),
+        (".x{@responsive 300px->600px{color:red}}", "arrow ranges"),
+        (".x{@space breakout}", "breakout"),
+        (".x{@space margin-left negate(20px)}", "negate()"),
+    ] {
+        let req = request(source, cfg.clone());
+        let report = migration::analyze(&req, migration::LEGACY_BETA6).unwrap();
+        assert!(report.analysis_complete, "{source}: {report:?}");
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.code == "EU_MIGRATION_LEGACY6"
+                    && f.diagnostic.message.contains(explanation)),
+            "{source}: {report:?}"
+        );
+        assert!(migration::analyze(&req, LEGACY_VERSION)
+            .unwrap()
+            .findings
+            .iter()
+            .all(|f| f.diagnostic.code != "EU_MIGRATION_LEGACY6"));
+        assert!(europacss::compile(&req).unwrap().warnings.is_empty());
+    }
+}
+
+#[test]
+fn beta6_checks_run_at_expanded_uses_and_review_cannot_cross_versions() {
+    let mut cfg = config();
+    cfg["theme"]["colors"] = json!({"brand":{"dark":"red"}});
+    cfg["enabled"] = false.into();
+    let unused = "%unused{@mq tablet{color:red}} .x{@if enabled{@color fg red tablet}}";
+    assert!(
+        migration::analyze(&request(unused, cfg.clone()), migration::LEGACY_BETA6)
+            .unwrap()
+            .findings
+            .is_empty()
+    );
+    let req = request(
+        "%shared{@color fg brand/dark tablet} .x{@extend %shared}",
+        cfg,
+    );
+    let mut report = migration::analyze(&req, migration::LEGACY_BETA6).unwrap();
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.message.contains("dot-path")));
+    let mut review = serde_json::to_value(&report).unwrap();
+    for finding in review["findings"].as_array_mut().unwrap() {
+        finding["accepted"] = true.into();
+    }
+    migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+    let mut other = migration::analyze(&req, LEGACY_VERSION).unwrap();
+    assert!(migration::apply_acceptances(&mut other, &review.to_string()).is_err());
+    let report = migration::analyze(
+        &request(
+            ".x{@space margin-top 10px tablet; margin-top:20px;}",
+            config(),
+        ),
+        migration::LEGACY_BETA6,
+    )
+    .unwrap();
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
+    assert!(report.findings.iter().all(|f| f.fix.is_none()));
+}
+
+#[test]
+fn beta6_dynamic_container_and_nested_spacing_warn_only_when_used() {
+    let mut cfg = config();
+    cfg["theme"]["container"] = json!({"padding":{"*":"* 20px"},"maxWidth":{"*":"1000px"}});
+    cfg["theme"]["spacing"] = json!({"group":{"small":{"*":"12px"}}});
+    assert!(migration::analyze(
+        &request(".x{color:red}", cfg.clone()),
+        migration::LEGACY_BETA6
+    )
+    .unwrap()
+    .findings
+    .is_empty());
+    let report = migration::analyze(
+        &request(".x{@space container;@space top group/small}", cfg),
+        migration::LEGACY_BETA6,
+    )
+    .unwrap();
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.message.contains("Dynamic container")));
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.message.contains("direct spacing-key")));
+}
+
+#[test]
 fn specificity_reports_actual_branch_changes_including_class_only_lists() {
     for (source, old, new) in [
         (".card, #featured {.title{color:red}}", "(0,2,0)", "(1,1,0)"),

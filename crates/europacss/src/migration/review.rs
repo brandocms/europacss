@@ -77,6 +77,7 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
                 | "EU_MIGRATION_ORDER"
                 | "EU_MIGRATION_SIZE"
                 | "EU_MIGRATION_COLUMN_SIGN"
+                | "EU_MIGRATION_LEGACY6"
         ) {
             return Err(fail(format!("{} is not an acceptable semantic change; resolve this syntax or analysis diagnostic", decision.code)));
         }

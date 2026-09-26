@@ -29,6 +29,17 @@ fn css(source: &str) -> String {
 }
 
 #[test]
+fn authored_color_precision_is_unchanged_until_the_lightning_backend() {
+    let req = request(".x{background:linear-gradient(rgb(0% 0% 0% / .30375),transparent);color:var(--color,hsl(198,100%,50%))}");
+    let frontend = europacss::compile_frontend(&req).unwrap();
+    assert!(frontend.css.contains(".30375"));
+    assert!(frontend.css.contains("hsl(198,100%,50%)"));
+    let output = compile(&req).unwrap();
+    assert!(output.css.contains("#0000004d"));
+    assert!(output.css.contains("#00b2ff"));
+}
+
+#[test]
 fn old_prelude_blocker_compiles_through_our_parser_and_rust_lightning() {
     assert_eq!(
         css(".card { @color fg brand.dark $lg; }"),

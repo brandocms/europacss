@@ -1,6 +1,7 @@
 //! Versioned, read-only migration analysis and explicitly classified source edits.
 //! A clean report is not a computed-style or rendered-page equivalence proof.
 mod fixes;
+pub(crate) mod legacy6;
 mod order;
 mod review;
 mod selectors;
@@ -18,7 +19,8 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
-pub const REPORT_VERSION: u32 = 5;
+pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
+pub const REPORT_VERSION: u32 = 6;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -67,8 +69,8 @@ pub struct Report {
 }
 
 fn version(from: &str) -> Result<(), Error> {
-    if from != LEGACY_VERSION {
-        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {LEGACY_VERSION}; received `{from}`. No assumptions were made about another version."), 0));
+    if !matches!(from, LEGACY_VERSION | LEGACY_BETA6) {
+        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {LEGACY_BETA6} and {LEGACY_VERSION}; received `{from}`. No assumptions were made about another version."), 0));
     }
     Ok(())
 }
@@ -104,6 +106,7 @@ fn report(
 ) -> Result<Report, Error> {
     let mut config = Config::new(&request.config)?;
     config.migration_warnings = Some(std::cell::RefCell::new(Vec::new()));
+    config.migration_beta6 = from == LEGACY_BETA6;
     let mut audit = Audit {
         sources: &sources,
         findings: Vec::new(),
@@ -127,7 +130,9 @@ fn report(
         }
         shift(&mut file_nodes, sources.files[index].start);
         fixes::collect(&file_nodes, false, &mut audit)?;
-        fixes::order_candidates(&file_nodes, &mut audit)?;
+        if !config.migration_beta6 {
+            fixes::order_candidates(&file_nodes, &mut audit)?;
+        }
     }
     let origins = order::origins(&nodes, &config)?;
     match transform::for_migration(nodes, &config) {
@@ -143,6 +148,11 @@ fn report(
         }
     }
     for warning in config.migration_warnings.unwrap().into_inner() {
+        if warning.code == "EU_MIGRATION_LEGACY6" {
+            audit.add(&warning.code, warning.message, warning.offset,
+                "Review this beta.6-specific change against the old output. Keep the new behavior intentionally, or replace it with explicit CSS/config values preserving the old result. No automatic appearance edit is proposed for beta.6.", None);
+            continue;
+        }
         if warning.code == "EU_MIGRATION_INCOMPLETE" {
             audit.complete = false;
         }
@@ -182,6 +192,7 @@ fn report(
             "overlapping-width-media-order".into(),
             "resolved-sizing-corrections".into(),
             "signed-column-intent".into(),
+            if from == LEGACY_BETA6 { "beta6-feature-and-sizing-changes" } else { "beta16-profile" }.into(),
         ],
         analysis_complete: audit.complete,
         limitations: vec![
@@ -189,6 +200,7 @@ fn report(
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
             "Other sizing differences (including calculation grouping and color query gaps) and backend/browser-target changes require separate review".into(),
+            "Configuration must represent the resolved legacy values; beta.6 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],
         findings: audit.findings,
     })

@@ -208,6 +208,7 @@ impl Sizes<'_, '_> {
         index: Option<usize>,
         depth: usize,
     ) -> Result<String, Error> {
+        self.config.beta6_warning(self.offset, || "negate() sizing was added after beta.6; review its newly generated margin or size calculation".into());
         let params = split_top_level(args, ',').map_err(|e| self.error(e.message))?;
         if !(1..=2).contains(&params.len()) || params.iter().any(|s| s.is_empty()) {
             return Err(self.error("negate() expects a value and an optional desired gap"));
@@ -270,6 +271,23 @@ impl Sizes<'_, '_> {
     ) -> Result<String, Error> {
         if depth > 64 {
             return Err(self.error("Cyclic or excessively nested size expression"));
+        }
+        if self.config.migration_beta6 {
+            let old = self
+                .config
+                .value
+                .pointer("/theme/spacing")
+                .and_then(|v| v.get(value));
+            let new = self.config.get("/theme/spacing", value);
+            if old != new {
+                self.config.beta6_warning(self.offset, || format!("Spacing token `{value}` resolves differently from beta.6's direct spacing-key lookup; review nested or dotted token names"));
+            }
+            if matches!(value, "container/2" | "-container/2") {
+                let padding = self.config_size("/theme/container/padding", index)?;
+                if padding.starts_with("calc(") {
+                    self.config.beta6_warning(self.offset, || format!("`{value}` now divides the whole container padding `{padding}` by two; beta.6 divided only the final term of the outer calc() expression"));
+                }
+            }
         }
         if let Some(token) = self.config.get("/theme/spacing", value) {
             let token = scalar(self.at(token, index)?)
@@ -525,6 +543,7 @@ impl Sizes<'_, '_> {
         }
         let padding = self.config_size("/theme/container/padding", index)?;
         if padding.starts_with('*') {
+            self.config.beta6_warning(self.offset, || format!("Dynamic container padding `{padding}` was not supported by beta.6; review its newly active viewport-based sizing"));
             let args = arguments(&padding).map_err(|e| self.error(e.message))?;
             if args[0] != "*" || args.len() > 2 {
                 return Err(

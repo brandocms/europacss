@@ -161,6 +161,15 @@ impl Compiler<'_, '_> {
                     node.text = text;
                 }
                 let args = arguments(&params).map_err(|e| error(&node, &e.code, e.message))?;
+                if self.config.migration_beta6 {
+                    crate::migration::legacy6::directive(
+                        &node,
+                        &name,
+                        &args,
+                        ctx.responsive.as_deref(),
+                        self.config,
+                    );
+                }
                 match name.as_str() {
                     "europa" => {
                         arity(&node, &args, 1, 1)?;
@@ -803,12 +812,16 @@ impl Compiler<'_, '_> {
             .strip_prefix(&name)
             .is_some_and(|suffix| suffix.starts_with('('));
         let token = self.config.get("/theme/typography/sizes", &name);
+        if token.is_none() && ctx.responsive.is_some() {
+            self.config.beta6_warning(node.offset, || "Literal font sizes inside @responsive were emitted as breakpoint-specific groups in beta.6; native conditions retain their enclosing range, including fractional boundary gaps".into());
+        }
         let sizes = crate::size::Sizes {
             config: self.config,
             offset: node.offset,
         };
         let mut result = Vec::new();
         if let Some(base) = token.and_then(|v| v.get("__base__")) {
+            self.config.beta6_warning(node.offset, || format!("Typography `{name}` now applies __base__ properties; beta.6 did not apply those shared properties"));
             if !base.is_object() {
                 return Err(error(
                     node,

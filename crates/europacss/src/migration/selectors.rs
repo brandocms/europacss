@@ -112,8 +112,29 @@ pub(super) fn walk(
         };
         let mut valid = true;
         if parent.is_some_and(|p| p.pseudo) {
+            let mut candidates = Vec::new();
+            for selector in &selectors {
+                if let Some(expanded) = expand(selector, &parent.unwrap().legacy)? {
+                    if candidates.len() + expanded.len() <= BRANCH_LIMIT
+                        && expanded.iter().all(|s| specificity(s).is_some())
+                    {
+                        candidates.extend(expanded);
+                    } else {
+                        candidates.clear();
+                        break;
+                    }
+                } else {
+                    candidates.clear();
+                    break;
+                }
+            }
+            let help = if candidates.is_empty() {
+                "Use explicit flattened selectors and review their matching behavior before migrating.".into()
+            } else {
+                format!("Move this rule outside its nested selector ancestors, preserving all enclosing media/layer/supports conditions and declaration order. The explicit legacy selector is: {}. Review the flattened rule before migrating.", candidates.join(", "))
+            };
             audit.add("EU_MIGRATION_MATCHING", "A nested rule has a pseudo-element in its parent selector; native & does not represent pseudo-elements", node.offset,
-                "Use explicit flattened selectors and review their matching behavior before migrating.", None);
+                &help, None);
             // :is() cannot represent a pseudo-element parent. Do not report invented specificity values.
             audit.complete = false;
             continue;

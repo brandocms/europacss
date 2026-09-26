@@ -44,7 +44,7 @@ pub(super) fn origins(nodes: &[Node], config: &Config<'_>) -> Result<Origins, Er
                         .insert("*".into());
                 }
                 iteration |= name == "iterate";
-                if matches!(name, "font" | "fontsize") {
+                if !config.migration_beta6 && matches!(name, "font" | "fontsize") {
                     let args = parser::arguments(params)?;
                     let token = args.get(usize::from(name == "font"));
                     if let Some(base) = token
