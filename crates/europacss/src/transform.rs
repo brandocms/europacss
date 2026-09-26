@@ -1,6 +1,8 @@
 use crate::{
     config::{lookup, scalar, Config},
-    parser::{arguments, suffix_offset, unsupported_function, Node},
+    parser::{
+        arguments, interpolate, suffix_offset, unsupported_function, validate_interpolation, Node,
+    },
     Error,
 };
 use serde_json::Value;
@@ -10,6 +12,7 @@ use std::collections::HashMap;
 struct Context {
     style: bool,
     responsive: Option<String>,
+    iteration: Option<(String, Option<String>)>,
 }
 
 pub fn transform(nodes: Vec<Node>, config: &Config<'_>) -> Result<Vec<Node>, Error> {
@@ -101,19 +104,47 @@ impl Compiler<'_, '_> {
         }
         let mut result = Vec::new();
         for mut node in nodes {
-            self.visited += 1;
-            if self.visited > 100_000 {
-                return Err(error(
-                    &node,
-                    "EU_LIMIT",
-                    "Maximum expanded node count exceeded",
-                ));
+            self.visit(&node)?;
+            if let Some((key, value)) = &ctx.iteration {
+                let text = interpolate(&node.text, key, value.as_deref())
+                    .map_err(|e| error(&node, "EU_ITERATE", e.message))?;
+                if text != node.text {
+                    validate_interpolation(&text, node.children.is_some())
+                        .map_err(|e| error(&node, "EU_ITERATE", e.message))?;
+                    node.text = text;
+                }
             }
             if let Some((name, params)) = node.at_rule() {
                 let name = name.to_owned();
                 let params = params.to_owned();
                 let args = arguments(&params).map_err(|e| error(&node, &e.code, e.message))?;
                 match name.as_str() {
+                    "iterate" => {
+                        arity(&node, &args, 1, 1)?;
+                        if !ctx.style { return Err(error(&node, "EU_CONTEXT", "@iterate must be inside a style rule")); }
+                        let children = node.children.as_ref().ok_or_else(|| error(&node, "EU_ARGUMENTS", "@iterate requires a block"))?;
+                        let values = lookup(self.config.value, args[0]).ok_or_else(|| error(&node, "EU_CONFIG", format!("Unknown iterable `{}`", args[0])))?;
+                        let entries: Box<dyn Iterator<Item = (String, &Value)>> = match values {
+                            Value::Object(values) => Box::new(values.iter().map(|(k, v)| (k.clone(), v))),
+                            Value::Array(values) => Box::new(values.iter().enumerate().map(|(i, v)| (i.to_string(), v))),
+                            _ => return Err(error(&node, "EU_ITERATE", "@iterate requires an object or array")),
+                        };
+                        for (key, value) in entries {
+                            self.visit(&node)?;
+                            let value = scalar(value).or_else(|| value.as_bool().map(|v| v.to_string()));
+                            let child_ctx = Context { iteration: Some((key, value)), ..ctx.clone() };
+                            result.extend(self.nodes(children.clone(), &child_ctx, depth + 1)?);
+                        }
+                    }
+                    "unpack" => {
+                        self.statement(&node, ctx)?;
+                        arity(&node, &args, 1, 1)?;
+                        let generated = self.unpack(&node, args[0])?;
+                        // Interpolation has already happened at the use site; config values
+                        // must not accidentally acquire bindings from a surrounding iterator.
+                        let child_ctx = Context { iteration: None, ..ctx.clone() };
+                        result.extend(self.nodes(generated, &child_ctx, depth + 1)?);
+                    }
                     "responsive" => {
                         arity(&node, &args, 1, 1)?;
                         if ctx.responsive.is_some() { return Err(error(&node, "EU_RESPONSIVE", "Nested @responsive is not supported; combine the breakpoint query")); }
@@ -140,14 +171,14 @@ impl Compiler<'_, '_> {
                         result.extend(self.nodes(children, ctx, depth + 1)?);
                         self.expanding.pop();
                     }
-                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space" | "space!" | "column-offset" => {
+                    "color" | "color!" | "display" | "order" | "font" | "fontsize" | "space" | "space!" | "column-offset" | "abs100" | "abs100!" | "embed-responsive" => {
                         self.statement(&node, ctx)?;
                         let mut generated = self.directive(&node, &name, &args, ctx)?;
                         result.append(&mut generated);
                     }
                     "nest" => return Err(error(&node, "EU_LEGACY_NEST", "Replace legacy @nest with a native nested selector")),
                     "import" => return Err(error(&node, "EU_UNSUPPORTED", "Import resolution is not implemented in the experimental compiler; supply a bundled stylesheet")),
-                    "iterate" | "unpack" | "europa" | "column" | "row" | "grid" | "abs100" | "embed-responsive" | "at-root" => {
+                    "europa" | "column" | "row" | "grid" | "at-root" => {
                         return Err(error(&node, "EU_UNSUPPORTED", format!("@{name} is not implemented in the experimental compiler yet")));
                     }
                     _ => {
@@ -173,7 +204,7 @@ impl Compiler<'_, '_> {
                     continue;
                 }
                 if let Some(offset) = suffix_offset(&node.text)? {
-                    return Err(Error::new("EU_LEGACY_SUFFIX", "Identifier suffix nesting is not supported; migrate to an explicit selector such as .card__title", node.offset + offset));
+                    return Err(Error::new("EU_LEGACY_SUFFIX", "Identifier suffix nesting is not supported; migrate to an explicit selector such as .card__title", node.offset + if ctx.iteration.is_some() { 0 } else { offset }));
                 }
                 let children = node.children.take().unwrap();
                 node.children = Some(self.nodes(
@@ -195,6 +226,94 @@ impl Compiler<'_, '_> {
                 }
                 result.push(node);
             }
+        }
+        Ok(result)
+    }
+
+    fn visit(&mut self, node: &Node) -> Result<(), Error> {
+        self.visited += 1;
+        if self.visited > 100_000 {
+            Err(error(
+                node,
+                "EU_LIMIT",
+                "Maximum expanded node count exceeded",
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn unpack(&self, node: &Node, path: &str) -> Result<Vec<Node>, Error> {
+        let (path, property) = match path {
+            "containerPadding" => ("theme.container.padding", Some("--container-padding")),
+            "gridGutter" => ("theme.columns.gutters", Some("--grid-gutter")),
+            _ => (path, None),
+        };
+        let values = lookup(self.config.value, path)
+            .and_then(Value::as_object)
+            .ok_or_else(|| {
+                error(
+                    node,
+                    "EU_CONFIG",
+                    format!("@unpack requires a breakpoint object at `{path}`"),
+                )
+            })?;
+        let mut result = Vec::new();
+        for (query, value) in values {
+            let children = if let Some(property) = property {
+                let value = scalar(value).ok_or_else(|| {
+                    error(
+                        node,
+                        "EU_CONFIG",
+                        format!("Expected a CSS size at `{path}.{query}`"),
+                    )
+                })?;
+                if value.ends_with("dpx") {
+                    for index in self.config.select(query, node.offset)? {
+                        let size =
+                            crate::size::design_pixels(&value, self.config, index, node.offset)?;
+                        result.push(Node::block(
+                            format!("@media {}", self.config.media_indices(&[index])),
+                            vec![decl(property, &size, node, false)],
+                            node.offset,
+                        ));
+                    }
+                    continue;
+                }
+                self.check_size(node, &value)?;
+                vec![decl(property, &value, node, false)]
+            } else {
+                value
+                    .as_object()
+                    .ok_or_else(|| {
+                        error(
+                            node,
+                            "EU_CONFIG",
+                            format!("Expected a property object at `{path}.{query}`"),
+                        )
+                    })?
+                    .iter()
+                    .map(|(property, value)| {
+                        if property.starts_with('@') || property.trim().is_empty() {
+                            return Err(error(
+                                node,
+                                "EU_CONFIG",
+                                "@unpack entries must be CSS properties",
+                            ));
+                        }
+                        let value = css_value(value, property, node)?;
+                        let declaration = decl(property, &value, node, false);
+                        validate_interpolation(&declaration.text, false)
+                            .map_err(|e| error(node, "EU_CONFIG", e.message))?;
+                        Ok(declaration)
+                    })
+                    .collect::<Result<Vec<_>, Error>>()?
+            };
+            result.push(Node::block(
+                format!("@media {}", self.config.media(query, node.offset)?),
+                children,
+                node.offset,
+            ));
         }
         Ok(result)
     }
@@ -248,6 +367,57 @@ impl Compiler<'_, '_> {
     ) -> Result<Vec<Node>, Error> {
         let important = name.ends_with('!');
         match name {
+            "abs100" | "abs100!" => {
+                arity(node, args, 0, 1)?;
+                let nodes = [
+                    ("position", "absolute"),
+                    ("width", "100%"),
+                    ("height", "100%"),
+                    ("top", "0"),
+                    ("left", "0"),
+                ]
+                .into_iter()
+                .map(|(p, v)| decl(p, v, node, important))
+                .collect();
+                self.wrap(node, nodes, args.first().copied(), ctx)
+            }
+            "embed-responsive" => {
+                arity(node, args, 1, 1)?;
+                let ratio = args[0].split_once('/').and_then(|(w, h)| Some((w.parse::<f64>().ok()?, h.parse::<f64>().ok()?)))
+                    .filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0)
+                    .map(|(w, h)| h / w * 100.0)
+                    .filter(|n| n.is_finite() && *n > 0.0)
+                    .ok_or_else(|| error(node, "EU_ARGUMENTS", "@embed-responsive requires a positive width/height ratio, such as 16/9"))?;
+                let padding = format!("{ratio}%");
+                Ok(vec![
+                    decl("position", "relative", node, false),
+                    decl("width", "100%", node, false),
+                    Node::block(
+                        "&::before",
+                        vec![
+                            decl("display", "block", node, false),
+                            decl("content", "\"\"", node, false),
+                            decl("padding-top", &padding, node, false),
+                        ],
+                        node.offset,
+                    ),
+                    Node::block(
+                        "iframe, embed, object, video",
+                        [
+                            ("position", "absolute"),
+                            ("top", "0"),
+                            ("left", "0"),
+                            ("width", "100%"),
+                            ("height", "100%"),
+                            ("border", "0"),
+                        ]
+                        .into_iter()
+                        .map(|(p, v)| decl(p, v, node, false))
+                        .collect(),
+                        node.offset,
+                    ),
+                ])
+            }
             "color" | "color!" => {
                 arity(node, args, 2, 3)?;
                 let prop = match args[0] {

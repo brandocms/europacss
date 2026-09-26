@@ -3,6 +3,7 @@ mod config;
 mod config_file;
 mod emit;
 pub mod parser;
+mod size;
 mod transform;
 pub use config_file::{json_to_json5, load_config, resolve_config};
 
