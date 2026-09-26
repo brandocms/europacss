@@ -131,7 +131,7 @@ europa studio --config europa.json5               # your config + detected proje
 europa studio --config europa.json5 --fonts css/fonts.css --public-dir public
 ```
 
-Open the local URL printed by the command. The native binary serves the entire UI; no Node or development server is required. Edit JSON5 with comments, preview real compiled typography/spacing/grid CSS at an adjustable iframe viewport, and inspect computed styles, resolved tokens, and generated CSS. Fit view scales only the display: measurements and media queries use the selected viewport width. Font-family selection supplies an inherited preview family; explicit font-family declarations in a typography token take precedence.
+Open the local URL printed by the command. The native binary serves the entire UI; no Node or development server is required. Edit JSON5 with comments, preview real compiled typography/spacing/grid CSS at an adjustable iframe viewport, and inspect computed styles, resolved tokens, and generated CSS. Fit view scales only the display: measurements and media queries use the selected viewport width. The specimen document initializes `--ec-zoom: 1`, matching the base stylesheet default so `dpx` calculations work in the isolated preview. Font-family selection supplies an inherited preview family; explicit font-family declarations in a typography token take precedence.
 
 JSON5 lines remain unwrapped by default, with horizontal scrolling to preserve indentation and line structure. Wrapping is an optional display toggle and never changes the source. Drag the divider (or focus it and use the arrow keys), toggle wrapping, or expand the editor to the full width. Escape returns from the expanded editor. The pane fits short laptop windows as well as larger screens.
 
