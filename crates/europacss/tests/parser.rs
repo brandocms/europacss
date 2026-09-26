@@ -95,3 +95,76 @@ fn balanced_values_do_not_split_at_internal_comments_or_delimiters() {
         assert!(parse(malformed).is_err(), "{malformed}");
     }
 }
+
+#[test]
+fn unquoted_urls_keep_braces_brackets_and_comment_markers_as_payload() {
+    use europacss::parser::{rewrite_value, split_top_level};
+    // CSS Syntax's URL token consumes these characters as data, not nested blocks.
+    for url in [
+        "url(data:text/plain,};[)",
+        "URL(icons/a{.svg)",
+        r"u\72l(icons/a].svg)",
+        r"\75 rl(icons/a[.svg)",
+        "url(icons/*literal.svg)",
+        r"url(icons/a\)b.svg)",
+    ] {
+        let source = format!(".x{{background:{url};color:red}}.after{{color:blue}}");
+        let nodes = parse(&source).unwrap();
+        assert_eq!(nodes.len(), 2, "{url}");
+        assert_eq!(nodes[0].children.as_ref().unwrap().len(), 2, "{url}");
+        assert_eq!(
+            arguments(&format!("{url} mobile")).unwrap(),
+            [url, "mobile"]
+        );
+        assert_eq!(
+            split_top_level(&format!("{url}, red"), ',').unwrap(),
+            [url, "red"]
+        );
+        assert_eq!(
+            rewrite_value(url, &mut |_, _| panic!("URL payload was visited: {url}")).unwrap(),
+            url
+        );
+    }
+    // A longer identifier containing `url` must keep normal function parsing.
+    for name in ["myurl", r"my\20 url", "1url"] {
+        assert!(parse(&format!(".x{{--value:{name}(a{{);}}")).is_err());
+    }
+}
+
+#[test]
+fn url_escapes_are_opaque_to_value_functions_and_split_delimiters() {
+    use europacss::parser::{rewrite_value, split_top_level, unsupported_function};
+    let source = r"u\72l(assets/theme\(ink\)-10dpx.svg) calc(10dpx + 1px)";
+    let rewritten = rewrite_value(source, &mut |name, args| {
+        Ok((name == "10dpx" && args.is_none()).then(|| "2vw".into()))
+    })
+    .unwrap();
+    assert_eq!(
+        rewritten,
+        r"u\72l(assets/theme\(ink\)-10dpx.svg) calc(2vw + 1px)"
+    );
+    assert_eq!(unsupported_function(source).unwrap(), None);
+    assert_eq!(
+        split_top_level(r"foo\-bar-baz-url(a-b)", '-').unwrap(),
+        [r"foo\-bar", "baz", "url(a-b)"]
+    );
+}
+
+#[test]
+fn malformed_unquoted_urls_fail_without_consuming_later_rules() {
+    for url in [
+        "url(a b)",
+        "url(a(b)",
+        "url(a'b)",
+        "url(a\"b)",
+        "url(a\u{7}b)",
+        "url(a\\\nb)",
+        "url(unfinished",
+    ] {
+        let source = format!(".x{{background:{url};}} .after{{color:red}}");
+        assert!(parse(&source).is_err(), "{url}");
+    }
+    for url in ["url()", "url( \t )", "url(  a.svg\n )", "url(  'a b.svg' )"] {
+        parse(&format!(".x{{background:{url}}}")).unwrap();
+    }
+}

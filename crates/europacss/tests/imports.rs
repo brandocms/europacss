@@ -128,6 +128,18 @@ fn css_escaped_and_percent_encoded_paths_and_utf8_bom_work() {
 }
 
 #[test]
+fn unquoted_url_tokens_rebase_without_reinterpreting_their_payloads() {
+    let p = Project::new();
+    p.write("app.css", "@import url(parts/a{.css); .after{color:blue}");
+    p.write("parts/a{.css", r".x{background:url(icons/a{.svg);mask:u\72l(icons/a].svg);--image:url(icons/*literal.svg);--data:url(data:text/plain,};[);color:red}");
+    p.css(".x{background:url('parts/icons/a{.svg');mask:url('parts/icons/a].svg');--image:url('parts/icons/*literal.svg');--data:url('data:text/plain,};[');color:red} .after{color:blue}");
+    p.write("parts/a{.css", ".x{\n background:url(a b);\n}");
+    let error = p.compile().unwrap_err();
+    assert_eq!((error.code.as_str(), error.line), ("EU_PARSE", 2));
+    assert_eq!(error.filename.as_deref(), p.0.join("parts/a{.css").to_str());
+}
+
+#[test]
 fn diagnostics_identify_the_authored_file_for_each_compiler_stage() {
     let p = Project::new();
     p.write("app.css", "@import 'nested.css';");

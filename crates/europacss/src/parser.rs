@@ -80,6 +80,29 @@ pub fn split_top_level(source: &str, separator: char) -> Result<Vec<&str>, Error
             parts.push(source[start..scanner.pos].trim());
             scanner.pos += separator.len_utf8();
             start = scanner.pos;
+        } else if let Some(name) = scanner.name()? {
+            if is_url(name) && scanner.byte() == Some(b'(') {
+                scanner.url_component(0)?;
+            } else if name.contains(separator) {
+                // Europa arithmetic can split names at '-', while escaped
+                // separators and URL payloads remain opaque. Scan each name once.
+                let offset = scanner.pos - name.len();
+                let mut word = Scanner {
+                    source: name,
+                    pos: 0,
+                };
+                while word.byte().is_some() {
+                    if word.byte() == Some(b'\\') {
+                        word.escape()?;
+                    } else if word.rest().starts_with(separator) {
+                        parts.push(source[start..offset + word.pos].trim());
+                        word.pos += separator.len_utf8();
+                        start = offset + word.pos;
+                    } else {
+                        word.advance();
+                    }
+                }
+            }
         } else if !scanner.opaque(0)? {
             if matches!(scanner.byte(), Some(b')' | b']' | b'}' | b';')) {
                 return Err(scanner.error("Unexpected delimiter in value"));
@@ -175,7 +198,7 @@ fn rewrite_components(
             if c.is_ascii_alphanumeric()
                 || matches!(c, b'_' | b'-' | b'.' | b'+')
                 || c >= 128
-                || urls && c == b'\\'
+                || c == b'\\'
             {
                 if c == b'\\' {
                     scanner.escape()?;
@@ -183,7 +206,7 @@ fn rewrite_components(
                     scanner.advance();
                 }
                 loop {
-                    if urls && scanner.byte() == Some(b'\\') {
+                    if scanner.byte() == Some(b'\\') {
                         scanner.escape()?;
                     } else if scanner.rest().chars().next().is_some_and(|c| {
                         c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | '+' | '%')
@@ -197,9 +220,13 @@ fn rewrite_components(
                 if scanner.byte() == Some(b'(') || name == "var" && scanner.byte() == Some(b'[') {
                     let bracket = scanner.byte() == Some(b'[');
                     let inner = scanner.pos + 1;
-                    scanner.component(depth + 1)?;
+                    if is_url(name) && !bracket {
+                        scanner.url_component(depth + 1)?;
+                    } else {
+                        scanner.component(depth + 1)?;
+                    }
                     let args = &source[inner..scanner.pos - 1];
-                    if name.eq_ignore_ascii_case("url") && !urls {
+                    if !urls && (is_url(name) || name.contains('\\')) {
                         result.push_str(&source[start..scanner.pos]);
                     } else if let Some(value) =
                         mapper(if bracket { "var[]" } else { name }, Some(args))?
@@ -212,7 +239,11 @@ fn rewrite_components(
                         result.push(if bracket { ']' } else { ')' });
                     }
                 } else {
-                    result.push_str(&mapper(name, None)?.unwrap_or_else(|| name.into()));
+                    if name.contains('\\') && !urls {
+                        result.push_str(name);
+                    } else {
+                        result.push_str(&mapper(name, None)?.unwrap_or_else(|| name.into()));
+                    }
                 }
             } else if matches!(c, b'(' | b'[') {
                 scanner.component(depth + 1)?;
@@ -312,15 +343,12 @@ pub fn validate_interpolation(text: &str, block: bool) -> Result<(), Error> {
 pub fn unsupported_function(source: &str) -> Result<Option<(usize, &str)>, Error> {
     let mut scanner = Scanner { source, pos: 0 };
     while let Some(c) = scanner.byte() {
-        if c.is_ascii_alphabetic() || c == b'_' || c == b'-' {
-            let start = scanner.pos;
-            while scanner
-                .byte()
-                .is_some_and(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
-            {
-                scanner.pos += 1;
+        let start = scanner.pos;
+        if let Some(name) = scanner.name()? {
+            if is_url(name) && scanner.byte() == Some(b'(') {
+                scanner.url_component(0)?;
+                continue;
             }
-            let name = &source[start..scanner.pos];
             if scanner.byte() == Some(b'(')
                 && matches!(
                     name,
@@ -368,11 +396,17 @@ fn space(c: u8) -> bool {
     matches!(c, b' ' | b'\n' | b'\r' | b'\t' | 12)
 }
 
+fn is_url(name: &str) -> bool {
+    name.eq_ignore_ascii_case("url")
+        || name.contains('\\')
+            && decode_string(name, 0).is_ok_and(|name| name.eq_ignore_ascii_case("url"))
+}
+
 struct Scanner<'a> {
     source: &'a str,
     pos: usize,
 }
-impl Scanner<'_> {
+impl<'a> Scanner<'a> {
     fn byte(&self) -> Option<u8> {
         self.source.as_bytes().get(self.pos).copied()
     }
@@ -384,6 +418,19 @@ impl Scanner<'_> {
     }
     fn error(&self, message: &str) -> Error {
         Error::new("EU_PARSE", message, self.pos)
+    }
+    fn name(&mut self) -> Result<Option<&'a str>, Error> {
+        let start = self.pos;
+        loop {
+            match self.byte() {
+                Some(b'\\') => self.escape()?,
+                Some(c) if c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-') || c >= 128 => {
+                    self.advance()
+                }
+                _ => break,
+            }
+        }
+        Ok((self.pos > start).then_some(&self.source[start..self.pos]))
     }
     fn escape(&mut self) -> Result<(), Error> {
         self.pos += 1;
@@ -419,11 +466,13 @@ impl Scanner<'_> {
         if depth > 128 {
             return Err(self.error("Maximum nesting depth exceeded"));
         }
-        match self.byte() {
-            Some(b'\\') => {
-                self.escape()?;
-                Ok(true)
+        if let Some(name) = self.name()? {
+            if is_url(name) && self.byte() == Some(b'(') {
+                self.url_component(depth + 1)?;
             }
+            return Ok(true);
+        }
+        match self.byte() {
             Some(b'\'' | b'"') => {
                 let quote = self.byte().unwrap();
                 self.pos += 1;
@@ -454,6 +503,54 @@ impl Scanner<'_> {
                 Ok(true)
             }
             _ => Ok(false),
+        }
+    }
+    /// CSS Syntax distinguishes unquoted URL tokens from ordinary functions.
+    /// https://drafts.csswg.org/css-syntax-3/#consume-url-token
+    fn url_component(&mut self, depth: usize) -> Result<(), Error> {
+        if depth > 128 {
+            return Err(self.error("Maximum nesting depth exceeded"));
+        }
+        let start = self.pos;
+        self.pos += 1;
+        while self.byte().is_some_and(space) {
+            self.pos += 1;
+        }
+        if matches!(self.byte(), Some(b'\'' | b'"')) {
+            self.pos = start;
+            return self.component(depth);
+        }
+        loop {
+            match self.byte() {
+                Some(b')') => {
+                    self.pos += 1;
+                    return Ok(());
+                }
+                None => return Err(self.error("Unterminated URL")),
+                Some(c) if space(c) => {
+                    while self.byte().is_some_and(space) {
+                        self.pos += 1;
+                    }
+                    if self.byte() != Some(b')') {
+                        return Err(self.error("Whitespace inside an unquoted URL"));
+                    }
+                }
+                Some(b'\\') => {
+                    if self
+                        .source
+                        .as_bytes()
+                        .get(self.pos + 1)
+                        .is_some_and(|c| matches!(c, b'\n' | b'\r' | 12))
+                    {
+                        return Err(self.error("Invalid escape in an unquoted URL"));
+                    }
+                    self.escape()?;
+                }
+                Some(b'\'' | b'"' | b'(' | 1..=8 | 11 | 14..=31 | 127) => {
+                    return Err(self.error("Invalid character in an unquoted URL"));
+                }
+                _ => self.advance(),
+            }
         }
     }
     fn component(&mut self, depth: usize) -> Result<(), Error> {

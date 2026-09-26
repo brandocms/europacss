@@ -190,3 +190,28 @@ fn advanced_json5_typography_matches_explicit_css() {
     assert_eq!(generated.css, expected.css);
     assert!(generated.warnings.is_empty());
 }
+
+#[test]
+fn url_payload_delimiters_survive_the_frontend_and_lightning_backend() {
+    for (unquoted, quoted) in [
+        ("url(data:text/plain,};[)", "url('data:text/plain,};[')"),
+        ("URL(icons/a{.svg)", "url('icons/a{.svg')"),
+        (r"u\72l(icons/a].svg)", "url('icons/a].svg')"),
+        (r"\75 rl(icons/a[.svg)", "url('icons/a[.svg')"),
+        ("url(icons/*literal.svg)", "url('icons/*literal.svg')"),
+        (
+            r"url(icons/theme\(ink\).svg)",
+            "url('icons/theme(ink).svg')",
+        ),
+    ] {
+        assert_eq!(
+            css(&format!(
+                ".x{{background:{unquoted};@color fg red;}} .after{{color:blue}}"
+            )),
+            css(&format!(
+                ".x{{background:{quoted};color:red;}} .after{{color:blue}}"
+            )),
+            "{unquoted}"
+        );
+    }
+}
