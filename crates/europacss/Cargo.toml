@@ -8,10 +8,13 @@ license = "MIT"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
+# Upstream v1.33.0 / npm 1.33.0 publishes its Rust crate as 1.0.0-alpha.72.
+# Same source commit: c6a0c3cebf3395635e61075d2c81a96a710d4910.
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = ["sourcemap", "browserslist"] }
 parcel_sourcemap = { version = "2", features = ["json"] }
 json5 = "1.3"
 pathdiff = "0.2"
+unicode-width = "0.2"
 
 [[bin]]
 name = "europa"

@@ -1,28 +1,18 @@
+mod cli_output;
+use cli_output::{Build, Color, Ui};
 use europacss::{compile, compile_file, Request};
 use std::{
     env, fs,
     io::{self, Read, Write},
     path::PathBuf,
     process::ExitCode,
+    time::Instant,
 };
 
-const HELP: &str = "EuropaCSS experimental Rust compiler
-
-Usage: europa <input.css|-> [-o output.css] [--config europa.json5]
-              [--targets 'defaults'] [--minify] [--source-map]
-
-With no -o option, CSS is written to stdout. Use - for stdin.
---source-map requires -o and writes an adjacent .map file.
---targets accepts a Browserslist query; the default is 'defaults'.
-Configuration is JSON5 (or JSON for interchange); JavaScript is not executed.
-
-Convert previously exported config data:
-  europa migrate-config resolved.json -o europa.json5
-";
-
-fn run() -> Result<(), String> {
-    let mut args = env::args().skip(1);
-    if env::args().nth(1).as_deref() == Some("migrate-config") {
+fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
+    let started = Instant::now();
+    let mut args = args.into_iter().peekable();
+    if args.peek().map(String::as_str) == Some("migrate-config") {
         args.next();
         let input = args
             .next()
@@ -43,6 +33,7 @@ fn run() -> Result<(), String> {
             .map_err(|e| format!("{output}: {e}"))?;
         file.write_all(json5.as_bytes())
             .map_err(|e| e.to_string())?;
+        ui.migrated(&output);
         return Ok(());
     }
     let mut input = None;
@@ -54,7 +45,7 @@ fn run() -> Result<(), String> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--help" | "-h" => {
-                print!("{HELP}");
+                print!("{}", Ui::stdout(color).help());
                 return Ok(());
             }
             "--version" | "-V" => {
@@ -81,7 +72,8 @@ fn run() -> Result<(), String> {
             }
         }
     }
-    let input = input.ok_or_else(|| HELP.to_string())?;
+    let input = input
+        .ok_or("Provide an input stylesheet or - for stdin. Run europa --help for examples.")?;
     if source_map && output.is_none() {
         return Err("--source-map requires an output path (-o)".into());
     }
@@ -116,13 +108,30 @@ fn run() -> Result<(), String> {
     } else {
         compile_file(&request, output.as_deref())
     }
-    .map_err(|e| format!("{}:{e}", e.filename.as_deref().unwrap_or(&filename)))?;
-    for warning in result.warnings {
-        eprintln!(
-            "{}: warning: {warning}",
-            warning.filename.as_deref().unwrap_or(&filename)
+    .map_err(|e| {
+        ui.diagnostic(
+            &e,
+            &filename,
+            (input == "-").then_some(request.source.as_str()),
+            false,
+        )
+    })?;
+    let warning_count = result.warnings.len();
+    for warning in &result.warnings {
+        eprint!(
+            "{}",
+            ui.diagnostic(
+                warning,
+                &filename,
+                (input == "-").then_some(request.source.as_str()),
+                true
+            )
         );
     }
+    let destination = output
+        .as_ref()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "stdout".into());
     if let Some(output) = output {
         let mut protected: Vec<PathBuf> = result.dependencies.iter().map(PathBuf::from).collect();
         if let Some(path) = config_path {
@@ -165,20 +174,65 @@ fn run() -> Result<(), String> {
                 .css
                 .push_str(&format!("\n/*# sourceMappingURL={name} */\n"));
         }
-        fs::write(&output, result.css).map_err(|e| format!("{}: {e}", output.display()))?;
+        fs::write(&output, &result.css).map_err(|e| format!("{}: {e}", output.display()))?;
     } else {
         io::stdout()
             .write_all(result.css.as_bytes())
             .map_err(|e| e.to_string())?;
     }
+    ui.built(Build {
+        input: if input == "-" { "stdin" } else { &input },
+        output: &destination,
+        bytes: result.css.len(),
+        files: result.dependencies.len().max(1),
+        map: source_map,
+        minify,
+        warnings: warning_count,
+        elapsed: started.elapsed(),
+    });
     Ok(())
 }
 
+fn options() -> Result<(Vec<String>, Color, bool), String> {
+    let mut args = env::args().skip(1);
+    let mut rest = Vec::new();
+    let mut color = Color::Auto;
+    let mut quiet = false;
+    while let Some(arg) = args.next() {
+        if arg == "--color" {
+            color = Color::parse(
+                &args
+                    .next()
+                    .ok_or("--color needs a mode: auto, always, or never")?,
+            )?;
+        } else if let Some(value) = arg.strip_prefix("--color=") {
+            color = Color::parse(value)?;
+        } else if arg == "--quiet" || arg == "-q" {
+            quiet = true;
+        } else {
+            rest.push(arg);
+        }
+    }
+    Ok((rest, color, quiet))
+}
+
 fn main() -> ExitCode {
-    match run() {
+    let (args, color, quiet) = match options() {
+        Ok(options) => options,
+        Err(message) => {
+            eprintln!("{}", Ui::stderr(Color::Auto, false).failure(&message));
+            return ExitCode::FAILURE;
+        }
+    };
+    let ui = Ui::stderr(color, quiet);
+    match run(args, &ui, color) {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
-            eprintln!("{message}");
+            if message.starts_with('\n') {
+                eprint!("{message}");
+            } else {
+                eprintln!("{}", ui.failure(&message));
+            }
             ExitCode::FAILURE
         }
     }

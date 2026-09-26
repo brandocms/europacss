@@ -11,7 +11,18 @@ cargo test --locked -p europacss
   --targets 'defaults' --source-map -o /tmp/europa-example.css
 ```
 
-The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitted, and supports `--minify`. Browser queries run in Rust using Lightning's Browserslist support. The Rust Lightning dependency is pinned to `1.0.0-alpha.72`; its versioning differs from the npm package. Source maps compose through both compiler stages and include original source content. Diagnostics identify the source file, line, column, and a stable error code. Maps currently identify originating rules/directives, not every character of generated declarations.
+The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitted, and supports `--minify`. Browser queries run in Rust using Lightning's Browserslist support. The Rust Lightning dependency is pinned to `1.0.0-alpha.72`; it comes from the exact same source commit (`c6a0c3c`) as [GitHub/npm v1.33.0](https://github.com/parcel-bundler/lightningcss/blob/v1.33.0/Cargo.toml). Rust and npm use separate version numbers. Source maps compose through both compiler stages and include original source content. Diagnostics identify the source file, line, column, and a stable error code. Maps currently identify originating rules/directives, not every character of generated declarations.
+
+
+The terminal output uses color automatically on interactive terminals. Errors and warnings show the originating file, a numbered source excerpt, and a caret, including imported files. Build summaries show elapsed time, CSS size, file count, and enabled output options. All diagnostics and summaries go to stderr, so stdout remains CSS only. `--quiet` hides successful build/conversion summaries; warnings and errors remain visible. Use `--color auto|always|never` to override detection. Auto mode respects `NO_COLOR` and `TERM=dumb`; `--help` follows stdout's terminal status separately.
+
+```text
+  europa  ✓ compiled in 12.4 ms
+          css/app.css → public/app.css
+          8 files · 84.2 KiB · minified · source map
+```
+
+The numbers above illustrate the display, not benchmark results.
 
 ## Implemented
 

@@ -78,6 +78,7 @@ fn stdin_stdout_and_default_config_work() {
         .command()
         .args(["-", "--minify", "--targets", "chrome 100"])
         .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
@@ -104,7 +105,11 @@ fn diagnostics_fail_the_build_without_partial_output() {
         .output()
         .unwrap();
     assert!(!result.status.success());
-    assert!(String::from_utf8_lossy(&result.stderr).contains("input.css:2:2 [EU_LEGACY_SUFFIX]"));
+    let diagnostic = String::from_utf8_lossy(&result.stderr);
+    assert!(diagnostic.contains("input.css:2:2"));
+    assert!(diagnostic.contains("[EU_LEGACY_SUFFIX]"));
+    assert!(diagnostic.contains("2 │  &__title {color:red}"));
+    assert!(diagnostic.contains("│  ^"));
     assert!(!dir.0.join("output.css").exists());
 }
 
@@ -310,4 +315,138 @@ fn imported_file_errors_are_reported_and_outputs_cannot_clobber_dependencies() {
         fs::read_to_string(dir.0.join("out.css.map")).unwrap(),
         ".card{color:red}"
     );
+}
+
+#[test]
+fn terminal_colors_are_controllable_and_never_contaminate_css() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("input.css"), ".card{@color fg red;}").unwrap();
+    for (mode, ansi) in [("auto", false), ("never", false), ("always", true)] {
+        let result = dir
+            .command()
+            .args([
+                "input.css",
+                "--color",
+                mode,
+                "--minify",
+                "--targets",
+                "chrome 100",
+            ])
+            .output()
+            .unwrap();
+        assert!(result.status.success());
+        let css = String::from_utf8(result.stdout).unwrap();
+        let summary = String::from_utf8(result.stderr).unwrap();
+        assert_eq!(css.trim(), ".card{color:red}");
+        assert_eq!(summary.contains("\x1b["), ansi);
+        for text in [
+            "europa",
+            "✓ compiled",
+            "input.css",
+            "stdout",
+            "1 file",
+            "minified",
+        ] {
+            assert!(summary.contains(text), "{summary}");
+        }
+    }
+    let result = dir
+        .command()
+        .args(["input.css", "--quiet", "--color=always"])
+        .output()
+        .unwrap();
+    assert!(result.status.success());
+    assert!(result.stderr.is_empty());
+    assert!(!result.stdout.contains(&0x1b));
+    let result = dir
+        .command()
+        .args(["input.css", "--color=always"])
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    assert!(
+        result.stderr.contains(&0x1b),
+        "An explicit color choice overrides auto detection"
+    );
+    let result = dir
+        .command()
+        .args(["input.css"])
+        .env("NO_COLOR", "1")
+        .output()
+        .unwrap();
+    assert!(!result.stderr.contains(&0x1b));
+    let result = dir
+        .command()
+        .args(["input.css", "--color", "rainbow"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("auto, always, or never"));
+}
+
+#[test]
+fn colored_errors_include_imported_source_excerpts_even_in_quiet_mode() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("input.css"), "@import 'nested.css';").unwrap();
+    fs::write(
+        dir.0.join("nested.css"),
+        "/* context */\n.card {\n  @font missing;\n}\n",
+    )
+    .unwrap();
+    let result = dir
+        .command()
+        .args(["input.css", "--color=always", "--quiet"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(result.stdout.is_empty());
+    let error = String::from_utf8_lossy(&result.stderr);
+    assert!(error.contains("\x1b[1;31m"));
+    for text in ["[EU_CONFIG]", "nested.css:3:3", "@font missing;", "^"] {
+        assert!(error.contains(text), "{error}");
+    }
+    assert!(!error.contains("✓ compiled"));
+    fs::write(dir.0.join("nested.css"), "@unknown demo;").unwrap();
+    let warning = dir
+        .command()
+        .args(["input.css", "--color=always", "--quiet"])
+        .output()
+        .unwrap();
+    assert!(warning.status.success());
+    let warning = String::from_utf8_lossy(&warning.stderr);
+    assert!(warning.contains("\x1b[1;33m"));
+    assert!(warning.contains("[EU_CSS_WARNING]"));
+    assert!(!warning.contains("✓ compiled"));
+}
+
+#[test]
+fn help_and_migration_share_the_terminal_style() {
+    let dir = Temp::new();
+    let help = dir
+        .command()
+        .args(["--help", "--color=always"])
+        .output()
+        .unwrap();
+    assert!(help.status.success());
+    assert!(help.stderr.is_empty());
+    assert!(help.stdout.contains(&0x1b));
+    assert!(String::from_utf8_lossy(&help.stdout).contains("--quiet"));
+    let plain = dir.command().arg("--help").output().unwrap();
+    assert!(!plain.stdout.contains(&0x1b));
+    fs::write(dir.0.join("config.json"), "{}").unwrap();
+    let result = dir
+        .command()
+        .args([
+            "--color=always",
+            "migrate-config",
+            "config.json",
+            "-o",
+            "config.json5",
+        ])
+        .output()
+        .unwrap();
+    assert!(result.status.success());
+    assert!(result.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("✓ config converted"));
+    assert!(result.stderr.contains(&0x1b));
 }
