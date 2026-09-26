@@ -235,15 +235,8 @@ impl Compiler<'_, '_> {
                         };
                         result.extend(self.nodes(generated, &child_ctx, depth + 1)?);
                     }
-                    "responsive" => {
+                    "responsive" | "mq" => {
                         arity(&node, &args, 1, 1)?;
-                        if ctx.responsive.is_some() {
-                            return Err(error(
-                                &node,
-                                "EU_RESPONSIVE",
-                                "Nested @responsive is not supported; combine the breakpoint query",
-                            ));
-                        }
                         let media = self.config.media(args[0], node.offset)?;
                         let children = node.children.clone().ok_or_else(|| {
                             error(&node, "EU_ARGUMENTS", "@responsive requires a block")
