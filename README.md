@@ -18,7 +18,7 @@ weeding out a lot of the boilerplate involved.
 
 ## USAGE WITH POSTCSS
 
-An experimental [standalone Rust compiler](crates/europacss/README.md) is being built with JSON5 configuration and Lightning CSS as its Rust backend. It needs no Node or PostCSS. A future [config studio](research/config-studio.md) is also being considered for visual typography, grid, and spacing previews. The instructions below describe the existing published implementation, which remains the migration reference.
+An experimental [standalone Rust compiler](crates/europacss/README.md) is being built with JSON5 configuration and Lightning CSS as its Rust backend. It needs no Node or PostCSS. Its native `europa studio` command opens a [config studio](research/config-studio.md) with live typography, grid, spacing, and local font previews. The instructions below describe the existing published implementation, which remains the migration reference.
 
 Example `postcss.config.js`:
 

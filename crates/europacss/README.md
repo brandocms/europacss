@@ -123,7 +123,21 @@ For a static legacy config, run `europa migrate-config europa.config.cjs -o euro
 
 Constant theme section callbacks written as `() => ({ ... })` (including `theme.extend` sections) are unwrapped into data without evaluating JavaScript. Their returned objects must contain only JSON5 literals/token references; comments and numeric-key checks are retained. Other JavaScript callbacks, variable references, spreads, computed keys, imports, and function calls require manual conversion to static data or `{token.references}`. They produce an error before output is created; no code is executed. A general exporter for dynamic configs remains future work. Existing exported JSON can still be converted with `europa migrate-config resolved.json -o europa.json5`; comments absent from that JSON cannot be recovered.
 
-A future [config studio](../../research/config-studio.md) could provide visual typography, grid, and spacing editors with responsive previews driven by the same compiler. This is a proposal, not an implemented CLI feature.
+## Config Studio
+
+```sh
+europa studio                                    # bundled example
+europa studio --config europa.json5               # your config + detected project fonts
+europa studio --config europa.json5 --fonts css/fonts.css --public-dir public
+```
+
+Open the local URL printed by the command. The native binary serves the entire UI; no Node or development server is required. Edit JSON5 with comments, preview real compiled typography/spacing/grid CSS at an adjustable iframe viewport, and inspect computed styles, resolved tokens, and generated CSS. Fit view scales only the display: measurements and media queries use the selected viewport width. Font-family selection supplies an inherited preview family; explicit font-family declarations in a typography token take precedence.
+
+Long JSON5 lines wrap by default without changing the source. Drag the divider (or focus it and use the arrow keys), toggle wrapping, or expand the editor to the full width. Escape returns from the expanded editor. The pane fits short laptop windows as well as larger screens.
+
+Studio auto-detects `css/includes/fonts.css` and `public` beside the config. Other layouts use `--fonts` and `--public-dir`. It reads top-level `@font-face` rules and serves a fixed snapshot of their local WOFF/WOFF2/TTF/OTF files, preserving weights, styles, and Unicode ranges. Root-relative URLs map into the public directory; `/assets/fonts/...` can also map to `public/fonts/...`, as in the supplied Craft projects. Relative URLs resolve beside the font stylesheet and must remain inside that directory or the public directory. Remote URLs, stylesheet imports, and `local()` system-font substitutions are skipped. Font status reports loaded faces and failures; “Project fonts” lists faces and any skipped sources. Restart Studio to pick up changes to the on-disk config or font files.
+
+Edits stay in the browser tab; Export downloads the exact JSON5 text, including comments. Opening JSON5 through the browser changes the config only, not the server's font snapshot. There are no source-file writes. Invalid config retains the last successful preview with an error notice and disables export. This first version has a text editor and compiler-backed specimens; structured field editors and authored config diffs remain [future work](../../research/config-studio.md). Specimens use the default backend targets and cannot certify a site's full cascade or visual parity.
 
 ## Migration review
 
@@ -133,7 +147,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check --
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
 ```
 
-The source version is required. The currently modeled profile is exactly `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
+The source version is required. The modeled profiles are exactly `1.0.0-beta.6` and `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The beta.6 profile adds warnings for verified older color, breakpoint, typography, lookup, and container behavior; see the [audit](../../research/parser-feasibility/migration-followup.md). The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
 
 Specificity checks expand legacy selector alternatives and compare them with native `:is()` parent semantics using Lightning's selector parser, including `:where()`, `:is()`, `:not()`, `:has()`, and `:nth-child(... of ...)`. Conditions containing only declarations do not trigger selector-list warnings. Iterators and placeholders are expanded with the real config. Limits or unsupported selector contexts produce an incomplete-analysis finding rather than a clean result.
 
@@ -155,7 +169,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > r
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes review.json
 ```
 
-This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Report version 5 invalidates earlier saved reviews.
+This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 emits review warnings without borrowing beta.16 appearance edits. Report version 6 invalidates earlier saved reviews, and review snapshots include the source version.
 
 A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
 

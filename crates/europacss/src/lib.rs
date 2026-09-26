@@ -10,6 +10,7 @@ mod optimize;
 pub mod parser;
 mod size;
 mod sources;
+pub mod studio;
 mod transform;
 mod value_functions;
 pub mod watch;

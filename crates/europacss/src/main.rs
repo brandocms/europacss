@@ -1,5 +1,6 @@
 mod cli_migration;
 mod cli_output;
+mod cli_studio;
 mod cli_watch;
 use cli_output::{Build, Color, Ui};
 use europacss::{compile, compile_file, watch::Snapshot, Request};
@@ -19,6 +20,10 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         .cloned()
         .collect();
     let mut args = args.into_iter().peekable();
+    if args.peek().map(String::as_str) == Some("studio") {
+        args.next();
+        return cli_studio::run(args.collect(), ui).map(|_| Vec::new());
+    }
     if args.peek().map(String::as_str) == Some("migrate") {
         args.next();
         return cli_migration::run(args.collect(), ui).map(|_| Vec::new());

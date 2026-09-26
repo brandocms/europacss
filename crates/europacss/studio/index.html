@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/studio.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark" aria-hidden="true">e.</span><div><strong>Europa</strong><span>Config Studio <small>PREVIEW</small></span></div></div>
+  <div class="actions"><span id="status" role="status">Opening workspace…</span><button id="load">Open JSON5</button><button class="primary" id="export" disabled>Export JSON5 <span aria-hidden="true">↗</span></button><input id="file" type="file" accept=".json5,.json" hidden></div>
+</header>
+<main>
+  <aside class="editor-panel">
+    <div class="panel-heading"><div><span class="eyebrow">YOUR CONFIGURATION</span><h1 id="filename">europa.json5</h1></div><span class="file-icon" aria-hidden="true">{ }</span></div>
+    <p class="hint">Edit the rules. See how they feel.</p>
+    <div class="editor-tools"><button id="wrap" aria-pressed="true" title="Wrap long lines without changing the JSON5">Wrap lines</button><button id="expand" aria-pressed="false">Expand editor ↗</button></div>
+    <label class="sr-only" for="editor">JSON5 configuration</label><textarea id="editor" wrap="soft" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="editor-footer"><span>Comments stay intact</span><button id="compile" title="Compile preview (⌘/Ctrl + Enter)">Update preview <kbd>⌘ ↵</kbd></button></div>
+    <p class="save-note">Edits stay in this browser tab. Export to keep a copy.</p>
+  </aside>
+  <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
+  <section class="workspace" aria-label="Configuration preview">
+    <div class="workspace-heading"><div><span class="eyebrow">SEE YOUR SYSTEM</span><h2 id="heading">Type, with intention.</h2><p id="description">Read the scale together. Look for a rhythm that holds at every width.</p></div><div class="count" id="count"></div></div>
+    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button></nav>
+    <div class="viewport-controls"><label for="width">Viewport <input id="width" type="number" min="280" max="2400" value="1200"> <span>px</span></label><input aria-label="Viewport width" id="slider" type="range" min="280" max="2400" value="1200"><button id="fit" aria-pressed="true">Fit view</button></div>
+    <div id="breakpoints" class="breakpoints" aria-label="Breakpoint presets"></div>
+    <div class="specimen-controls"><label for="specimen-text">Specimen</label><input id="specimen-text" value="A little space changes everything." maxlength="240"></div>
+    <div class="font-controls"><label for="family">Font family</label><select id="family" aria-label="Preview font family"></select><span id="font-status" role="status">Checking project fonts…</span></div>
+    <details class="font-help"><summary>Project fonts</summary><p id="font-info"></p></details>
+    <div id="errors" role="alert" hidden></div>
+    <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin"></iframe></div></div>
+    <div class="preview-caption"><span id="active">Waiting for a valid config</span><span id="scale"></span></div>
+    <p class="notes" id="notes"></p>
+    <details class="inspector"><summary>Inspect resolved tokens &amp; generated CSS</summary><label for="token">Token</label><select id="token"></select><pre id="resolved"></pre></details>
+  </section>
+</main>
+</body>
+</html>

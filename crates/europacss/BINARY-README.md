@@ -9,12 +9,18 @@ From this directory:
 ```sh
 ./europa examples/app.css --config examples/europa.json5 -o app.css --source-map
 ./europa examples/app.css --config examples/europa.json5 -o app.css --watch
+./europa studio --config examples/europa.json5
 ./europa --help
 ```
 
 On Windows use `europa.exe`. To compile your project, provide its entry stylesheet,
 JSON5 configuration, and output path. The output directory must already exist.
 The binary resolves local imports; it does not install dependencies or run JavaScript.
+
+Studio prints a local browser URL for live JSON5 typography, spacing, and grid
+previews. It can load project fonts from a sibling `css/includes/fonts.css` and
+`public` directory, or explicit `--fonts` / `--public-dir` paths. Export downloads
+your edits with comments intact; it does not overwrite the source config.
 
 Native CSS nesting and source order intentionally differ from EuropaCSS beta.16.
 Before migrating an existing site, run:
@@ -25,7 +31,7 @@ Before migrating an existing site, run:
 
 Review findings and compare rendered pages. `--fix` rewrites supported suffix
 selectors; it never chooses a different appearance for you. Versioned migration
-analysis is bounded and does not prove complete visual equivalence.
+analysis supports beta.6 and beta.16, is bounded, and does not prove complete visual equivalence.
 
 These archives are preview build artifacts. They are unsigned and not notarized.
 `manifest.json` records target/toolchain details and file checksums. `Cargo.lock`,
