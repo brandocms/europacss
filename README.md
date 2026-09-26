@@ -18,6 +18,8 @@ weeding out a lot of the boilerplate involved.
 
 ## USAGE WITH POSTCSS
 
+An experimental [standalone Rust compiler](crates/europacss/README.md) is being built with TOML configuration and Lightning CSS as its Rust backend. It needs no Node or PostCSS. The instructions below describe the existing published implementation, which remains the migration reference.
+
 Example `postcss.config.js`:
 
 ```js

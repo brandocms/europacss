@@ -1,0 +1,33 @@
+# Comments work throughout TOML. Slash names and $collections use quoted keys.
+enabled = true
+
+[theme.breakpoints]
+mobile = "0"
+tablet = "740px"
+desktop = "1024px"
+
+[theme.breakpointCollections]
+"$sm" = "mobile/tablet"
+"$lg" = "desktop"
+
+[theme.colors]
+ink = "#163442"
+text = "{colors.ink}" # Reuse another token without a callback.
+accent = "#fc7444"
+
+[theme.spacing.md]
+mobile = "16px"
+tablet = "24px"
+desktop = "32px"
+
+[theme.typography.families]
+sans = ["Inter", "sans-serif"]
+
+[theme.typography.sizes.base]
+mobile = "16px"
+tablet = "18px"
+desktop = "20px"
+
+[theme.typography.sizes.base.__base__]
+font-family = "{typography.families.sans}"
+line-height = "150%"

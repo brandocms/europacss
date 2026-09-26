@@ -1,0 +1,36 @@
+%focus-ring {
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+  }
+}
+
+@layer components {
+  body {
+    @fontsize base;
+    @color fg text;
+    line-height: normal;
+  }
+
+  .card, #featured {
+    @space padding-x md;
+    @display flex/column;
+
+    .title {
+      @color fg accent;
+    }
+
+    @supports (display: grid) {
+      @responsive $lg {
+        @display grid;
+      }
+    }
+  }
+
+  .button {
+    @extend %focus-ring;
+    @font sans;
+    @color bg ink;
+    color: white;
+  }
+}
