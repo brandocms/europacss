@@ -211,16 +211,24 @@ impl Ui {
             eprintln!("  {} {}", self.paint("1;32", "--fix"), clean(fix));
         }
     }
-    pub fn migration_summary(&self, files: usize, findings: usize, fixed: usize, complete: bool) {
-        if self.quiet && findings == 0 && complete {
+    pub fn migration_summary(
+        &self,
+        files: usize,
+        findings: usize,
+        accepted: usize,
+        fixed: usize,
+        complete: bool,
+    ) {
+        let unresolved = findings - accepted;
+        if self.quiet && unresolved == 0 && complete {
             return;
         }
-        let label = if findings == 0 && complete {
-            "✓ no findings in the checks performed"
+        let label = if unresolved == 0 && complete {
+            "✓ no unresolved findings in the checks performed"
         } else {
             "! migration review required"
         };
-        eprintln!("\n  {}  {}\n          {files} files · {findings} findings · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if findings == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, suffix syntax, and local declaration order; rendered-page comparison remains necessary."));
+        eprintln!("\n  {}  {}\n          {files} files · {unresolved} unresolved · {accepted} accepted · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, suffix syntax, and local declaration order; rendered-page comparison remains necessary."));
     }
 }
 

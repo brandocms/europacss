@@ -26,6 +26,49 @@ impl Temp {
 }
 
 #[test]
+fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
+    let dir = Temp::new();
+    let source = ".a,#b{.child{color:red}}";
+    fs::write(dir.0.join("app.css"), "@import 'nested.css';").unwrap();
+    fs::write(dir.0.join("nested.css"), source).unwrap();
+    let base = ["migrate", "app.css", "--from", "1.0.0-beta.16", "--json"];
+    let result = dir.command().args(base).output().unwrap();
+    let mut review: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(review["findings"][0]["accepted"], false);
+    fs::write(dir.0.join("review.json"), review.to_string()).unwrap();
+    let check = || {
+        dir.command()
+            .args(base)
+            .args(["--accept", "review.json"])
+            .output()
+            .unwrap()
+    };
+    assert!(
+        !check().status.success(),
+        "Merely saving a report is not review"
+    );
+    review["findings"][0]["accepted"] = true.into();
+    fs::write(dir.0.join("review.json"), review.to_string()).unwrap();
+    let accepted = check();
+    assert!(
+        accepted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&accepted.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&accepted.stdout).unwrap();
+    assert_eq!(report["unresolved_findings"], 0);
+    assert_eq!(report["findings"][0]["accepted"], true);
+    assert_eq!(
+        fs::read_to_string(dir.0.join("nested.css")).unwrap(),
+        source
+    );
+    fs::write(dir.0.join("nested.css"), format!("{source}\n")).unwrap();
+    let changed = check();
+    assert!(!changed.status.success());
+    assert!(String::from_utf8_lossy(&changed.stderr).contains("stale"));
+}
+
+#[test]
 fn migration_check_reports_imported_specificity_and_order_without_writing() {
     let dir = Temp::new();
     let entry = "@import 'nested.css';";

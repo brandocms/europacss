@@ -6,6 +6,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut input = None;
     let mut config_path = None;
     let mut from = None;
+    let mut accept = None;
     let mut fix = false;
     let mut check = false;
     let mut json = false;
@@ -14,11 +15,14 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
         match arg.as_str() {
             "--from" => from = Some(args.next().ok_or("--from needs a source version")?),
             "--config" => config_path = Some(args.next().ok_or("--config needs a path")?),
+            "--accept" => {
+                accept = Some(args.next().ok_or("--accept needs a reviewed JSON report")?)
+            }
             "--fix" => fix = true,
             "--check" => check = true,
             "--json" => json = true,
             "--help" | "-h" => {
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\nExit 1 means findings remain or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json] [--accept review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(());
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
@@ -34,6 +38,9 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     }
     if fix && check {
         return Err("Choose --check or --fix".into());
+    }
+    if fix && accept.is_some() {
+        return Err("Apply syntax fixes first, then review a fresh report with --accept".into());
     }
     let input = input.ok_or("migrate requires an entry stylesheet")?;
     let from = from.ok_or("migrate requires --from: the installed version does not prove which semantics these files were authored against")?;
@@ -79,15 +86,21 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
                 .map_err(|e| ui.diagnostic(&e, &input, None, false))?;
         }
     }
+    if let Some(path) = accept {
+        let source = fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+        migration::apply_acceptances(&mut report, &source).map_err(|e| e.to_string())?;
+    }
+    let unresolved = report.findings.iter().filter(|f| !f.accepted).count();
     if json {
         let mut data = serde_json::to_value(&report).map_err(|e| e.to_string())?;
         data["fixed_files"] = changed.into();
+        data["unresolved_findings"] = unresolved.into();
         println!(
             "{}",
             serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?
         );
     } else {
-        for finding in &report.findings {
+        for finding in report.findings.iter().filter(|f| !f.accepted) {
             eprint!("{}", ui.diagnostic(&finding.diagnostic, &input, None, true));
             ui.migration_help(
                 &finding.help,
@@ -97,11 +110,12 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
         ui.migration_summary(
             report.files.len(),
             report.findings.len(),
+            report.findings.len() - unresolved,
             changed,
             report.analysis_complete,
         );
     }
-    if !report.analysis_complete || !report.findings.is_empty() {
+    if !report.analysis_complete || unresolved != 0 {
         return Err("Migration review has unresolved findings; no CSS build was written".into());
     }
     Ok(())

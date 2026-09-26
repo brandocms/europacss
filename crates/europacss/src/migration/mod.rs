@@ -2,7 +2,10 @@
 //! A clean report is not a computed-style or rendered-page equivalence proof.
 mod fixes;
 mod order;
+mod review;
 mod selectors;
+
+pub use review::apply_acceptances;
 
 use crate::{
     config::Config,
@@ -15,6 +18,7 @@ use serde::Serialize;
 use std::{collections::HashSet, path::Path};
 
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
+pub const REPORT_VERSION: u32 = 1;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -39,12 +43,17 @@ pub struct Finding {
     #[serde(flatten)]
     pub diagnostic: Error,
     pub help: String,
+    /// Explicitly reviewed semantic change; syntax errors cannot be accepted.
+    pub accepted: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fix: Option<Fix>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Report {
+    pub report_version: u32,
+    /// Binds review decisions to the complete input/config snapshot.
+    pub snapshot: String,
     pub from: String,
     pub to: String,
     pub files: Vec<String>,
@@ -140,6 +149,8 @@ fn report(
             ))
     });
     Ok(Report {
+        report_version: REPORT_VERSION,
+        snapshot: review::snapshot(&sources, request, from),
         from: from.into(),
         to: "rust-native-nesting".into(),
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
@@ -153,6 +164,7 @@ fn report(
         analysis_complete: audit.complete,
         limitations: vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
+            "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
             "Sizing formula corrections and backend/browser-target differences require separate review".into(),
         ],
@@ -192,6 +204,7 @@ impl Audit<'_> {
                         offset,
                     )),
                     help: "Resolve findings and rerun, or audit smaller entry points.".into(),
+                    accepted: false,
                     fix: None,
                 });
             }
@@ -204,6 +217,7 @@ impl Audit<'_> {
         self.findings.push(Finding {
             diagnostic: self.sources.locate(Error::new(code, message, offset)),
             help: help.into(),
+            accepted: false,
             fix,
         });
     }

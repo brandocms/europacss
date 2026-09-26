@@ -274,3 +274,46 @@ fn repeated_ampersands_can_change_matching_without_changing_specificity() {
         assert!(analyze(source).findings.is_empty(), "{source}");
     }
 }
+
+#[test]
+fn review_decisions_are_explicit_and_bound_to_all_source_and_config_data() {
+    let source = ".a,#b{.child{color:red}} .x{@space height 50px desktop;height:40px}";
+    let mut report = analyze(source);
+    let saved = serde_json::to_string(&report).unwrap();
+    migration::apply_acceptances(&mut report, &saved).unwrap();
+    assert!(report.findings.iter().all(|f| !f.accepted));
+    let mut review = serde_json::to_value(&report).unwrap();
+    review["findings"][0]["accepted"] = true.into();
+    migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+    assert_eq!(report.findings.iter().filter(|f| f.accepted).count(), 1);
+
+    let mut changed = analyze(&format!("{source} /* unrelated edit */"));
+    assert!(migration::apply_acceptances(&mut changed, &review.to_string()).is_err());
+    let mut cfg = config();
+    cfg["theme"]["colors"]["brand"] = json!("blue");
+    let mut changed = migration::analyze(&request(source, cfg), LEGACY_VERSION).unwrap();
+    assert!(migration::apply_acceptances(&mut changed, &review.to_string()).is_err());
+    for key in ["message", "filename", "code"] {
+        let mut invalid = review.clone();
+        invalid["findings"][0][key] = "changed".into();
+        assert!(migration::apply_acceptances(&mut analyze(source), &invalid.to_string()).is_err());
+    }
+    review["report_version"] = 0.into();
+    assert!(migration::apply_acceptances(&mut analyze(source), &review.to_string()).is_err());
+}
+
+#[test]
+fn syntax_and_incomplete_analysis_cannot_be_accepted() {
+    for source in [
+        ".card{&__title{color:red}}",
+        ".x::before{.child{color:red}}",
+    ] {
+        let mut report = analyze(source);
+        let mut review = serde_json::to_value(&report).unwrap();
+        for finding in review["findings"].as_array_mut().unwrap() {
+            finding["accepted"] = true.into();
+        }
+        assert!(migration::apply_acceptances(&mut report, &review.to_string()).is_err());
+        assert!(report.findings.iter().all(|f| !f.accepted));
+    }
+}
