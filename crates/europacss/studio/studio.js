@@ -1,7 +1,7 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
 const editor = EuropaEditor.create($('#editor')), frame = $('#preview');
-let latest, tab = 'typography', fit = true, timer, revision = 0, filename = 'europa.json5', initialSource = '';
+let latest, compiledSource, measuredWidth, tab = 'typography', fit = true, timer, revision = 0, filename = 'europa.json5', initialSource = '';
 let projectFonts = {css:'',faces:[],warnings:[]};
 let fontsDocument;
 let editingPath = [], hoveredSpecimen = null;
@@ -9,7 +9,16 @@ const headings = {
   typography: ['Type, with intention.', 'Read the scale together. Look for a rhythm that holds at every width.'],
   spacing: ['Room to breathe.', 'See the distances your tokens create, from the smallest detail to a whole section.'],
   grid: ['A place for everything.', 'Inspect your container, column widths and gutter arithmetic at the actual viewport.'],
+  accessibility: ['Readable at every size.', 'Explore text scaling, contrast and the limits of your design tokens.'],
 };
+const accessibility = EuropaAccessibility.create({
+  getContext: () => ({data:latest,source:editor.value,valid:!!latest && compiledSource===editor.value,family:$('#family').value,fonts:projectFonts,text:$('#specimen-text').value,width:Number($('#width').value)}),
+  trace: (token,reveal) => {
+    if(!token) {highlightEditingSource();return;}
+    const found=editor.highlight(token.config_paths,{reveal});
+    sourceContext(found?.path,found?.line,`${token.name} · no authored entry in this config`);
+  },
+});
 // dpx calculations use the zoom variable normally provided by @europa base.
 const baseStyle = `:root{--ec-zoom:1}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#2d263a;font-family:system-ui,sans-serif}body{overflow-x:hidden}.sample{border-bottom:1px solid #eeedf2;padding:27px 32px}.sample:last-child{border:0}.sample{cursor:pointer;transition:background-color .1s}.sample.is-editing{background:#f5f1ff;box-shadow:inset 3px 0 #8a71d5}.sample.is-hovered,.sample:focus-visible{background:#eee7ff;box-shadow:inset 3px 0 #6554cf;outline:none}.label{display:flex;justify-content:space-between;gap:20px;font:11px/1.5 ui-monospace,monospace;color:#857b96;margin-bottom:18px}.name{color:#695793;font-weight:500}.value{margin:0}.type .value{overflow-wrap:anywhere}.spacing .demo{background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 7px,#f1eff6 7px,#f1eff6 8px);height:36px;border-radius:4px}.spacing .value{height:36px;min-width:0;background:#aca0e5;border-radius:4px}.grid{padding-left:0;padding-right:0}.grid .label{padding:0 32px}.grid .demo{display:flex;background:repeating-linear-gradient(90deg,#faf9fc 0,#faf9fc 31px,#e9e6f0 31px,#e9e6f0 32px);min-height:64px}.grid .value{min-height:64px;background:#c4bae9;border:1px solid #aa9bdc;display:flex;align-items:center}.grid .inside{height:40px;width:100%;background:#eeebfa;border:1px dashed #998bbf}.error{color:#a23f32;font:12px/1.6 system-ui;white-space:pre-wrap}.measure{font-variant-numeric:tabular-nums;text-align:right}.empty{padding:40px;color:#91869f;font:13px system-ui}`;
 function element(doc, tag, className, text) {
@@ -59,7 +68,7 @@ function chooseTab(kind) {
 function syncFromEditor() {
   hoveredSpecimen = null; editingPath = editor.pathAtCursor();
   const kinds = new Set(matchingSpecimens().map(s => s.kind));
-  if(kinds.size === 1 && !kinds.has(tab)) {chooseTab([...kinds][0]); render();}
+  if(tab !== 'accessibility' && kinds.size === 1 && !kinds.has(tab)) {chooseTab([...kinds][0]); render();}
   highlightEditingSource(); paintPreview();
 }
 function tracePreview(specimen, reveal) {
@@ -72,10 +81,16 @@ function tracePreview(specimen, reveal) {
 // Its own CSP still blocks scripts; all specimen content is created as text/DOM.
 function render() {
   if (!latest || !frame.contentDocument?.body) return;
+  const auditing=tab==='accessibility';
+  $('#accessibility').hidden=!auditing;
+  for(const selector of ['.preview-shell','.preview-caption','.inspector','#notes','#fit']) $(selector).hidden=auditing;
+  $('#heading').textContent = headings[tab][0]; $('#description').textContent = headings[tab][1];
+  $('.specimen-controls').hidden = tab !== 'typography' && !auditing;
+  if(auditing) {$('#count').textContent='WCAG 2.2';return;}
   const doc = frame.contentDocument;
   doc.head.querySelectorAll('style:not(#project-fonts)').forEach(s => s.remove());
   const style = element(doc, 'style');
-  style.textContent = baseStyle + '\n' + (latest.families.find(([name]) => name === $('#family').value)?.[1] || '') + '\n' + latest.css;
+  style.textContent = baseStyle + '\n' + latest.root_css + '\n' + (latest.families.find(([name]) => name === $('#family').value)?.[1] || '') + '\n' + latest.css;
   doc.head.append(style);
   doc.body.replaceChildren();
   const items = latest.specimens.filter(s => s.kind === tab);
@@ -115,6 +130,7 @@ function render() {
 function layout() {
   if (!latest || !frame.contentDocument?.body) return;
   const width = Math.max(280, Math.min(2400, Number($('#width').value) || 1200));
+  if(measuredWidth!==width) {measuredWidth=width;accessibility.invalidate();}
   $('#width').value = width; $('#slider').value = width; frame.style.width = `${width}px`;
   const active = [...latest.breakpoints].reverse().find(([,px]) => width >= px);
   $('#active').textContent = active ? `${active[0]} · ${width}px viewport` : `${width}px viewport`;
@@ -142,15 +158,17 @@ function layout() {
 }
 async function compile() {
   clearTimeout(timer);
+  const source=editor.value;
   const current = ++revision;
+  compiledSource=undefined;accessibility.invalidate('Compiling the current configuration…');accessibility.colorPairs();
   status('Compiling…', 'loading'); $('#export').disabled = true;
   try {
-    const response = await fetch('/api/preview', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({source:editor.value}) });
+    const response = await fetch('/api/preview', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({source}) });
     const data = await response.json();
     if (current !== revision) return;
     if (!response.ok) throw Error(data.error || 'Preview failed');
     const hadPreview = !!latest;
-    latest = data; hoveredSpecimen = null;
+    latest = data; compiledSource=source; hoveredSpecimen = null;
     const family = $('#family').value;
     $('#family').replaceChildren(element(document, 'option', null, 'System default'));
     $('#family').firstChild.value = '';
@@ -171,10 +189,12 @@ async function compile() {
     }
     syncFromEditor();
     render();
+    accessibility.update();
   } catch(error) {
     if (current !== revision) return;
     status('Config needs attention', 'error'); $('#errors').hidden = false;
     $('#errors').textContent = `${error.message}\n\nThe preview below still shows the last successfully compiled config.`;
+    accessibility.invalidate('Fix the configuration before running checks.');accessibility.colorPairs();
   }
 }
 async function loadFonts() {
@@ -238,14 +258,14 @@ divider.addEventListener('keydown', event => {
 window.addEventListener('resize', () => resizeEditor(editorWidth));
 resizeEditor(editorWidth);
 editor.addEventListener('cursorchange', syncFromEditor);
-editor.addEventListener('input', () => { ++revision; $('#export').disabled = true; status('Uncompiled edits', 'loading'); clearTimeout(timer); timer = setTimeout(compile, 400); });
+editor.addEventListener('input', () => { ++revision; accessibility.invalidate('Uncompiled edits. Waiting for the compiler…');accessibility.colorPairs(); $('#export').disabled = true; status('Uncompiled edits', 'loading'); clearTimeout(timer); timer = setTimeout(compile, 400); });
 editor.addEventListener('keydown', event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); compile(); } });
 $('#compile').addEventListener('click', compile);
 $('#width').addEventListener('input', layout);
 $('#slider').addEventListener('input', event => { $('#width').value = event.target.value; layout(); });
 $('#fit').addEventListener('click', () => { fit = !fit; $('#fit').setAttribute('aria-pressed', fit); layout(); });
-$('#specimen-text').addEventListener('input', render);
-$('#family').addEventListener('change', render);
+$('#specimen-text').addEventListener('input', () => {accessibility.invalidate();render();});
+$('#family').addEventListener('change', () => {accessibility.invalidate();render();});
 $('#token').addEventListener('change', event => inspect(event.target.value));
 $('.tabs').addEventListener('click', event => {
   if (!event.target.dataset.tab) return;

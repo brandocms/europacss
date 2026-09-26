@@ -164,6 +164,9 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     assert!(loaded.starts_with("HTTP/1.1 200"));
     let parsed: Value = serde_json::from_str(loaded.split_once("\r\n\r\n").unwrap().1).unwrap();
     assert_eq!(parsed["source"], source);
+    let accessibility = send("GET", "/accessibility.js", "", "");
+    assert!(accessibility.starts_with("HTTP/1.1 200"));
+    assert!(accessibility.contains("window.EuropaAccessibility"));
     let body = json!({"source": "{theme:{spacing:{demo:{'*':'40px'}}}}"}).to_string();
     let good = send(
         "POST",
@@ -196,6 +199,74 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     .starts_with("HTTP/1.1 400"));
     assert!(send("GET", "/../../etc/passwd", "", "").starts_with("HTTP/1.1 404"));
     assert_eq!(fs::read_to_string(config).unwrap(), source);
+}
+
+#[test]
+fn studio_exposes_resolved_colors_with_source_links_and_compiles_root_size() {
+    let source = r##"{theme:{
+      colors:{ink:'#111',alias:'{colors.ink}', nested:{paper:'#eee'},
+        'nested/paper':'#fff', translucent:'rgb(0 0 0 / 50%)', variable:'var(--color)'},
+      typography:{base:'20px',sizes:{body:{'*':'1rem'}}},
+      extend:{colors:{ink:'#222'}},
+    }}"##;
+    // An extension replaces this category shallowly; source metadata follows it.
+    let preview = studio::preview(source).unwrap();
+    let ink = preview.colors.iter().find(|c| c.name == "ink").unwrap();
+    assert_eq!(ink.value, "#222");
+    assert_eq!(
+        ink.config_paths,
+        vec![vec!["theme", "extend", "colors", "ink"]]
+    );
+    let source = source.replace("extend:{colors:{ink:'#222'}},", "");
+    let preview = studio::preview(&source).unwrap();
+    let find = |name: &str| preview.colors.iter().find(|c| c.name == name).unwrap();
+    assert_eq!(find("alias").value, "#111");
+    assert_eq!(
+        find("alias").dependency_paths,
+        vec![vec!["theme", "colors", "ink"]]
+    );
+    assert_eq!(find("nested/paper").value, "#fff");
+    assert_eq!(
+        find("nested/paper").config_paths,
+        vec![vec!["theme", "colors", "nested/paper"]]
+    );
+    assert_eq!(
+        preview
+            .colors
+            .iter()
+            .filter(|c| c.name == "nested/paper")
+            .count(),
+        1
+    );
+    assert_eq!(find("variable").value, "var(--color)");
+    assert_eq!(find("translucent").value, "rgb(0 0 0 / 50%)");
+    assert_eq!(
+        find("translucent").compiled_value.as_deref(),
+        Some("#00000080")
+    );
+    assert_eq!(
+        find("variable").compiled_value.as_deref(),
+        Some("var(--color)")
+    );
+    let expected = compile(&Request {
+        source: "html {font-size:theme('typography.base', 16px)}".into(),
+        config: resolve_config(json5::from_str(&source).unwrap()).unwrap(),
+        ..Request::default()
+    })
+    .unwrap();
+    assert_eq!(preview.root_css, expected.css);
+    assert!(preview.root_css.contains("20px"));
+    let fallback = studio::preview("{theme:{typography:{sizes:{}}}}").unwrap();
+    assert!(fallback.root_css.contains("16px"));
+    let palette = (0..129)
+        .map(|i| (format!("color{i}"), json!("#123456")))
+        .collect::<serde_json::Map<_, _>>();
+    let capped = studio::preview(&json!({"theme":{"colors":palette}}).to_string()).unwrap();
+    assert_eq!(capped.colors.len(), 128);
+    assert!(capped
+        .notes
+        .iter()
+        .any(|note| note.contains("128 resolved color tokens")));
 }
 
 #[test]

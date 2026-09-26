@@ -24,6 +24,17 @@ pub struct Preview {
     pub css: String,
     pub notes: Vec<String>,
     pub families: Vec<(String, String)>,
+    pub colors: Vec<Color>,
+    pub root_css: String,
+}
+
+#[derive(Serialize)]
+pub struct Color {
+    pub name: String,
+    pub value: String,
+    pub compiled_value: Option<String>,
+    pub config_paths: Vec<Vec<String>>,
+    pub dependency_paths: Vec<Vec<String>>,
 }
 
 fn safe_token(key: &str) -> bool {
@@ -48,7 +59,91 @@ pub fn preview(source: &str) -> Result<Preview, String> {
         css: String::new(),
         notes: Vec::new(),
         families: Vec::new(),
+        colors: Vec::new(),
+        root_css: String::new(),
     };
+    match compile(&Request {
+        source: "html {font-size:theme('typography.base', 16px)}".into(),
+        filename: "studio/root".into(),
+        config: config.clone(),
+        ..Request::default()
+    }) {
+        Ok(output) => result.root_css = output.css,
+        Err(error) => result.notes.push(format!(
+            "Root font size could not compile; the preview uses the browser default: {error}"
+        )),
+    }
+    fn colors(value: &Value, path: &str, out: &mut Vec<String>) {
+        if out.len() > 128 {
+            return;
+        }
+        if crate::config::scalar(value).is_some() {
+            if !path.is_empty() && !out.iter().any(|name| name == path) {
+                out.push(path.into());
+            }
+        } else if let Some(object) = value.as_object() {
+            for (key, value) in object {
+                let path = if path.is_empty() {
+                    key.clone()
+                } else {
+                    format!("{path}/{key}")
+                };
+                colors(value, &path, out);
+            }
+        }
+    }
+    let mut palette = Vec::new();
+    if let Some(value) = config.pointer("/theme/colors") {
+        colors(value, "", &mut palette);
+    }
+    if palette.len() > 128 {
+        result
+            .notes
+            .push("Color checks show the first 128 resolved color tokens.".into());
+    }
+    for name in palette.into_iter().take(128) {
+        // Use the same lookup precedence as @color (including literal slash keys).
+        let Some(value) = checked
+            .get("/theme/colors", &name)
+            .and_then(crate::config::scalar)
+        else {
+            continue;
+        };
+        let (config_paths, dependency_paths) =
+            source_paths::locate(&authored, &config, &["theme", "colors"], Some(&name));
+        // Check the backend's emitted color, including its channel/alpha precision.
+        // Conditional output or invalid tokens need review rather than a guessed fallback.
+        let compiled_value = if safe_token(&name) {
+            compile(&Request {
+                source: format!(".color {{ @color fg {name}; }}"),
+                filename: format!("studio/colors/{name}"),
+                config: config.clone(),
+                ..Request::default()
+            })
+            .ok()
+            .and_then(|output| crate::parser::parse(&output.css).ok())
+            .and_then(|nodes| {
+                if nodes.len() != 1 || nodes[0].text != ".color" {
+                    return None;
+                }
+                let children = nodes[0].children.as_ref()?;
+                if children.len() != 1 || children[0].children.is_some() {
+                    return None;
+                }
+                let (property, value) = children[0].text.split_once(':')?;
+                (property.trim() == "color").then(|| value.trim().to_owned())
+            })
+        } else {
+            None
+        };
+        result.colors.push(Color {
+            name,
+            value,
+            compiled_value,
+            config_paths,
+            dependency_paths,
+        });
+    }
     if let Some(families) = config
         .pointer("/theme/typography/families")
         .and_then(Value::as_object)

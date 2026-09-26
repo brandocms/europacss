@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/studio.js" defer></script>
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/studio.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -22,13 +22,49 @@
   <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
   <section class="workspace" aria-label="Configuration preview">
     <div class="workspace-heading"><div><span class="eyebrow">SEE YOUR SYSTEM</span><h2 id="heading">Type, with intention.</h2><p id="description">Read the scale together. Look for a rhythm that holds at every width.</p></div><div class="count" id="count"></div></div>
-    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button></nav>
+    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button></nav>
     <div class="viewport-controls"><label for="width">Viewport <input id="width" type="number" min="280" max="2400" value="1200"> <span>px</span></label><input aria-label="Viewport width" id="slider" type="range" min="280" max="2400" value="1200"><button id="fit" aria-pressed="true">Fit view</button></div>
     <div id="breakpoints" class="breakpoints" aria-label="Breakpoint presets"></div>
     <div class="specimen-controls"><label for="specimen-text">Specimen</label><input id="specimen-text" value="A little space changes everything." maxlength="240"></div>
     <div class="font-controls"><label for="family">Font family</label><select id="family" aria-label="Preview font family"></select><span id="font-status" role="status">Checking project fonts…</span></div>
     <details class="font-help"><summary>Project fonts</summary><p id="font-info"></p></details>
     <div id="errors" role="alert" hidden></div>
+    <section id="accessibility" hidden aria-label="Accessibility checks">
+      <p class="a11y-intro">Check the compiled tokens across widths, then test their use on your site. These are specimen checks and a zoom model, not a WCAG conformance report.</p>
+      <details class="a11y-settings" open><summary>Check settings</summary>
+        <div class="a11y-fields">
+          <label>WCAG 2.2 target<select id="a11y-level"><option>AA</option><option>AAA</option></select></label>
+          <label>From width (px)<input id="a11y-from" type="number" value="320" min="280" max="3840"></label>
+          <label>To width (px)<input id="a11y-to" type="number" value="1920" min="280" max="3840"></label>
+          <label>Model zoom up to<select id="a11y-zoom"><option value="4">400%</option><option value="2">200%</option></select></label>
+          <label>Small text hint (px)<input id="a11y-min-size" type="number" value="16" min="0" max="96" step="0.5"></label>
+          <label>Breakpoint jump hint (%)<input id="a11y-jump" type="number" value="20" min="1" max="100"></label>
+        </div>
+        <p>Size and jump limits are design hints, not WCAG requirements. Settings are remembered in this browser; they do not change your JSON5.</p>
+      </details>
+      <div class="a11y-actions"><button id="a11y-run" class="primary">Run checks</button><button id="a11y-export" disabled>Export report</button><span id="a11y-status" role="status">Run checks on this configuration.</span></div>
+      <div id="a11y-results" hidden>
+        <div id="a11y-summary" class="a11y-summary"></div>
+        <h3>Responsive text &amp; zoom</h3>
+        <p class="a11y-help">Measurements include breakpoint edges and intermediate widths; browser viewport rounding can affect fractional edges. Zoom shrinks the layout viewport, then magnifies the result. Viewport-based text can cancel that enlargement. “Review” is a prompt to test real browser zoom and other supported text-resizing mechanisms.</p>
+        <div class="a11y-scroll" tabindex="0" aria-label="Typography check results"><table class="a11y-table"><thead><tr><th>Token</th><th>Size range</th><th>Zoom model</th><th>Review notes</th><th>Source</th></tr></thead><tbody id="a11y-types"></tbody></table></div>
+        <details id="a11y-detail" open><summary id="a11y-detail-title">Inspect a typography token</summary><div id="a11y-chart"></div><div id="a11y-detail-body"></div></details>
+      </div>
+      <h3>Color contrast</h3>
+      <p class="a11y-help">Choose a foreground/background pairing. Checks use the compiler’s emitted colors, including alpha precision. Palette membership does not tell us how a color is used. Transparent colors are composited over the selected canvas; unresolved variables, system colors and wide-gamut colors need manual review.</p>
+      <div class="a11y-fields a11y-colors">
+        <label>Foreground<select id="a11y-fg"></select></label><label>Background<select id="a11y-bg"></select></label>
+        <label>Canvas beneath transparency<input id="a11y-canvas" type="color" value="#ffffff"></label>
+      </div>
+      <div id="a11y-contrast" aria-live="polite"></div>
+      <details class="a11y-palette"><summary>Palette against the selected background</summary><div class="a11y-scroll" tabindex="0" aria-label="Palette contrast results"><table class="a11y-table"><thead><tr><th>Foreground</th><th>Ratio</th><th>Normal text</th><th>Large text</th><th>Source</th></tr></thead><tbody id="a11y-palette"></tbody></table></div></details>
+      <details class="a11y-method"><summary>What these checks cover</summary>
+        <p>Text is rendered with the real compiler output, selected family and available project fonts. Base test viewports are 900px tall; modeled zoom divides both width and height. Root font size follows typography.base (16px fallback); --ec-zoom stays at 1. That design variable is not browser zoom.</p>
+        <p>The 320px reflow and text-spacing tests look for overflowing or clipped specimen text. Spacing overrides use at least 1.5 line height, 2em after paragraphs, 0.12em letter spacing and 0.16em word spacing. They are user overrides, not required design defaults. Full page layouts and functional content still need testing.</p>
+        <p>Also check on your site: real browser zoom, keyboard navigation and focus visibility, control target sizes, meaningful names and alt text, reduced motion, and contrast over images/gradients. No site-wide pass is inferred here.</p>
+        <p><a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html" target="_blank" rel="noreferrer">Resize text</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html" target="_blank" rel="noreferrer">Reflow</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html" target="_blank" rel="noreferrer">Text spacing</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noreferrer">Contrast AA</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noreferrer">Contrast AAA</a></p>
+      </details>
+    </section>
     <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin allow-scripts"></iframe></div></div>
     <div class="preview-caption"><span id="active">Waiting for a valid config</span><span id="scale"></span></div>
     <p class="notes" id="notes"></p>

@@ -165,6 +165,7 @@ fn handle(
         ("GET", "/editor.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/editor.bundle.js").into()),
         ("GET", "/editor.LICENSES.txt") => (200, "text/plain; charset=utf-8", include_str!("../studio/editor.LICENSES.txt").into()),
         ("GET", "/studio.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/studio.js").into()),
+        ("GET", "/accessibility.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/accessibility.js").into()),
         ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),
         ("GET", "/api/fonts") => (200, "application/json", serde_json::to_string(fonts).unwrap()),
         ("GET", "/api/config") => (200, "application/json", initial.into()),
