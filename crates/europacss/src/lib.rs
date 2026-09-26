@@ -3,6 +3,7 @@ mod config;
 mod config_file;
 mod emit;
 mod imports;
+mod optimize;
 pub mod parser;
 mod size;
 mod sources;
@@ -69,21 +70,26 @@ impl Error {
 pub fn compile(request: &Request) -> Result<Output, Error> {
     // Keep internal mappings even when output maps are disabled, for backend diagnostics.
     let sources = single_source(request);
-    let frontend = frontend(request, true)?;
+    let frontend = frontend(request, true, true)?;
     backend::compile(request, frontend, &sources)
 }
 
 /// Expand Europa syntax into standard CSS, preserving native nesting and source order.
 pub fn compile_frontend(request: &Request) -> Result<Output, Error> {
-    frontend(request, request.source_map)
+    frontend(request, request.source_map, false)
 }
 
-fn frontend(request: &Request, source_map: bool) -> Result<Output, Error> {
+fn frontend(request: &Request, source_map: bool, optimize: bool) -> Result<Output, Error> {
     (|| {
         let nodes = parser::parse(&request.source)?;
         imports::validate_external_order(&nodes)?;
         let config = config::Config::new(&request.config)?;
         let nodes = transform::transform(nodes, &config)?;
+        let nodes = if optimize {
+            optimize::media(nodes)
+        } else {
+            nodes
+        };
         Ok(emit::emit(&nodes, &single_source(request), source_map))
     })()
     .map_err(|e: Error| e.locate(&request.source))
@@ -122,6 +128,7 @@ pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Resu
         let config = config::Config::new(&request.config)?;
         let mut nodes = transform::transform(loaded.nodes, &config)?;
         imports::rebase(&mut nodes, &loaded.sources, &loaded.output_dir)?;
+        let nodes = optimize::media(nodes);
         let frontend = emit::emit(&nodes, &loaded.sources, true);
         let mut result = backend::compile(request, frontend, &loaded.sources)?;
         result.dependencies = loaded
