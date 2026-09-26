@@ -27,8 +27,8 @@ These 22 legacy cases are represented by Rust assertions, sometimes grouped in o
 ## Next feature families
 
 1. Continue the systematic spacing/container/column/typography case audit. The shared size engine and grid/column helpers are now implemented; [sizing.rs](sizing.rs) and [typography.rs](typography.rs) cover representative legacy calculations, wildcard/negative/hierarchical tokens, modifiers, viewport reference precedence, nested scope, and failures. These table-driven checks do not yet represent every old case. Equivalent values are not yet grouped across breakpoint ranges.
-4. CSS value functions (`theme`, `ease`) with token-aware parsing and diagnostics.
-5. Import resolution and dependency tracking with source provenance across files, then bundled `@europa` styles and watch mode.
+2. Value functions are now covered in [functions.rs](functions.rs): the three legacy function cases, every easing table entry, lazy/nested fallbacks, scalar arrays, literal exclusions, cycle detection, and source locations.
+3. Import resolution and dependency tracking with source provenance across files, then bundled `@europa` styles and watch mode.
 
 Sizing corrections to include in migration analysis:
 

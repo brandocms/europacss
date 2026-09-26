@@ -44,23 +44,34 @@ pub fn transform(nodes: Vec<Node>, config: &Config<'_>) -> Result<Vec<Node>, Err
             }
         }
     }
-    let result = compiler.nodes(nodes, &Context::default(), 0)?;
-    validate_values(&result)?;
+    let mut result = compiler.nodes(nodes, &Context::default(), 0)?;
+    validate_values(&mut result, config.value)?;
     Ok(result)
 }
 
-fn validate_values(nodes: &[Node]) -> Result<(), Error> {
+fn validate_values(nodes: &mut [Node], config: &Value) -> Result<(), Error> {
     for node in nodes {
-        if let Some(children) = &node.children {
-            validate_values(children)?;
-        } else if let Some((_, name)) =
-            unsupported_function(&node.text).map_err(|e| error(node, &e.code, e.message))?
-        {
-            return Err(error(
-                node,
-                "EU_UNSUPPORTED",
-                format!("Europa function {name}() is not implemented yet"),
-            ));
+        if let Some(children) = &mut node.children {
+            validate_values(children, config)?;
+        } else if !node.text.starts_with("/*") {
+            if let Some((property, value)) = node.text.split_once(':') {
+                let value = crate::value_functions::resolve(value, config, node.offset)?;
+                let text = format!("{property}:{value}");
+                if text != node.text {
+                    validate_interpolation(&text, false)
+                        .map_err(|e| error(node, "EU_FUNCTION", e.message))?;
+                    node.text = text;
+                }
+            }
+            if let Some((_, name)) =
+                unsupported_function(&node.text).map_err(|e| error(node, &e.code, e.message))?
+            {
+                return Err(error(
+                    node,
+                    "EU_UNSUPPORTED",
+                    format!("Europa function {name}() is not implemented yet"),
+                ));
+            }
         }
     }
     Ok(())
@@ -116,7 +127,21 @@ impl Compiler<'_, '_> {
             }
             if let Some((name, params)) = node.at_rule() {
                 let name = name.to_owned();
-                let params = params.to_owned();
+                let params =
+                    crate::value_functions::resolve(params, self.config.value, node.offset)?;
+                let text = format!(
+                    "@{name}{}",
+                    if params.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" {params}")
+                    }
+                );
+                if text != node.text {
+                    validate_interpolation(&text, node.children.is_some())
+                        .map_err(|e| error(&node, "EU_FUNCTION", e.message))?;
+                    node.text = text;
+                }
                 let args = arguments(&params).map_err(|e| error(&node, &e.code, e.message))?;
                 match name.as_str() {
                     "iterate" => {

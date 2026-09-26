@@ -179,14 +179,14 @@ fn plain_css_and_custom_at_rules_survive() {
 #[test]
 fn unported_functions_cannot_leak_into_output() {
     assert_eq!(
-        compile(&request(".x { width: calc(10px + theme('spacing.md')); }"))
+        compile(&request(".x { width: calc(10px + between(10px-20px)); }"))
             .unwrap_err()
             .code,
         "EU_UNSUPPORTED"
     );
     assert_eq!(
         compile(&request(
-            ".x { transition-timing-function: ease('sine.in'); }"
+            ".x { width: vertical-rhythm(theme.typography.sizes.base); }"
         ))
         .unwrap_err()
         .code,
