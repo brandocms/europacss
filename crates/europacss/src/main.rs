@@ -27,16 +27,21 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         args.next();
         let input = args
             .next()
-            .ok_or("migrate-config requires exported JSON input")?;
+            .ok_or("migrate-config requires JSON/JSON5 data or a static JavaScript config")?;
         if args.next().as_deref() != Some("-o") {
-            return Err("Usage: europa migrate-config resolved.json -o europa.json5".into());
+            return Err("Usage: europa migrate-config europa.config.cjs -o europa.json5".into());
         }
         let output = args.next().ok_or("-o requires a path")?;
         if args.next().is_some() {
             return Err("Unexpected argument after config output path".into());
         }
         let source = fs::read_to_string(&input).map_err(|e| format!("{input}: {e}"))?;
-        let json5 = europacss::json_to_json5(&source).map_err(|e| format!("{input}: {e}"))?;
+        let extension = std::path::Path::new(&input)
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        let json5 =
+            europacss::migrate_config(&source, extension).map_err(|e| format!("{input}: {e}"))?;
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create_new(true)

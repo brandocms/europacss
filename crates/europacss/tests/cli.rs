@@ -141,6 +141,42 @@ fn watch_requires_file_input_and_output() {
 }
 
 #[test]
+fn static_config_migration_runs_without_node_and_never_evaluates_expressions() {
+    let dir = Temp::new();
+    let source = "/* keep me */ module.exports = {theme:{colors:{100:'red'}}};";
+    fs::write(dir.0.join("europa.config.cjs"), source).unwrap();
+    let result = dir
+        .command()
+        .args(["migrate-config", "europa.config.cjs", "-o", "europa.json5"])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let migrated = fs::read_to_string(dir.0.join("europa.json5")).unwrap();
+    assert!(migrated.contains("/* keep me */"));
+    assert_eq!(
+        fs::read_to_string(dir.0.join("europa.config.cjs")).unwrap(),
+        source
+    );
+    fs::write(
+        dir.0.join("unsafe.cjs"),
+        "module.exports = require('fs').writeFileSync('SENTINEL', 'bad');",
+    )
+    .unwrap();
+    let failed = dir
+        .command()
+        .args(["migrate-config", "unsafe.cjs", "-o", "unsafe.json5"])
+        .output()
+        .unwrap();
+    assert!(!failed.status.success());
+    assert!(!dir.0.join("unsafe.json5").exists());
+    assert!(!dir.0.join("SENTINEL").exists());
+}
+
+#[test]
 fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
     let dir = Temp::new();
     let source = ".a,#b{.child{color:red}}";

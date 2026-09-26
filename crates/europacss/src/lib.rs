@@ -1,6 +1,7 @@
 mod backend;
 mod config;
 mod config_file;
+mod config_migration;
 mod emit;
 mod imports;
 pub mod migration;
@@ -12,6 +13,7 @@ mod transform;
 mod value_functions;
 pub mod watch;
 pub use config_file::{json_to_json5, load_config, resolve_config};
+pub use config_migration::migrate_config;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

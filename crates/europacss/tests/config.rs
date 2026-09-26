@@ -2,6 +2,68 @@ use europacss::{json_to_json5, resolve_config};
 use serde_json::{json, Value};
 
 #[test]
+fn static_javascript_config_migration_preserves_comments_strings_and_token_data() {
+    let source = r#"/* original comments */
+        'use strict';
+        module /* comment */ . exports = {
+            text: 'module.exports = {200: 3};',
+            theme: {
+                colors: {100: 'red', 200 /* label */: 'tan', text: '{colors.100}'},
+                typography: {families: {brand: ['A // font', 'serif']}},
+            },
+        }; // trailing comment
+    "#;
+    let output = europacss::migrate_config(source, "cjs").unwrap();
+    for comment in [
+        "/* original comments */",
+        "/* comment */",
+        "/* label */",
+        "// trailing comment",
+    ] {
+        assert!(output.contains(comment));
+    }
+    assert!(output.contains("'100': 'red'"));
+    assert!(output.contains("'200' /* label */: 'tan'"));
+    assert!(output.contains("'module.exports = {200: 3};'"));
+    let raw: Value = json5::from_str(&output).unwrap();
+    let config = resolve_config(raw).unwrap();
+    assert_eq!(config["theme"]["colors"]["text"], "red");
+    assert_eq!(
+        config["theme"]["typography"]["families"]["brand"],
+        json!(["A // font", "serif"])
+    );
+    let esm = europacss::migrate_config(
+        "// ESM\nexport default { theme: { colors: { ink: 'black' } } };",
+        "mjs",
+    )
+    .unwrap();
+    assert!(esm.contains("// ESM"));
+    assert_eq!(europacss::migrate_config(&esm, "json5").unwrap(), esm);
+}
+
+#[test]
+fn static_config_migration_declines_executable_and_semantically_ambiguous_inputs() {
+    for source in [
+        "module.exports = loadConfig();",
+        "module.exports = {theme: t => ({colors: t('colors')})};",
+        "module.exports = {...defaults};",
+        "module.exports = {theme: {colors: {[name]: 'red'}}};",
+        "module.exports = {}; console.log('executed');",
+        "module.exports = {theme:{colors:{200:'red',100:'blue'}}};",
+        "module.exports = {theme:{colors:{name:'red','100':'blue'}}};",
+        "module.exports = {theme:{colors:{01:'red'}}};",
+        "module.exports = {theme:{colors:{9007199254740993:'red'}}};",
+        "module.exports = {theme:{__proto__:{colors:{ink:'red'}}}};",
+        "module.exports = {theme:{colors:{ink:'red',ink:'blue'}}};",
+        "module.exports = {dpxViewportSize: Infinity};",
+        "module.exports = {text:'unterminated};",
+        "module.exports = { /* unterminated",
+    ] {
+        assert!(europacss::migrate_config(source, "js").is_err(), "{source}");
+    }
+}
+
+#[test]
 fn defaults_sections_and_extensions_follow_the_existing_contract() {
     let result = resolve_config(
         json!({ "theme": { "colors": {"brand": "red"}, "extend": { "colors": {"ink": "blue"} } } }),

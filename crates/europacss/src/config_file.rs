@@ -36,7 +36,7 @@ pub fn json_to_json5(source: &str) -> Result<String, String> {
 
 // serde_json::Value silently converts non-finite floats to null and overwrites
 // duplicate keys. Reject both at the config boundary, preserving insertion order.
-struct ConfigValue(Value);
+pub(crate) struct ConfigValue(pub(crate) Value);
 impl<'de> Deserialize<'de> for ConfigValue {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         ConfigSeed(0).deserialize(deserializer).map(Self)
