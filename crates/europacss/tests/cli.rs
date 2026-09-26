@@ -878,13 +878,13 @@ fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
     fs::write(dir.0.join("review.json"), review.to_string()).unwrap();
     let result = run();
     assert!(
-        result.status.success(),
-        "{}",
-        String::from_utf8_lossy(&result.stderr)
+        !result.status.success(),
+        "The boundary change still needs a fresh review after the source edit"
     );
     let report: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
     assert_eq!(report["fixed_files"], 1);
-    assert_eq!(report["unresolved_findings"], 0);
+    assert_eq!(report["unresolved_findings"], 1);
+    assert_eq!(report["findings"][0]["code"], "EU_MIGRATION_BREAKPOINT");
     assert_eq!(
         fs::read_to_string(dir.0.join("app.css")).unwrap(),
         ".x{width:40px; @space width 40dpx md;}"

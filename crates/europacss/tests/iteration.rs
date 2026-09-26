@@ -11,7 +11,7 @@ fn iterates_breakpoint_values_with_and_without_surrounding_declarations() {
     for prefix in ["", "margin-top:100px;"] {
         assert_css(
             &format!("article {{ {prefix} @iterate theme.spacing.md {{ @responsive $key {{margin-bottom:$value}} }} }}"),
-            &format!("article {{ {prefix} @media (width <= 739px) {{margin-bottom:25px}} @media (width >= 740px) and (width <= 1023px) {{margin-bottom:50px}} @media (width >= 1024px) {{margin-bottom:75px}} }}"),
+            &format!("article {{ {prefix} @media (width < 740px) {{margin-bottom:25px}} @media (width >= 740px) and (width < 1024px) {{margin-bottom:50px}} @media (width >= 1024px) {{margin-bottom:75px}} }}"),
             cfg.clone(),
         );
     }
@@ -32,7 +32,7 @@ fn iterates_custom_property_names_using_dot_and_slash_paths() {
 fn interpolates_quoted_keys_inside_nested_rules() {
     assert_css(
         "i.dbg { position:fixed; &:after { text-align:center; @iterate theme.breakpoints { @responsive $key { content:'$key'; } } } }",
-        "i.dbg {position:fixed; &:after {text-align:center; @media (width <= 739px) {content:'mobile'} @media (width >= 740px) and (width <= 1023px) {content:'tablet'} @media (width >= 1024px) {content:'desktop'}}}",
+        "i.dbg {position:fixed; &:after {text-align:center; @media (width < 740px) {content:'mobile'} @media (width >= 740px) and (width < 1024px) {content:'tablet'} @media (width >= 1024px) {content:'desktop'}}}",
         config(),
     );
 }
@@ -148,7 +148,7 @@ fn unpacked_config_data_is_not_interpolated_again() {
     cfg["groups"] = json!({"first":{"mobile":{"content":"'$value'"}}});
     assert_css(
         ".x {@iterate groups {@unpack groups.$key}}",
-        ".x {@media (width <= 739px) {content:'$value'}}",
+        ".x {@media (width < 740px) {content:'$value'}}",
         cfg,
     );
 }

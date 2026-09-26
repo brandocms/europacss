@@ -59,3 +59,16 @@ main.expanded #editor .cm-editor{font-size:14px}
 .a11y-method{font-size:12px;color:#605969}.a11y-method a{color:#5542b0;text-underline-offset:3px}
 .a11y-measure{position:fixed;left:-100000px;top:0;pointer-events:none;opacity:0;max-width:none;max-height:none;border:0}
 @media(max-width:550px){.a11y-summary{gap:6px}.a11y-summary>div{padding:9px}.a11y-summary strong{font-size:23px}.tabs{column-gap:18px}}
+
+/* Focused edits keep code and a reviewable proposal within reach. */
+#focused{background:#fff;border:1px solid #d3cae8;border-radius:10px;padding:18px;margin:18px 0 24px;min-width:0}
+.focused-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.focused-heading h3{flex:1;font-size:17px;margin:0;overflow-wrap:anywhere}.focused-heading button{font-size:11px;padding:6px 9px}
+#focused-fields,.context-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin:18px 0}
+#focused-fields{max-height:320px;overflow:auto;padding:3px}
+#focused-fields label,.context-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:11px;color:#655a74;overflow-wrap:anywhere}
+#focused-fields input,.context-fields select{width:100%;min-width:0;border:1px solid #ccc5d8;border-radius:6px;padding:9px;background:#fff;color:#302a44}
+#focused-fields input{font:12px/1.5 ui-monospace,monospace}
+.focused-actions{display:flex;gap:10px;flex-wrap:wrap}.focused-actions button{font-size:12px}
+#focused-status,#context-controls p{font-size:12px;line-height:1.7;color:#655a74}
+#focused-diff{font:12px/1.7 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;background:#f6f4fa;padding:12px;border-radius:6px}
+#focused-diff:empty{display:none}#context-controls{margin-bottom:20px}#context-controls>label{font-size:12px;color:#655a74}

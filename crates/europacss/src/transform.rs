@@ -506,7 +506,10 @@ impl Compiler<'_, '_> {
                         for index in self.config.select(query, node.offset)? {
                             let value = sizes.css(&value, Some(index), false)?;
                             result.push(Node::block(
-                                format!("@media {}", self.config.media_indices(&[index])),
+                                format!(
+                                    "@media {}",
+                                    self.config.media_indices(&[index], node.offset)
+                                ),
                                 vec![decl(property, &value, node, false)],
                                 node.offset,
                             ));
@@ -816,8 +819,8 @@ impl Compiler<'_, '_> {
             .is_some_and(|suffix| suffix.starts_with('('));
         let token = self.config.get("/theme/typography/sizes", &name);
         if token.is_none() && ctx.responsive.is_some() {
-            self.config.beta11_warning(node.offset, || "Literal font sizes inside @responsive were emitted as breakpoint-specific groups in beta.11; native conditions retain their enclosing range, including fractional boundary gaps".into());
-            self.config.beta6_warning(node.offset, || "Literal font sizes inside @responsive were emitted as breakpoint-specific groups in beta.6; native conditions retain their enclosing range, including fractional boundary gaps".into());
+            self.config.beta11_warning(node.offset, || "Literal font sizes inside @responsive were emitted as breakpoint-specific groups in beta.11; native conditions retain their enclosing range, with contiguous named breakpoint boundaries".into());
+            self.config.beta6_warning(node.offset, || "Literal font sizes inside @responsive were emitted as breakpoint-specific groups in beta.6; native conditions retain their enclosing range, with contiguous named breakpoint boundaries".into());
         }
         let sizes = crate::size::Sizes {
             config: self.config,
@@ -1073,7 +1076,10 @@ impl Compiler<'_, '_> {
                 result.extend(nodes);
             } else {
                 result.push(Node::block(
-                    format!("@media {}", self.config.media_indices(&[*index])),
+                    format!(
+                        "@media {}",
+                        self.config.media_indices(&[*index], node.offset)
+                    ),
                     nodes,
                     node.offset,
                 ));

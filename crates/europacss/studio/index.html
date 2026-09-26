@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/studio.js" defer></script>
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/focused.js" defer></script><script src="/specimens.js" defer></script><script src="/studio.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -22,7 +22,7 @@
   <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
   <section class="workspace" aria-label="Configuration preview">
     <div class="workspace-heading"><div><span class="eyebrow">SEE YOUR SYSTEM</span><h2 id="heading">Type, with intention.</h2><p id="description">Read the scale together. Look for a rhythm that holds at every width.</p></div><div class="count" id="count"></div></div>
-    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button></nav>
+    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="context" aria-pressed="false">In context</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button></nav>
     <div class="viewport-controls"><label for="width">Viewport <input id="width" type="number" min="280" max="2400" value="1200"> <span>px</span></label><input aria-label="Viewport width" id="slider" type="range" min="280" max="2400" value="1200"><button id="fit" aria-pressed="true">Fit view</button></div>
     <div id="breakpoints" class="breakpoints" aria-label="Breakpoint presets"></div>
     <div class="specimen-controls"><label for="specimen-text">Specimen</label><input id="specimen-text" value="A little space changes everything." maxlength="240"></div>
@@ -68,6 +68,25 @@
         <p>Also check on your site: real browser zoom, keyboard navigation and focus visibility, control target sizes, meaningful names and alt text, reduced motion, and contrast over images/gradients. No site-wide pass is inferred here.</p>
         <p><a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html" target="_blank" rel="noreferrer">Resize text</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html" target="_blank" rel="noreferrer">Reflow</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html" target="_blank" rel="noreferrer">Text spacing</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noreferrer">Contrast AA</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noreferrer">Contrast AAA</a></p>
       </details>
+    </section>
+    <section id="focused" hidden aria-labelledby="focused-title">
+      <div class="focused-heading"><h3 id="focused-title">Edit token</h3><button id="focused-source">View JSON5</button><button id="focused-close" aria-label="Close token editor">Close</button></div>
+      <div id="focused-fields"></div>
+      <div class="focused-actions"><button id="focused-review">Review change</button><button id="focused-apply" class="primary" disabled>Apply to JSON5</button></div>
+      <p id="focused-status" role="status"></p><pre id="focused-diff" aria-label="Proposed changes"></pre>
+    </section>
+    <section id="context-controls" hidden aria-label="Realistic specimen settings">
+      <p>Combine your tokens in an article and cards. Click a text or spacing marker to edit its rules. These are sample layouts, not a rendering of your site.</p>
+      <div class="context-fields">
+        <label>Heading<select id="context-heading"></select></label>
+        <label>Body<select id="context-body"></select></label>
+        <label>Small text &amp; buttons<select id="context-detail"></select></label>
+        <label>Spacing<select id="context-space"></select></label>
+        <label>Columns<select id="context-column"></select></label>
+        <label>Copy<select id="context-copy"><option value="en">English</option><option value="no">Norwegian · long words</option></select></label>
+      </div>
+      <label><input id="context-container" type="checkbox" checked> Use configured container</label>
+      <p id="context-measure" role="status"></p>
     </section>
     <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin allow-scripts"></iframe></div></div>
     <div class="preview-caption"><span id="active">Waiting for a valid config</span><span id="scale"></span></div>

@@ -18,7 +18,7 @@ fn abs100_with_and_without_important() {
 #[test]
 fn abs100_breakpoints_collections_comparisons_and_ranges() {
     for (query, media) in [
-        ("tablet", "(width >= 740px) and (width <= 1023px)"),
+        ("tablet", "(width >= 740px) and (width < 1024px)"),
         ("$lg", "(width >= 1024px)"),
         (">=tablet", "(width >= 740px)"),
         ("300px->800px", "(width >= 300px) and (width <= 800px)"),
@@ -33,7 +33,7 @@ fn abs100_breakpoints_collections_comparisons_and_ranges() {
 
 #[test]
 fn abs100_inherits_responsive_context_once_and_keeps_later_overrides() {
-    assert_css(".x {@responsive tablet {@abs100; position:relative}}", ".x {@media (width >= 740px) and (width <= 1023px) {position:absolute;width:100%;height:100%;top:0;left:0;position:relative}}", config());
+    assert_css(".x {@responsive tablet {@abs100; position:relative}}", ".x {@media (width >= 740px) and (width < 1024px) {position:absolute;width:100%;height:100%;top:0;left:0;position:relative}}", config());
     let output = compile_frontend(&request(".x {@responsive tablet {@abs100}}", config())).unwrap();
     assert_eq!(output.css.matches("@media").count(), 1);
 }

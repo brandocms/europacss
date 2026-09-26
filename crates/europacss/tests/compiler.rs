@@ -78,9 +78,9 @@ fn source_order_and_conditional_scopes_are_preserved() {
 #[test]
 fn breakpoint_queries_are_validated_and_sorted_by_width() {
     for (query, expected) in [
-        ("$sm", "(width <= 1023px)"),
+        ("$sm", "(width < 1024px)"),
         (">=tablet", "(width >= 740px)"),
-        ("mobile/desktop", "(width <= 739px), (width >= 1024px)"),
+        ("mobile/desktop", "(width < 740px), (width >= 1024px)"),
         ("300px->800px", "(width >= 300px) and (width <= 800px)"),
         ("<mobile", "not all"),
     ] {

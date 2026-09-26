@@ -116,7 +116,7 @@ fn scope_and_separated_duplicate_selectors_are_preserved() {
 #[test]
 fn basic_directives_compile_together_without_reordering() {
     assert_eq!(css(".card {@display flex/column/wrap; @order 2; @font header/display; @fontsize header/large $lg; @space padding-x 12px;}"), css(".card {display:flex; flex-direction:column; flex-wrap:wrap; order:2; font-family:Georgia,serif} @media (width >= 1024px) {.card {font-size:40px}} .card {padding-left:12px; padding-right:12px}"));
-    assert_eq!(css(".card {@responsive $sm {@space margin-y md;}}"), css("@media (width <= 1023px) {@media (width <= 739px) {.card {margin-top:10px; margin-bottom:10px}} @media (width >= 740px) and (width <= 1023px) {.card {margin-top:20px; margin-bottom:20px}}}"));
+    assert_eq!(css(".card {@responsive $sm {@space margin-y md;}}"), css("@media (width < 1024px) {@media (width < 740px) {.card {margin-top:10px; margin-bottom:10px}} @media (width >= 740px) and (width < 1024px) {.card {margin-top:20px; margin-bottom:20px}}}"));
 }
 
 #[test]
@@ -212,10 +212,10 @@ fn advanced_json5_typography_matches_explicit_css() {
             line-height: 1.1;
             letter-spacing: -0.025em;
         }
-        @media (width <= 739px) {
+        @media (width < 740px) {
             .hero-title { font-size: 32px; line-height: 1.15; }
         }
-        @media (width >= 740px) and (width <= 1023px) {
+        @media (width >= 740px) and (width < 1024px) {
             .hero-title { font-size: 48px; }
         }
         @media (width >= 1024px) {

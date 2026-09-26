@@ -89,10 +89,9 @@ impl<'a> Config<'a> {
             return;
         }
         let message = message();
-        if warnings
-            .iter()
-            .any(|e| e.offset == offset && e.message == message)
-        {
+        if warnings.iter().any(|e| {
+            (e.offset == offset || code == "EU_MIGRATION_BREAKPOINT") && e.message == message
+        }) {
             return;
         }
         let error = if warnings.len() == 512 {
@@ -195,12 +194,12 @@ impl<'a> Config<'a> {
                     offset,
                 ));
             }
-            return Ok(range(min.unwrap_or(0.0), max));
+            return Ok(range(min.unwrap_or(0.0), max, "<="));
         }
         let indices = self.select(query, offset)?;
-        Ok(self.media_indices(&indices))
+        Ok(self.media_indices(&indices, offset))
     }
-    pub fn media_indices(&self, indices: &[usize]) -> String {
+    pub fn media_indices(&self, indices: &[usize], offset: usize) -> String {
         if indices.is_empty() {
             return "not all".into();
         }
@@ -211,18 +210,23 @@ impl<'a> Config<'a> {
             if idx == end + 1 {
                 end = idx;
             } else {
-                ranges.push(self.interval(start, end));
+                ranges.push(self.interval(start, end, offset));
                 start = idx;
                 end = idx;
             }
         }
-        ranges.push(self.interval(start, end));
+        ranges.push(self.interval(start, end, offset));
         ranges.join(", ")
     }
-    fn interval(&self, start: usize, end: usize) -> String {
+    fn interval(&self, start: usize, end: usize, offset: usize) -> String {
+        if let Some((name, next)) = self.breakpoints.get(end + 1) {
+            self.migration_notice("EU_MIGRATION_BREAKPOINT", offset, || format!(
+                "Named breakpoint ranges used here now end at width < {next}px (`{name}`), rather than width <= {}px. Reported once per boundary at its first use. Fractional widths in that final pixel now keep the preceding range active.", next - 1.0));
+        }
         range(
             self.breakpoints[start].1,
-            self.breakpoints.get(end + 1).map(|(_, n)| n - 1.0),
+            self.breakpoints.get(end + 1).map(|(_, n)| *n),
+            "<",
         )
     }
 }
@@ -236,11 +240,11 @@ fn pixels(s: &str) -> Option<f64> {
     (n.is_finite() && n >= 0.0).then_some(n)
 }
 
-fn range(min: f64, max: Option<f64>) -> String {
+fn range(min: f64, max: Option<f64>, upper: &str) -> String {
     match (min > 0.0, max) {
         (false, None) => "all".into(),
         (true, None) => format!("(width >= {min}px)"),
-        (false, Some(max)) => format!("(width <= {max}px)"),
-        (true, Some(max)) => format!("(width >= {min}px) and (width <= {max}px)"),
+        (false, Some(max)) => format!("(width {upper} {max}px)"),
+        (true, Some(max)) => format!("(width >= {min}px) and (width {upper} {max}px)"),
     }
 }

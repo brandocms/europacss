@@ -54,7 +54,50 @@ pub(crate) fn media(nodes: Vec<Node>) -> Vec<Node> {
 
 // A later block may cross only media blocks proven inactive at all of its widths.
 // Limit the search so large stylesheets cannot turn this pass into quadratic work.
-type WidthRanges = Vec<(f64, f64)>;
+#[derive(Clone, Copy)]
+pub(crate) struct WidthRange {
+    pub low: f64,
+    pub high: f64,
+    pub low_closed: bool,
+    pub high_closed: bool,
+}
+impl WidthRange {
+    pub fn all() -> Self {
+        Self {
+            low: 0.0,
+            high: f64::INFINITY,
+            low_closed: true,
+            high_closed: true,
+        }
+    }
+    pub fn intersect(self, other: Self) -> Self {
+        Self {
+            low: self.low.max(other.low),
+            high: self.high.min(other.high),
+            low_closed: if self.low > other.low {
+                self.low_closed
+            } else if self.low < other.low {
+                other.low_closed
+            } else {
+                self.low_closed && other.low_closed
+            },
+            high_closed: if self.high < other.high {
+                self.high_closed
+            } else if self.high > other.high {
+                other.high_closed
+            } else {
+                self.high_closed && other.high_closed
+            },
+        }
+    }
+    pub fn nonempty(self) -> bool {
+        self.low < self.high || self.low == self.high && self.low_closed && self.high_closed
+    }
+    pub fn overlaps(self, other: Self) -> bool {
+        self.intersect(other).nonempty()
+    }
+}
+type WidthRanges = Vec<WidthRange>;
 
 fn disjoint_widths(nodes: Vec<Node>) -> Vec<Node> {
     let mut result: Vec<(Node, Option<WidthRanges>)> = Vec::new();
@@ -76,13 +119,13 @@ fn disjoint_widths(nodes: Vec<Node>) -> Vec<Node> {
                     merged = true;
                     break;
                 }
-                let may_overlap = ranges.iter().any(|&(low, high)| {
-                    previous_ranges.iter().any(|&(other_low, other_high)| {
+                let may_overlap = ranges.iter().any(|range| {
+                    previous_ranges.iter().any(|other| {
                         if comparisons == 0 {
                             return true;
                         }
                         comparisons -= 1;
-                        low <= other_high && other_low <= high
+                        range.overlaps(*other)
                     })
                 });
                 if may_overlap {
@@ -97,7 +140,7 @@ fn disjoint_widths(nodes: Vec<Node>) -> Vec<Node> {
     result.into_iter().map(|(node, _)| node).collect()
 }
 
-// Deliberately narrow proof language: comma-separated unions of inclusive px
+// Deliberately narrow proof language: comma-separated unions of px
 // width comparisons joined with `and`. Anything else is an ordering barrier.
 fn width_ranges(node: &Node) -> Option<WidthRanges> {
     let ("media", query) = node.at_rule()? else {
@@ -120,7 +163,7 @@ pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
         if terms.is_empty() || terms.len() > 15 || terms.len() % 2 == 0 {
             return None;
         }
-        let (mut low, mut high): (f64, f64) = (0.0, f64::INFINITY);
+        let mut range = WidthRange::all();
         for (i, term) in terms.iter().enumerate() {
             if i % 2 == 1 {
                 if *term != "and" {
@@ -137,16 +180,24 @@ pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
             if !number.is_finite() || number < 0.0 {
                 return None;
             }
+            let mut bound = WidthRange::all();
             match values[1] {
-                ">=" => low = low.max(number),
-                "<=" => high = high.min(number),
+                ">=" | ">" => {
+                    bound.low = number;
+                    bound.low_closed = values[1] == ">=";
+                }
+                "<=" | "<" => {
+                    bound.high = number;
+                    bound.high_closed = values[1] == "<=";
+                }
                 _ => return None,
             }
+            range = range.intersect(bound);
         }
-        if low > high {
+        if !range.nonempty() {
             return None;
         }
-        ranges.push((low, high));
+        ranges.push(range);
     }
     Some(ranges)
 }

@@ -164,6 +164,8 @@ fn handle(
         ("GET", "/studio.css") => (200, "text/css; charset=utf-8", include_str!("../studio/studio.css").into()),
         ("GET", "/editor.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/editor.bundle.js").into()),
         ("GET", "/editor.LICENSES.txt") => (200, "text/plain; charset=utf-8", include_str!("../studio/editor.LICENSES.txt").into()),
+        ("GET", "/focused.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/focused.js").into()),
+        ("GET", "/specimens.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/specimens.js").into()),
         ("GET", "/studio.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/studio.js").into()),
         ("GET", "/accessibility.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/accessibility.js").into()),
         ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),

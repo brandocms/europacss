@@ -12,10 +12,10 @@ fn container_config() -> Value {
 
 #[test]
 fn ordinary_containers_expand_at_the_directive_with_breakpoint_specific_properties() {
-    let expected = ".card { @media (width <= 739px) {padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%} @media (width >= 740px) and (width <= 1023px) {padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%} @media (width >= 1024px) {padding-left:50px;padding-right:50px;max-width:1200px;margin-left:auto;margin-right:auto;width:100%} }";
+    let expected = ".card { @media (width < 740px) {padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%} @media (width >= 740px) and (width < 1024px) {padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%} @media (width >= 1024px) {padding-left:50px;padding-right:50px;max-width:1200px;margin-left:auto;margin-right:auto;width:100%} }";
     assert_css(".card{@space container;}", expected, container_config());
-    assert_css(".card{color:red;@space container mobile;padding-left:99px;}", ".card{color:red;@media (width <= 739px){padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%}padding-left:99px;}", container_config());
-    assert_css(".card{@space container mobile;@space container tablet;}", ".card{@media (width <= 739px){padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%}@media (width >= 740px) and (width <= 1023px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}", container_config());
+    assert_css(".card{color:red;@space container mobile;padding-left:99px;}", ".card{color:red;@media (width < 740px){padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%}padding-left:99px;}", container_config());
+    assert_css(".card{@space container mobile;@space container tablet;}", ".card{@media (width < 740px){padding-left:15px;padding-right:15px;max-width:740px;margin-left:auto;margin-right:auto;width:100%}@media (width >= 740px) and (width < 1024px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}", container_config());
 }
 
 #[test]
@@ -27,16 +27,16 @@ fn viewport_containers_cap_only_when_enabled_at_the_largest_breakpoint() {
         cfg["theme"]["container"]["maxWidth"] =
             json!({"mobile":"100%","tablet":"100%","desktop":"1024px"});
         let last = if capped { "40.96px" } else { "4vw" };
-        assert_css(".card{@space container;}", &format!(".card{{@media (width <= 739px){{padding-left:4vw;padding-right:4vw;max-width:100%;margin-left:auto;margin-right:auto;width:100%}}@media (width >= 740px) and (width <= 1023px){{padding-left:4vw;padding-right:4vw;max-width:100%;margin-left:auto;margin-right:auto;width:100%}}@media (width >= 1024px){{padding-left:{last};padding-right:{last};max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}}}"), cfg);
+        assert_css(".card{@space container;}", &format!(".card{{@media (width < 740px){{padding-left:4vw;padding-right:4vw;max-width:100%;margin-left:auto;margin-right:auto;width:100%}}@media (width >= 740px) and (width < 1024px){{padding-left:4vw;padding-right:4vw;max-width:100%;margin-left:auto;margin-right:auto;width:100%}}@media (width >= 1024px){{padding-left:{last};padding-right:{last};max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}}}"), cfg);
     }
 }
 
 #[test]
 fn container_queries_and_collections_stay_inside_native_scopes() {
     for query in [">=tablet", "tablet/desktop"] {
-        assert_css(&format!("@layer ui {{.card{{@space container {query};}}}}"), "@layer ui {.card{@media (width >= 740px) and (width <= 1023px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}@media (width >= 1024px){padding-left:50px;padding-right:50px;max-width:1200px;margin-left:auto;margin-right:auto;width:100%}}}", container_config());
+        assert_css(&format!("@layer ui {{.card{{@space container {query};}}}}"), "@layer ui {.card{@media (width >= 740px) and (width < 1024px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}@media (width >= 1024px){padding-left:50px;padding-right:50px;max-width:1200px;margin-left:auto;margin-right:auto;width:100%}}}", container_config());
     }
-    assert_css(".card{@responsive tablet{@space container;}}", ".card{@media (width >= 740px) and (width <= 1023px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}", container_config());
+    assert_css(".card{@responsive tablet{@space container;}}", ".card{@media (width >= 740px) and (width < 1024px){padding-left:35px;padding-right:35px;max-width:1024px;margin-left:auto;margin-right:auto;width:100%}}", container_config());
     assert_css(".card{@space container $lg;}", ".card{@media (width >= 1024px){padding-left:50px;padding-right:50px;max-width:1200px;margin-left:auto;margin-right:auto;width:100%}}", container_config());
 }
 
@@ -65,7 +65,7 @@ fn identical_containers_compact_both_padding_and_maximum_without_changing_condit
     assert_eq!(result.css.matches("padding-left:20px").count(), 2);
     assert_eq!(result.css.matches("max-width:100%").count(), 1);
     assert_eq!(result.css.matches("max-width:1200px").count(), 1);
-    assert!(result.css.contains("739px"));
+    assert!(!result.css.contains("739px"));
     assert!(result.css.contains("740px"));
 }
 

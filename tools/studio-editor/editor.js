@@ -1,8 +1,8 @@
-import {EditorState, StateEffect, StateField, Compartment} from '@codemirror/state';
+import {EditorState, StateEffect, StateField, Compartment, Transaction} from '@codemirror/state';
 import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, dropCursor, Decoration} from '@codemirror/view';
 import {javascriptLanguage} from '@codemirror/lang-javascript';
 import {indentOnInput, indentUnit, bracketMatching, foldGutter, foldKeymap, foldedRanges, unfoldEffect, syntaxHighlighting, HighlightStyle} from '@codemirror/language';
-import {defaultKeymap, history, historyKeymap, indentWithTab} from '@codemirror/commands';
+import {defaultKeymap, history, historyKeymap, indentWithTab, isolateHistory} from '@codemirror/commands';
 import {closeBrackets, closeBracketsKeymap} from '@codemirror/autocomplete';
 import {searchKeymap, highlightSelectionMatches} from '@codemirror/search';
 import {tags} from '@lezer/highlight';
@@ -89,7 +89,9 @@ export function create(host) {
         try { name=Object.keys(parseJSON5(`{${source.slice(key.from,key.to)}:null}`))[0]; } catch {continue;}
         if(name === undefined) continue;
         const next=[...path,name], encoded=JSON.stringify(next);
-        const range={path:next,from:property.from,to:property.to,keyFrom:key.from,keyTo:key.to};
+        let valueNode;
+        for(let child=key.nextSibling;child;child=child.nextSibling) if(![':', 'LineComment', 'BlockComment'].includes(child.name)) valueNode=child;
+        const range={path:next,from:property.from,to:property.to,keyFrom:key.from,keyTo:key.to,valueFrom:valueNode?.from,valueTo:valueNode?.to};
         ranges.push(range); index.set(encoded,index.has(encoded)?null:range);
         for(let value=key.nextSibling;value;value=value.nextSibling) if(value.name==='ObjectExpression') object(value,next,depth+1);
       }
@@ -114,6 +116,41 @@ export function create(host) {
       return ranges.filter(range=>range.from<=position && range.to>=position).sort((a,b)=>b.path.length-a.path.length)[0]?.path || [];
     },
     range(path) {indexSource();return index.get(JSON.stringify(path)) || null;},
+    fields(paths) {
+      indexSource();
+      // Never offer edits against an incomplete expression or ambiguous key.
+      parseJSON5(view.state.doc.toString());
+      return ranges.filter(range => index.get(JSON.stringify(range.path)) === range && range.valueFrom !== undefined && paths.some(path=>path.length<=range.path.length && path.every((key,i)=>key===range.path[i])))
+        .flatMap(range => {
+          const literal=view.state.doc.sliceString(range.valueFrom,range.valueTo), value=parseJSON5(literal);
+          return value !== null && typeof value==='object' ? [] : [{path:range.path,value,literal}];
+        });
+    },
+    plan(edits) {
+      indexSource();
+      const before=view.state.doc.toString();
+      parseJSON5(before);
+      const changes=edits.map(({path,value})=>{
+        const range=index.get(JSON.stringify(path));
+        if(!range || range.valueFrom===undefined) throw Error('This property is missing or ambiguous. Update the preview first.');
+        const old=before.slice(range.valueFrom,range.valueTo);
+        let insert=JSON.stringify(value);
+        if(typeof value==='string' && old.startsWith("'")) insert="'"+JSON.stringify(value).slice(1,-1).replace(/'/g,"\\'")+"'";
+        if(JSON.stringify(parseJSON5(old))===JSON.stringify(value)) insert=old;
+        if(insert===undefined) throw Error('Enter a JSON5 value.');
+        return {from:range.valueFrom,to:range.valueTo,insert,path,old};
+      }).filter(change=>change.old!==change.insert).sort((a,b)=>a.from-b.from);
+      for(let i=1;i<changes.length;i++) if(changes[i].from<changes[i-1].to) throw Error('Choose separate properties to edit.');
+      let source=before;
+      for(const change of [...changes].reverse()) source=source.slice(0,change.from)+change.insert+source.slice(change.to);
+      parseJSON5(source);
+      return {before,source,changes};
+    },
+    apply(plan) {
+      if(plan.before!==view.state.doc.toString()) throw Error('The source changed. Review a fresh proposal before applying.');
+      view.dispatch({changes:plan.changes.map(({from,to,insert})=>({from,to,insert})),annotations:[Transaction.userEvent.of('input.focused'),isolateHistory.of('full')]});
+    },
+    parse: parseJSON5,
     highlight(paths,{reveal=false}={}) {
       indexSource();
       const found=paths.map(path=>index.get(JSON.stringify(path))).filter(Boolean);

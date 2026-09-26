@@ -4,13 +4,13 @@ use serde_json::json;
 use support::{assert_css, config, request};
 
 #[test]
-fn repeated_generated_values_share_exact_conditions_without_filling_gaps() {
+fn repeated_generated_values_share_contiguous_conditions() {
     let mut cfg = config();
     cfg["theme"]["spacing"] = json!({"gap":{"mobile":"12px","tablet":"12px","desktop":"24px"}});
-    assert_css(".card{@space padding gap;}", ".card { @media (width <= 739px), (width >= 740px) and (width <= 1023px) {padding:12px} @media (width >= 1024px) {padding:24px} }", cfg.clone());
+    assert_css(".card{@space padding gap;}", ".card { @media (width < 740px), (width >= 740px) and (width < 1024px) {padding:12px} @media (width >= 1024px) {padding:24px} }", cfg.clone());
     let result = compile(&request(".card{@space padding gap;}", cfg.clone())).unwrap();
     assert_eq!(result.css.matches("padding:12px").count(), 1);
-    assert!(result.css.contains("739px"));
+    assert!(!result.css.contains("739px"));
     assert!(result.css.contains("740px"));
     let frontend = compile_frontend(&request(".card{@space padding gap;}", cfg)).unwrap();
     assert_eq!(
@@ -24,7 +24,7 @@ fn repeated_generated_values_share_exact_conditions_without_filling_gaps() {
 fn adjacent_identical_conditions_combine_without_reordering_declarations() {
     assert_css(
         ".card { @responsive mobile {color:red} @mq mobile {color:blue; &:hover {color:green}} }",
-        ".card { @media (width <= 739px) {color:red; color:blue; &:hover{color:green}} }",
+        ".card { @media (width < 740px) {color:red; color:blue; &:hover{color:green}} }",
         config(),
     );
     let result = compile(&request(
@@ -83,12 +83,12 @@ fn repeated_queries_can_cross_proven_disjoint_widths_in_one_scope() {
     let mut cfg = config();
     cfg["theme"]["spacing"] = json!({"gap":{"mobile":"12px","tablet":"20px","desktop":"24px"}});
     let source = ".card{@space padding gap;@space margin gap;}";
-    let expected = ".card{@media (width <= 739px){padding:12px;margin:12px}@media (width >= 740px) and (width <= 1023px){padding:20px;margin:20px}@media (width >= 1024px){padding:24px;margin:24px}}";
+    let expected = ".card{@media (width < 740px){padding:12px;margin:12px}@media (width >= 740px) and (width < 1024px){padding:20px;margin:20px}@media (width >= 1024px){padding:24px;margin:24px}}";
     assert_css(source, expected, cfg.clone());
     let result = compile(&request(source, cfg)).unwrap();
     assert_eq!(result.css.matches("@media").count(), 3);
     assert_eq!(result.css.matches(".card").count(), 3);
-    assert_css("@media (width <= 739px), (width >= 1024px){.a{color:red}} @media (width >= 740px) and (width <= 1023px){.b{color:blue}} @media (width <= 739px), (width >= 1024px){.c{color:green}}", "@media (width <= 739px), (width >= 1024px){.a{color:red}.c{color:green}} @media (width >= 740px) and (width <= 1023px){.b{color:blue}}", config());
+    assert_css("@media (width < 740px), (width >= 1024px){.a{color:red}} @media (width >= 740px) and (width < 1024px){.b{color:blue}} @media (width < 740px), (width >= 1024px){.c{color:green}}", "@media (width < 740px), (width >= 1024px){.a{color:red}.c{color:green}} @media (width >= 740px) and (width < 1024px){.b{color:blue}}", config());
 }
 
 #[test]
@@ -135,4 +135,24 @@ fn disjoint_packing_keeps_later_rule_source_origins() {
         .original
         .unwrap();
     assert_eq!(origin.original_line, 2);
+}
+
+#[test]
+fn open_endpoints_allow_disjoint_packing_but_closed_endpoints_still_overlap() {
+    for (upper, count) in [("<", 2), ("<=", 3)] {
+        let source=format!("@media (width {upper} 740px){{.a{{color:red}}}} @media (width >= 740px){{.b{{color:blue}}}} @media (width {upper} 740px){{.c{{color:green}}}}");
+        assert_eq!(
+            compile(&request(&source, config()))
+                .unwrap()
+                .css
+                .matches("@media")
+                .count(),
+            count
+        );
+    }
+    assert_css(
+        "@media (width <= 739px){.x{color:red}} @media (width >= 740px){.x{color:red}}",
+        "@media (width <= 739px),(width >= 740px){.x{color:red}}",
+        config(),
+    );
 }

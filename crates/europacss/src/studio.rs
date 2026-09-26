@@ -14,6 +14,7 @@ pub struct Specimen {
     pub config_paths: Vec<Vec<String>>,
     pub dependency_paths: Vec<Vec<String>>,
     pub css: String,
+    pub context_css: String,
     pub error: Option<String>,
 }
 
@@ -246,6 +247,28 @@ pub fn preview(source: &str) -> Result<Preview, String> {
             }
             Err(error) => (String::new(), Some(error)),
         };
+        // Compile reusable context roles independently: spacing is padding/gap,
+        // while the isolated ruler still measures width.
+        let context_rule = match kind {
+            "typography" => format!(".context-{id} {{ @fontsize {name}; }}"),
+            "spacing" => format!(".context-{id} {{ @space padding {name}; @space gap {name}; }}"),
+            _ if name == "container" => format!(".context-{id} {{ @space container; }}"),
+            _ => format!(
+                ".context-{id} {{ @column {name}; }} .context-columns-{id} {{ @space gap 1; }}"
+            ),
+        };
+        let context_css = if error.is_none() {
+            compile(&Request {
+                source: context_rule,
+                filename: format!("studio/context/{kind}/{name}"),
+                config: config.clone(),
+                ..Request::default()
+            })
+            .map(|out| out.css)
+            .unwrap_or_default()
+        } else {
+            String::new()
+        };
         let (base, key): (&[&str], _) = match kind {
             "typography" => (&["theme", "typography", "sizes"], Some(name.as_str())),
             "spacing" => (&["theme", "spacing"], Some(name.as_str())),
@@ -261,6 +284,7 @@ pub fn preview(source: &str) -> Result<Preview, String> {
             config_paths,
             dependency_paths,
             css,
+            context_css,
             error,
         });
     }

@@ -154,23 +154,22 @@ fn packing_risk(previous: &[String], current: &[String]) -> bool {
     if previous == current {
         return false;
     }
-    fn interval(conditions: &[String]) -> Option<(f64, f64)> {
-        let (mut low, mut high): (f64, f64) = (0.0, f64::INFINITY);
+    fn interval(conditions: &[String]) -> Option<crate::optimize::WidthRange> {
+        let mut range = crate::optimize::WidthRange::all();
         if conditions.is_empty() {
             return None;
         }
         for condition in conditions {
             let ranges = crate::optimize::width_query_ranges(condition.strip_prefix("@media ")?)?;
-            let [(start, end)] = ranges.as_slice() else {
+            let [part] = ranges.as_slice() else {
                 return None;
             };
-            low = low.max(*start);
-            high = high.min(*end);
+            range = range.intersect(*part);
         }
-        (low <= high).then_some((low, high))
+        range.nonempty().then_some(range)
     }
     match (interval(previous), interval(current)) {
-        (Some((a, b)), Some((c, d))) => a <= d && c <= b,
+        (Some(a), Some(b)) => a.overlaps(b),
         _ => false,
     }
 }

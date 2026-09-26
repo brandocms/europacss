@@ -164,6 +164,9 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     assert!(loaded.starts_with("HTTP/1.1 200"));
     let parsed: Value = serde_json::from_str(loaded.split_once("\r\n\r\n").unwrap().1).unwrap();
     assert_eq!(parsed["source"], source);
+    for asset in ["/focused.js", "/specimens.js"] {
+        assert!(send("GET", asset, "", "").starts_with("HTTP/1.1 200"));
+    }
     let accessibility = send("GET", "/accessibility.js", "", "");
     assert!(accessibility.starts_with("HTTP/1.1 200"));
     assert!(accessibility.contains("window.EuropaAccessibility"));
@@ -322,4 +325,26 @@ fn studio_source_links_follow_literal_keys_overrides_references_and_defaults() {
         .unwrap();
     assert_eq!(small.config_paths, vec![vec!["theme", "spacing"]]);
     assert_eq!(small.dependency_paths, vec![vec!["theme", "scales"]]);
+}
+
+#[test]
+fn contextual_roles_compile_spacing_as_padding_and_gap_and_keep_type_properties() {
+    let source="{theme:{spacing:{md:{'*':'24px'}},typography:{sizes:{body:{'*':{'font-size':'18px','line-height':1.6}}}}}}";
+    let preview = studio::preview(source).unwrap();
+    let config = resolve_config(json5::from_str(source).unwrap()).unwrap();
+    let column = preview.specimens.iter().find(|s| s.name == "1/2").unwrap();
+    assert!(column.context_css.contains("gap:"));
+    for (name, directives) in [
+        ("md", "@space padding md;@space gap md;"),
+        ("body", "@fontsize body;"),
+    ] {
+        let specimen = preview.specimens.iter().find(|s| s.name == name).unwrap();
+        let expected = compile(&Request {
+            source: format!(".context-{}{{{directives}}}", specimen.id),
+            config: config.clone(),
+            ..Request::default()
+        })
+        .unwrap();
+        assert_eq!(specimen.context_css, expected.css);
+    }
 }

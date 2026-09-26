@@ -22,7 +22,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 7;
+pub const REPORT_VERSION: u32 = 8;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -152,6 +152,11 @@ fn report(
         }
     }
     for warning in config.migration_warnings.unwrap().into_inner() {
+        if warning.code == "EU_MIGRATION_BREAKPOINT" {
+            audit.add(&warning.code, warning.message, warning.offset,
+                "This closes the legacy one-pixel gap. Review widths immediately below the next breakpoint and accept the correction. Authored CSS media queries and explicit pixel arrow ranges are unchanged; --fix does not rewrite them.", None);
+            continue;
+        }
         if warning.code == "EU_MIGRATION_LEGACY11" {
             audit.add(&warning.code, warning.message, warning.offset,
                 "Review this beta.11-specific change against the old output. Keep the new behavior intentionally, or use explicit CSS/config values preserving the old result. No automatic appearance edit is proposed for beta.11.", None);
@@ -201,6 +206,7 @@ fn report(
             "repeated-selector-media-order".into(),
             "overlapping-width-media-order".into(),
             "resolved-sizing-corrections".into(),
+            "contiguous-breakpoint-boundaries".into(),
             "signed-column-intent".into(),
             match from { LEGACY_BETA6 => "beta6-feature-and-sizing-changes", LEGACY_BETA11 => "beta11-feature-and-sizing-changes", _ => "beta16-profile" }.into(),
         ],
@@ -209,7 +215,7 @@ fn report(
             "No DOM, computed-style, or rendered-page comparison".into(),
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
-            "Other sizing differences (including calculation grouping and color query gaps) and backend/browser-target changes require separate review".into(),
+            "Other sizing differences (including calculation grouping) and backend/browser-target changes require separate review".into(),
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],
         findings: audit.findings,

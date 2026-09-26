@@ -286,7 +286,13 @@ fn equal_specificity_where_and_declaration_only_conditions_do_not_warn() {
         ".a { [data-x='&'] {color:red}}",
     ] {
         let report = analyze(source);
-        assert!(report.findings.is_empty(), "{source}: {report:?}");
+        assert!(
+            report
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
+            "{source}: {report:?}"
+        );
         assert!(report.analysis_complete);
     }
 }
@@ -399,11 +405,14 @@ fn base_properties_and_responsive_fallbacks_report_concrete_order_changes() {
     let mut cfg = config();
     cfg["theme"]["typography"]["sizes"] =
         json!({"base":{"__base__":{"line-height":"150%"},"*":"20px"}});
-    let report = migration::analyze(
+    let mut report = migration::analyze(
         &request("body{\n @fontsize base;\n line-height:normal;\n}", cfg),
         LEGACY_VERSION,
     )
     .unwrap();
+    report
+        .findings
+        .retain(|f| f.diagnostic.code != "EU_MIGRATION_BREAKPOINT");
     assert_eq!(report.findings.len(), 1, "{report:?}");
     assert_eq!(report.findings[0].diagnostic.code, "EU_MIGRATION_ORDER");
     assert_eq!(report.findings[0].diagnostic.line, 3);
@@ -460,7 +469,10 @@ fn order_analysis_understands_shorthands_importance_and_unrelated_properties() {
         ".x{@space margin-left 20px desktop;.child{margin:0}}",
     ] {
         assert!(
-            analyze(source).findings.is_empty(),
+            analyze(source)
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
             "{source}: {:?}",
             analyze(source)
         );
@@ -511,7 +523,13 @@ fn repeated_ampersands_can_change_matching_without_changing_specificity() {
         ".a,.b{&[data-x=' ']&{color:red}}",
         ".a,.b{:is(&,&){color:red}}",
     ] {
-        assert!(analyze(source).findings.is_empty(), "{source}");
+        assert!(
+            analyze(source)
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
+            "{source}"
+        );
     }
 }
 
@@ -568,16 +586,29 @@ fn resolved_fluid_spacing_and_rhythm_changes_are_reported_at_the_use_site() {
         let mut report =
             migration::analyze(&request(&source, cfg.clone()), LEGACY_VERSION).unwrap();
         assert!(report.analysis_complete, "{report:?}");
-        assert_eq!(report.findings.len(), 1, "{report:?}");
-        let finding = &report.findings[0];
+        let index = report
+            .findings
+            .iter()
+            .position(|f| f.diagnostic.code != "EU_MIGRATION_BREAKPOINT")
+            .unwrap();
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|f| f.diagnostic.code != "EU_MIGRATION_BREAKPOINT")
+                .count(),
+            1,
+            "{report:?}"
+        );
+        let finding = &report.findings[index];
         assert_eq!(finding.diagnostic.code, "EU_MIGRATION_SIZE");
         assert_eq!(finding.diagnostic.line, 2);
         assert!(finding.diagnostic.message.contains(message), "{report:?}");
         assert!(finding.fix.is_none());
         let mut review = serde_json::to_value(&report).unwrap();
-        review["findings"][0]["accepted"] = true.into();
+        review["findings"][index]["accepted"] = true.into();
         migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
-        assert!(report.findings[0].accepted);
+        assert!(report.findings[index].accepted);
     }
     for source in [
         ".x{@space width between(10px-20px) desktop}",
@@ -587,7 +618,13 @@ fn resolved_fluid_spacing_and_rhythm_changes_are_reported_at_the_use_site() {
         ".x{@space height vertical-rhythm(theme.typography.sizes.product, 1.6) mobile}",
     ] {
         let report = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
-        assert!(report.findings.is_empty(), "{source}: {report:?}");
+        assert!(
+            report
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
+            "{source}: {report:?}"
+        );
     }
 }
 
@@ -632,8 +669,21 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
         )
         .unwrap();
         assert!(report.analysis_complete, "{report:?}");
-        assert_eq!(report.findings.len(), 1, "{report:?}");
-        let finding = &report.findings[0];
+        let index = report
+            .findings
+            .iter()
+            .position(|f| f.diagnostic.code != "EU_MIGRATION_BREAKPOINT")
+            .unwrap();
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|f| f.diagnostic.code != "EU_MIGRATION_BREAKPOINT")
+                .count(),
+            1,
+            "{report:?}"
+        );
+        let finding = &report.findings[index];
         assert_eq!(finding.diagnostic.code, "EU_MIGRATION_COLUMN_SIGN");
         assert_eq!(finding.diagnostic.line, 2);
         assert!(finding
@@ -642,9 +692,9 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
             .contains("calc(-25% - 1.25 * (20px))"));
         assert!(finding.fix.is_none());
         let mut review = serde_json::to_value(&report).unwrap();
-        review["findings"][0]["accepted"] = true.into();
+        review["findings"][index]["accepted"] = true.into();
         migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
-        assert!(report.findings[0].accepted);
+        assert!(report.findings[index].accepted);
     }
     for value in ["negate(1/4)", "-20px", "-2", "calc(-25% - 1.25 * (20px))"] {
         let report = migration::analyze(
@@ -652,7 +702,13 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
             LEGACY_VERSION,
         )
         .unwrap();
-        assert!(report.findings.is_empty(), "{report:?}");
+        assert!(
+            report
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
+            "{report:?}"
+        );
     }
 }
 
@@ -677,7 +733,10 @@ fn repeated_nested_selector_media_overrides_are_reported_across_rule_nodes() {
         ".x{@responsive mobile{color:red}} .x{@responsive desktop{color:blue}}",
     ] {
         assert!(
-            analyze(source).findings.is_empty(),
+            analyze(source)
+                .findings
+                .iter()
+                .all(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"),
             "{source}: {:?}",
             analyze(source)
         );
@@ -686,7 +745,7 @@ fn repeated_nested_selector_media_overrides_are_reported_across_rule_nodes() {
 
 #[test]
 fn overlapping_width_groups_warn_without_claiming_a_definite_cascade_winner() {
-    let source = ".x{@media (width >= 740px) and (width <= 1023px){padding:20px} @media (width <= 1023px){padding:24px}}";
+    let source = ".x{@media (width >= 740px) and (width < 1024px){padding:20px} @media (width < 1024px){padding:24px}}";
     let report = analyze(source);
     assert!(report.analysis_complete);
     assert_eq!(report.findings.len(), 4, "{report:?}");
@@ -695,7 +754,7 @@ fn overlapping_width_groups_warn_without_claiming_a_definite_cascade_winner() {
         .iter()
         .all(|f| f.diagnostic.message.contains("can favor")));
     let report =
-        analyze(".x{@media (width <= 739px){padding:20px} @media (width >= 740px){padding:24px}}");
+        analyze(".x{@media (width < 740px){padding:20px} @media (width >= 740px){padding:24px}}");
     assert!(report.findings.is_empty());
 }
 
@@ -731,6 +790,11 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
             .unwrap()
             .is_empty()
     );
+    let index = report
+        .findings
+        .iter()
+        .position(|f| f.fix.is_some())
+        .unwrap();
     let mut review = serde_json::to_value(&report).unwrap();
     for finding in review["findings"].as_array_mut().unwrap() {
         if !finding["fix"].is_null() {
@@ -749,7 +813,7 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
         .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
     assert_css(
         &fixed,
-        ".hero{width:40px;@media(width <= 739px){width:calc(2.77778vw * var(--ec-zoom))}}",
+        ".hero{width:40px;@media(width < 740px){width:calc(2.77778vw * var(--ec-zoom))}}",
         config(),
     );
     assert!(
@@ -757,12 +821,12 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
             .is_err()
     );
     // The saved payload cannot inject edits: only a fresh compiler proposal is used.
-    review["findings"][0]["fix"]["edits"][0]["replacement"] = "evil".into();
+    review["findings"][index]["fix"]["edits"][0]["replacement"] = "evil".into();
     assert_eq!(
         migration::reviewed_edits(&report, &review.to_string()).unwrap()[0].replacement,
         edits[0].replacement
     );
-    review["findings"][0]["message"] = "forged".into();
+    review["findings"][index]["message"] = "forged".into();
     assert!(migration::reviewed_edits(&report, &review.to_string()).is_err());
 }
 
@@ -811,5 +875,48 @@ fn object_line_height_overrides_warn_only_at_affected_uses() {
             warns,
             "{report:?}"
         );
+    }
+}
+
+#[test]
+fn gap_correction_is_reviewable_once_per_used_boundary_in_each_legacy_profile() {
+    let source = "@responsive mobile {.a{color:red}}\n@responsive mobile {.b{color:blue}}\n@responsive tablet {.c{color:red}}";
+    for from in [
+        LEGACY_VERSION,
+        migration::LEGACY_BETA6,
+        migration::LEGACY_BETA11,
+    ] {
+        let mut report = migration::analyze(&request(source, config()), from).unwrap();
+        let boundaries: Vec<_> = report
+            .findings
+            .iter()
+            .filter(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT")
+            .collect();
+        assert_eq!(boundaries.len(), 2);
+        assert_eq!(boundaries[0].diagnostic.line, 1);
+        assert!(boundaries.iter().all(|f| f.fix.is_none()));
+        let mut review = serde_json::to_value(&report).unwrap();
+        for finding in review["findings"].as_array_mut().unwrap() {
+            if finding["code"] == "EU_MIGRATION_BREAKPOINT" {
+                finding["accepted"] = true.into();
+            }
+        }
+        migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+        assert!(report
+            .findings
+            .iter()
+            .filter(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT")
+            .all(|f| f.accepted));
+    }
+    for source in [
+        ".x{color:red}",
+        "@media (width <= 739px){.x{color:red}}",
+        "@mq 0px->739px{.x{color:red}}",
+        "@responsive >=tablet{.x{color:red}}",
+    ] {
+        assert!(!analyze(source)
+            .findings
+            .iter()
+            .any(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"));
     }
 }

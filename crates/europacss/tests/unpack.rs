@@ -22,7 +22,7 @@ fn unpack_config() -> Value {
 }
 
 // Ported from __tests__/rules/substituteUnpackAtRules.test.js.
-const NAVIGATION: &str = "@media (width <= 739px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 740px) and (width <= 1023px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 1024px) {font-size:12px;line-height:12px;letter-spacing:0.12rem}";
+const NAVIGATION: &str = "@media (width < 740px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 740px) and (width < 1024px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 1024px) {font-size:12px;line-height:12px;letter-spacing:0.12rem}";
 
 #[test]
 fn unpacks_property_maps_from_dot_and_slash_paths() {
@@ -40,15 +40,15 @@ fn unpacks_property_maps_from_dot_and_slash_paths() {
 
 #[test]
 fn unpacks_container_padding_and_grid_gutter_variables() {
-    assert_css(":root {@unpack containerPadding}", ":root {@media (width <= 739px) {--container-padding:25px} @media (width >= 740px) and (width <= 1023px) {--container-padding:5.555556vw} @media (width >= 1024px) {--container-padding:5.555556vw}}", unpack_config());
-    assert_css(":root {@unpack gridGutter}", ":root {@media (width <= 739px) {--grid-gutter:15px} @media (width >= 740px) and (width <= 1023px) {--grid-gutter:40px} @media (width >= 1024px) {--grid-gutter:4.1667vw}}", unpack_config());
+    assert_css(":root {@unpack containerPadding}", ":root {@media (width < 740px) {--container-padding:25px} @media (width >= 740px) and (width < 1024px) {--container-padding:5.555556vw} @media (width >= 1024px) {--container-padding:5.555556vw}}", unpack_config());
+    assert_css(":root {@unpack gridGutter}", ":root {@media (width < 740px) {--grid-gutter:15px} @media (width >= 740px) and (width < 1024px) {--grid-gutter:40px} @media (width >= 1024px) {--grid-gutter:4.1667vw}}", unpack_config());
 }
 
 #[test]
 fn nested_unpack_stays_at_its_source_position() {
     assert_css(
         "article {@unpack theme.typography.sections.navigation; h1 {color:blue; @unpack theme.typography.sections.simple; color:purple}}",
-        &format!("article {{{NAVIGATION} h1 {{color:blue; @media (width <= 739px) {{color:red}} @media (width >= 740px) and (width <= 1023px) {{color:green}} @media (width >= 1024px) {{color:blue}} color:purple}}}}"),
+        &format!("article {{{NAVIGATION} h1 {{color:blue; @media (width < 740px) {{color:red}} @media (width >= 740px) and (width < 1024px) {{color:green}} @media (width >= 1024px) {{color:blue}} color:purple}}}}"),
         unpack_config(),
     );
 }
@@ -60,7 +60,7 @@ fn aliases_convert_dpx_with_the_legacy_zoom_and_precision() {
         "container":{"padding":{"xs":"75dpx","md":"50dpx"}},
         "columns":{"gutters":{"xs":"25dpx","md":"30dpx"}}
     }});
-    assert_css(":root {@unpack containerPadding; @unpack gridGutter}", ":root {@media (width <= 1023px) {--container-padding:calc(5.20833vw * var(--ec-zoom))} @media (width >= 1024px) {--container-padding:calc(3.47222vw * var(--ec-zoom))} @media (width <= 1023px) {--grid-gutter:calc(1.73611vw * var(--ec-zoom))} @media (width >= 1024px) {--grid-gutter:calc(2.08333vw * var(--ec-zoom))}}", cfg);
+    assert_css(":root {@unpack containerPadding; @unpack gridGutter}", ":root {@media (width < 1024px) {--container-padding:calc(5.20833vw * var(--ec-zoom))} @media (width >= 1024px) {--container-padding:calc(3.47222vw * var(--ec-zoom))} @media (width < 1024px) {--grid-gutter:calc(1.73611vw * var(--ec-zoom))} @media (width >= 1024px) {--grid-gutter:calc(2.08333vw * var(--ec-zoom))}}", cfg);
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn dpx_reference_precedence_is_breakpoint_then_collection_then_global() {
     cfg["dpxViewportSizes"] = json!({"mobile":400,"$sm":800});
     cfg["theme"]["columns"] =
         json!({"gutters":{"mobile":"40dpx","tablet":"40dpx","desktop":"40dpx"}});
-    assert_css(":root {@unpack gridGutter}", ":root {@media (width <= 739px) {--grid-gutter:calc(10vw * var(--ec-zoom))} @media (width >= 740px) and (width <= 1023px) {--grid-gutter:calc(5vw * var(--ec-zoom))} @media (width >= 1024px) {--grid-gutter:calc(4vw * var(--ec-zoom))}}", cfg);
+    assert_css(":root {@unpack gridGutter}", ":root {@media (width < 740px) {--grid-gutter:calc(10vw * var(--ec-zoom))} @media (width >= 740px) and (width < 1024px) {--grid-gutter:calc(5vw * var(--ec-zoom))} @media (width >= 1024px) {--grid-gutter:calc(4vw * var(--ec-zoom))}}", cfg);
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn dpx_maximum_uses_the_largest_breakpoint_even_when_config_is_unsorted() {
     cfg["setMaxForVw"] = json!(true);
     cfg["theme"]["container"] =
         json!({"maxWidth":{"desktop":"1200px"},"padding":{"tablet":"40dpx","desktop":"40dpx"}});
-    assert_css(":root {@unpack containerPadding}", ":root {@media (width >= 740px) and (width <= 1023px) {--container-padding:calc(4vw * var(--ec-zoom))} @media (width >= 1024px) {--container-padding:48px}}", cfg);
+    assert_css(":root {@unpack containerPadding}", ":root {@media (width >= 740px) and (width < 1024px) {--container-padding:calc(4vw * var(--ec-zoom))} @media (width >= 1024px) {--container-padding:48px}}", cfg);
 }
 
 #[test]

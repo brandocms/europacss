@@ -19,8 +19,8 @@ fn spacing_config() -> Value {
 }
 
 const CONDITIONS: [&str; 3] = [
-    "(width <= 739px)",
-    "(width >= 740px) and (width <= 1023px)",
+    "(width < 740px)",
+    "(width >= 740px) and (width < 1024px)",
     "(width >= 1024px)",
 ];
 
@@ -97,7 +97,7 @@ fn spacing_shortcuts_importance_and_native_values_do_not_gain_queries() {
                 );
                 assert_css(
                     &format!(".x{{@space{flag} {shortcut} {value} mobile;}}"),
-                    &format!(".x{{@media (width <= 739px){{{declarations}}}}}"),
+                    &format!(".x{{@media (width < 740px){{{declarations}}}}}"),
                     spacing_config(),
                 );
             }
@@ -147,9 +147,9 @@ fn calc_references_combine_container_gutter_and_design_pixels() {
         json!({"mobile":"20px","tablet":"30dpx","desktop":"50dpx"});
     cfg["theme"]["container"]["padding"] =
         json!({"mobile":"15px","tablet":"35dpx","desktop":"50dpx"});
-    assert_css(".x{@space width calc(100vw - var[container] + var[1]);}", ".x{@media (width <= 739px){width:calc(100vw + 5px)}@media (width >= 740px) and (width <= 1023px){width:calc(100vw - calc(3.5vw * var(--ec-zoom)) + calc(3vw * var(--ec-zoom)))}@media (width >= 1024px){width:100vw}}", cfg.clone());
+    assert_css(".x{@space width calc(100vw - var[container] + var[1]);}", ".x{@media (width < 740px){width:calc(100vw + 5px)}@media (width >= 740px) and (width < 1024px){width:calc(100vw - calc(3.5vw * var(--ec-zoom)) + calc(3vw * var(--ec-zoom)))}@media (width >= 1024px){width:100vw}}", cfg.clone());
     assert_css(".x{@space width calc(100% - var[container] - var[2:1/12]) desktop;}", ".x{@media (width >= 1024px){width:calc(100% - 60px - (16.666666666666664% + 9.999999999999998px))}}", cfg.clone());
-    assert_css(".x{@space padding-x .4;@space padding-y .4;}", ".x{@media (width <= 739px){padding-left:8px;padding-right:8px;padding-top:8px;padding-bottom:8px}@media (width >= 740px) and (width <= 1023px){padding-left:calc(1.2vw * var(--ec-zoom));padding-right:calc(1.2vw * var(--ec-zoom));padding-top:calc(1.2vw * var(--ec-zoom));padding-bottom:calc(1.2vw * var(--ec-zoom))}@media (width >= 1024px){padding-left:24px;padding-right:24px;padding-top:24px;padding-bottom:24px}}", cfg);
+    assert_css(".x{@space padding-x .4;@space padding-y .4;}", ".x{@media (width < 740px){padding-left:8px;padding-right:8px;padding-top:8px;padding-bottom:8px}@media (width >= 740px) and (width < 1024px){padding-left:calc(1.2vw * var(--ec-zoom));padding-right:calc(1.2vw * var(--ec-zoom));padding-top:calc(1.2vw * var(--ec-zoom));padding-bottom:calc(1.2vw * var(--ec-zoom))}@media (width >= 1024px){padding-left:24px;padding-right:24px;padding-top:24px;padding-bottom:24px}}", cfg);
 }
 
 #[test]
@@ -191,9 +191,9 @@ fn spacing_in_nested_selectors_and_responsive_scopes_keeps_later_overrides() {
         spacing_config(),
     );
     for (query, condition, indices) in [
-        ("mobile", "(width <= 739px)", &[0][..]),
+        ("mobile", "(width < 740px)", &[0][..]),
         (">=tablet", "(width >= 740px)", &[1, 2][..]),
-        ("$sm", "(width <= 1023px)", &[0, 1][..]),
+        ("$sm", "(width < 1024px)", &[0, 1][..]),
     ] {
         let declarations = if indices.len() == 1 {
             format!("margin-left:{};", values[indices[0]])
@@ -249,9 +249,9 @@ fn negate_and_breakout_queries_preserve_each_directives_position() {
         }
     }
     for (query, condition) in [
-        ("mobile", "(width <= 739px)"),
+        ("mobile", "(width < 740px)"),
         (">=tablet", "(width >= 740px)"),
-        ("$sm", "(width <= 1023px)"),
+        ("$sm", "(width < 1024px)"),
     ] {
         assert_css(&format!(".x{{@space! breakout {query};}}"), &format!(".x{{@media {condition}{{width:100vw!important;margin-left:calc(50% - 50vw)!important}}}}"), spacing_config());
         assert_css(
@@ -291,7 +291,7 @@ fn fluid_spacing_and_rhythm_scale_the_whole_size() {
     ] {
         assert_css(
             &format!(".x{{@space margin-top {expression} mobile;}}"),
-            &format!(".x{{@media (width <= 739px){{margin-top:{expected}}}}}"),
+            &format!(".x{{@media (width < 740px){{margin-top:{expected}}}}}"),
             cfg.clone(),
         );
     }
@@ -343,7 +343,7 @@ fn negate_values_resolve_the_whole_width_and_preserve_gap_shorthand() {
         for directive in ["@space margin-left", "@column-offset"] {
             assert_css(
                 &format!(".x{{{directive} {value} mobile}}"),
-                &format!(".x{{@media (width <= 739px){{margin-left:{expected}}}}}"),
+                &format!(".x{{@media (width < 740px){{margin-left:{expected}}}}}"),
                 spacing_config(),
             );
         }
@@ -352,7 +352,7 @@ fn negate_values_resolve_the_whole_width_and_preserve_gap_shorthand() {
     cfg["theme"]["spacing"]["offset"] = json!({"*":"negate(1/4)"});
     assert_css(
         ".x{@space margin-left offset tablet}",
-        ".x{@media (width >= 740px) and (width <= 1023px){margin-left:calc((25% - 22.5px) * -1)}}",
+        ".x{@media (width >= 740px) and (width < 1024px){margin-left:calc((25% - 22.5px) * -1)}}",
         cfg,
     );
 }

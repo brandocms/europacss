@@ -39,10 +39,10 @@ fn color_queries_and_native_value_functions_keep_their_use_site() {
     for (query, media) in [
         ("desktop", "(width >= 1024px)"),
         ("$lg", "(width >= 1024px)"),
-        ("$sm", "(width <= 1023px)"),
+        ("$sm", "(width < 1024px)"),
         (">=tablet", "(width >= 740px)"),
-        ("<=tablet", "(width <= 1023px)"),
-        ("mobile/desktop", "(width <= 739px), (width >= 1024px)"),
+        ("<=tablet", "(width < 1024px)"),
+        ("mobile/desktop", "(width < 740px), (width >= 1024px)"),
     ] {
         for important in ["", "!"] {
             let suffix = if important.is_empty() {
@@ -102,19 +102,19 @@ fn display_and_order_cover_legacy_parent_and_responsive_positions() {
             (
                 "article{@responsive mobile{",
                 "}}",
-                "article{@media (width <= 739px){",
+                "article{@media (width < 740px){",
                 "}}",
             ),
             (
                 ".inner{article{@responsive mobile{",
                 "}}}",
-                ".inner{article{@media (width <= 739px){",
+                ".inner{article{@media (width < 740px){",
                 "}}}",
             ),
             (
                 ".inner{article{@responsive mobile{figure{",
                 "}}}}",
-                ".inner{article{@media (width <= 739px){figure{",
+                ".inner{article{@media (width < 740px){figure{",
                 "}}}}",
             ),
         ] {
@@ -148,7 +148,7 @@ fn display_and_order_cover_legacy_parent_and_responsive_positions() {
             config(),
         );
     }
-    assert_css(".inner{article{@display flex/row/wrap $lg;@display flex/column/nowrap mobile;}}", ".inner{article{@media (width >= 1024px){display:flex;flex-direction:row;flex-wrap:wrap}@media (width <= 739px){display:flex;flex-direction:column;flex-wrap:nowrap}}}", config());
+    assert_css(".inner{article{@display flex/row/wrap $lg;@display flex/column/nowrap mobile;}}", ".inner{article{@media (width >= 1024px){display:flex;flex-direction:row;flex-wrap:wrap}@media (width < 740px){display:flex;flex-direction:column;flex-wrap:nowrap}}}", config());
 }
 
 #[test]

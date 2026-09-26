@@ -621,6 +621,8 @@ impl Sizes<'_, '_> {
             return Ok(format!("{max}{unit}"));
         }
         let mut low = self.config.breakpoints[index].1;
+        // Keep the established interpolation anchor at the last whole pixel.
+        // Media coverage uses < next breakpoint; changing the slope is separate.
         let mut high = self
             .config
             .breakpoints
