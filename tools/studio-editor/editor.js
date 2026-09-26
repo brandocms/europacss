@@ -6,7 +6,7 @@ import {defaultKeymap, history, historyKeymap, indentWithTab} from '@codemirror/
 import {closeBrackets, closeBracketsKeymap} from '@codemirror/autocomplete';
 import {searchKeymap, highlightSelectionMatches} from '@codemirror/search';
 import {tags} from '@lezer/highlight';
-import JSON5 from 'json5';
+import parseJSON5 from 'json5/lib/parse.js';
 
 // The expression grammar understands JSON5 comments, unquoted keys, single
 // quotes and trailing commas. Rust remains the config validator.
@@ -86,7 +86,7 @@ export function create(host) {
         const key = property.firstChild;
         if(!key || !['PropertyDefinition','String','Number'].includes(key.name)) continue;
         let name;
-        try { name=Object.keys(JSON5.parse(`{${source.slice(key.from,key.to)}:null}`))[0]; } catch {continue;}
+        try { name=Object.keys(parseJSON5(`{${source.slice(key.from,key.to)}:null}`))[0]; } catch {continue;}
         if(name === undefined) continue;
         const next=[...path,name], encoded=JSON.stringify(next);
         const range={path:next,from:property.from,to:property.to,keyFrom:key.from,keyTo:key.to};

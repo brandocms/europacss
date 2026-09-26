@@ -2,7 +2,7 @@ use crate::{sources::Sources, Error, Output, Request};
 use lightningcss::{
     error::ErrorLocation,
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
-    targets::{Browsers, Features, Targets},
+    targets::{Browsers, Targets},
 };
 use parcel_sourcemap::SourceMap;
 use std::sync::{Arc, RwLock};
@@ -23,7 +23,6 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
     let targets = Targets {
         browsers: Browsers::from_browserslist(browsers)
             .map_err(|e| Error::new("EU_TARGETS", e.to_string(), 0).locate(&request.source))?,
-        include: Features::Nesting,
         ..Targets::default()
     };
     let warnings = Arc::new(RwLock::new(Vec::new()));

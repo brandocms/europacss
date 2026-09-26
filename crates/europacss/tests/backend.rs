@@ -79,6 +79,32 @@ fn native_nesting_specificity_and_interleaved_declarations() {
 }
 
 #[test]
+fn nesting_is_retained_only_when_all_targets_support_it() {
+    let source = ".card,#featured {color:red; .title {color:blue} @media (width >= 740px) {padding:20px} color:green}";
+    let mut req = request(source);
+    let lowered = compile(&req).unwrap();
+    assert!(lowered.css.contains(":is(.card,#featured) .title"));
+    req.browsers = vec!["chrome 131, firefox 132, safari 18.2".into()];
+    let modern = compile(&req).unwrap();
+    assert!(modern.css.len() < lowered.css.len(), "{}", modern.css);
+    assert!(modern.css.contains(".title{"));
+    assert!(!modern.css.contains(":is(.card,#featured) .title"));
+    // Compiling the retained nesting back to older targets must preserve the
+    // selector-list specificity, nested media and trailing declaration order.
+    req.source = modern.css;
+    req.browsers = vec!["chrome 100".into()];
+    assert_eq!(compile(&req).unwrap().css, lowered.css);
+    req.source = source.into();
+    req.browsers = vec!["chrome 131, safari 15".into()];
+    assert!(compile(&req)
+        .unwrap()
+        .css
+        .contains(":is(.card,#featured) .title"));
+    let map: serde_json::Value = serde_json::from_str(modern.map.as_ref().unwrap()).unwrap();
+    assert_eq!(map["sourcesContent"][0], source);
+}
+
+#[test]
 fn scope_and_separated_duplicate_selectors_are_preserved() {
     assert_eq!(css("@layer components {@supports (display:grid) {.card {@display grid $lg;}}}"), css("@layer components {@supports (display:grid) {@media (width >= 1024px) {.card {display:grid}}}}"));
     assert_eq!(
