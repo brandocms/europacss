@@ -149,3 +149,44 @@ fn browser_targets_are_validated() {
     request.browsers = vec!["madeup-browser 100".into()];
     assert_eq!(compile(&request).unwrap_err().code, "EU_TARGETS");
 }
+
+#[test]
+fn advanced_toml_typography_matches_explicit_css() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/europa.toml");
+    let config = europacss::load_config(&path).unwrap();
+    assert_eq!(
+        config["theme"]["typography"]["sizes"]["heading/4xl"]["__base__"]["font-family"],
+        json!(["Inter", "sans-serif"])
+    );
+
+    let mut req = Request {
+        source: ".hero-title { @fontsize heading/4xl; }".into(),
+        filename: "advanced.css".into(),
+        config,
+        minify: true,
+        browsers: vec!["chrome 100".into()],
+        ..Request::default()
+    };
+    let generated = compile(&req).unwrap();
+    req.source = r#"
+        .hero-title {
+            font-family: Inter, sans-serif;
+            font-weight: 600;
+            line-height: 1.1;
+            letter-spacing: -0.025em;
+        }
+        @media (width <= 739px) {
+            .hero-title { font-size: 32px; line-height: 1.15; }
+        }
+        @media (width >= 740px) and (width <= 1023px) {
+            .hero-title { font-size: 48px; }
+        }
+        @media (width >= 1024px) {
+            .hero-title { font-size: clamp(48px, 4vw, 72px); letter-spacing: -0.04em; }
+        }
+    "#
+    .into();
+    let expected = compile(&req).unwrap();
+    assert_eq!(generated.css, expected.css);
+    assert!(generated.warnings.is_empty());
+}

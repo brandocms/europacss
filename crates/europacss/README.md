@@ -41,6 +41,24 @@ font-family = "{typography.families.sans}"
 
 TOML comments and quoted keys are standard features, not Europa extensions. [TOML specification](https://toml.io/en/v1.0.0).
 
+For richer typography, one table per named style keeps related values together. Dotted keys avoid a second long header for `__base__`, and short inline tables keep each breakpoint on one line:
+
+```toml
+[theme.typography.sizes."heading/4xl"]
+__base__.font-family = "{typography.families.sans}"
+__base__.font-weight = 600
+__base__.line-height = 1.1
+__base__.letter-spacing = "-0.025em"
+
+mobile = { font-size = "32px", line-height = 1.15 }
+tablet = { font-size = "48px" }
+desktop = { font-size = "clamp(48px, 4vw, 72px)", letter-spacing = "-0.04em" }
+```
+
+Use it with `.hero-title { @fontsize heading/4xl; }`. Shared properties are expanded first, followed by breakpoint overrides, all at the directive's source position. The full [example config](examples/europa.toml) defines the referenced font family and all three breakpoints. A regression test compiles this config and compares the result with explicit CSS. `clamp()` is native CSS; Europa `dpx` and wildcard size expansion are still pending, although TOML can represent both as quoted values/keys.
+
+For a breakpoint with many declarations or individual comments, it can instead have its own table, for example `[theme.typography.sizes."heading/4xl".desktop]`. Do not also define `desktop` as an inline table: TOML does not allow redefining or extending an inline table elsewhere. The tradeoff is that these full table headers get verbose for deeply nested typography.
+
 The JSON-to-TOML command is only the data-conversion part of migration. An exporter for existing JavaScript configs is still needed: it must evaluate both theme callbacks and typography `__base__` callbacks using the old installation, then report any behavior that a static snapshot would lose. That one-time legacy export would require the old JavaScript environment; the new compiler does not execute JavaScript. Source comments from a JavaScript file cannot survive an export containing only its evaluated data.
 
 ## Remaining work before migrating a site

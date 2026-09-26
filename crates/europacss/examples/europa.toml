@@ -31,3 +31,14 @@ desktop = "20px"
 [theme.typography.sizes.base.__base__]
 font-family = "{typography.families.sans}"
 line-height = "150%"
+
+# One named style: shared properties, then breakpoint-specific overrides.
+[theme.typography.sizes."heading/4xl"]
+__base__.font-family = "{typography.families.sans}"
+__base__.font-weight = 600
+__base__.line-height = 1.1
+__base__.letter-spacing = "-0.025em"
+
+mobile = { font-size = "32px", line-height = 1.15 }
+tablet = { font-size = "48px" }
+desktop = { font-size = "clamp(48px, 4vw, 72px)", letter-spacing = "-0.04em" }

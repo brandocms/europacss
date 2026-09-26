@@ -33,4 +33,8 @@
     @color bg ink;
     color: white;
   }
+
+  .hero-title {
+    @fontsize heading/4xl;
+  }
 }
