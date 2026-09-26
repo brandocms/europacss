@@ -178,5 +178,6 @@ pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
         map,
         warnings: Vec::new(),
         dependencies: Vec::new(),
+        watch: Vec::new(),
     }
 }

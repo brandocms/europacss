@@ -10,6 +10,7 @@ mod size;
 mod sources;
 mod transform;
 mod value_functions;
+pub mod watch;
 pub use config_file::{json_to_json5, load_config, resolve_config};
 
 use serde::{Deserialize, Serialize};
@@ -37,6 +38,9 @@ pub struct Output {
     pub warnings: Vec<Error>,
     /// Canonical source paths in first-visit order; empty for in-memory compilation.
     pub dependencies: Vec<String>,
+    /// Contents observed during compilation, including logical import paths.
+    #[serde(skip)]
+    pub watch: Vec<watch::Snapshot>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -138,6 +142,7 @@ pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Resu
             .iter()
             .map(|file| file.name.clone())
             .collect();
+        result.watch = loaded.watch;
         Ok(result)
     })();
     result.map_err(|error| loaded.sources.locate(error))

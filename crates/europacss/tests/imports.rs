@@ -51,6 +51,45 @@ impl Drop for Project {
 }
 
 #[test]
+fn compile_snapshots_detect_content_changes_even_with_restored_timestamps() {
+    let p = Project::new();
+    p.write("app.css", "@import 'part.css';");
+    p.write("part.css", ".x{color:red}");
+    let output = p.compile().unwrap();
+    assert!(output.watch.iter().all(|input| !input.changed()));
+    let path = p.0.join("part.css");
+    let modified = fs::metadata(&path).unwrap().modified().unwrap();
+    p.write("part.css", ".x{color:tan}");
+    fs::File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_times(fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    assert!(output.watch.iter().any(|input| input.changed()));
+    let output = p.compile().unwrap();
+    fs::remove_file(path).unwrap();
+    assert!(output.watch.iter().any(|input| input.changed()));
+}
+
+#[cfg(unix)]
+#[test]
+fn compile_snapshots_track_imported_symlink_retargets() {
+    let p = Project::new();
+    p.write("app.css", "@import 'alias.css';");
+    p.write("a.css", ".x{color:red}");
+    p.write("b.css", ".x{color:tan}");
+    let alias = p.0.join("alias.css");
+    std::os::unix::fs::symlink("a.css", &alias).unwrap();
+    let output = p.compile().unwrap();
+    assert!(output.watch.iter().all(|input| !input.changed()));
+    fs::remove_file(&alias).unwrap();
+    std::os::unix::fs::symlink("b.css", &alias).unwrap();
+    assert!(output.watch.iter().any(|input| input.changed()));
+    assert!(p.compile().unwrap().css.contains("tan"));
+}
+
+#[test]
 fn nested_and_repeated_imports_preserve_order_and_unique_dependencies() {
     let p = Project::new();
     p.write("app.css", "@import 'parts/one.css'; @import url(parts/two.css); @import 'parts/one.css'; .last { color:black }");

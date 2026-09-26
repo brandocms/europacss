@@ -24,6 +24,16 @@ The terminal output uses color automatically on interactive terminals. Errors an
 
 The numbers above illustrate the display, not benchmark results.
 
+## Watch mode
+
+```sh
+europa css/app.css --config europa.json5 --source-map -o public/app.css --watch
+```
+
+Watch mode compiles immediately, then checks input contents every 250 ms. It tracks the current import graph, the JSON5 config, and symlink targets; editor file replacements are detected even when timestamps or sizes stay unchanged. Newly added imports are picked up on rebuild and removed imports stop triggering builds. Compile/config errors retain the previous CSS and source map. Failed builds retry once per second so creating a missing import or fixing the first build recovers automatically; identical repeated errors are printed only once. Stop with Ctrl-C.
+
+This first implementation uses content polling rather than operating-system notifications. Its idle I/O scales with the source/config size. Output files do not trigger rebuilds; asset contents, external URLs, and unrelated files are not watched. `--watch` requires a file input and `-o` output. It never concatenates repeated builds on stdout.
+
 ## Implemented
 
 - Local `@import` resolution with dependency tracking, repeated imports in source order, media/supports/layer qualifiers, cycle and expansion limits, and per-file source maps and diagnostics. Relative `url()` and `image-set()` assets are rebased for the output directory. Leading external imports stay browser-loaded.
@@ -46,7 +56,7 @@ The numbers above illustrate the display, not benchmark results.
 
 ## Configuration
 
-Use `--config europa.json5` explicitly. Without it, the compiler uses the checked-in default configuration. The library's `load_config` accepts `.json5` and strict `.json`; `resolve_config` accepts a data object. Call one of them before constructing a library `Request`. Config files are not watched or discovered automatically yet.
+Use `--config europa.json5` explicitly. Without it, the compiler uses the checked-in default configuration. The library's `load_config` accepts `.json5` and strict `.json`; `resolve_config` accepts a data object. Call one of them before constructing a library `Request`. Pass `--watch` to monitor this config and imported stylesheets. Config discovery remains explicit.
 
 JSON5 supports comments, single-quoted strings, unquoted identifier keys, and trailing commas. It is data only: no `module.exports`, imports, callbacks, or JavaScript evaluation. Parsing runs entirely in Rust. [JSON5 specification](https://spec.json5.org/).
 
@@ -115,7 +125,7 @@ A clean report covers only the checks listed in its JSON. It does not prove unch
 
 ## Remaining work before migrating a site
 
-A read-only integration run now compiles the current eight-file Site A entry with a temporary JSON5 config. This is a compilation check, not visual or behavioral parity, and does not replace the published package. Still to port: watch/build integration and release packaging. Full case-by-case parity and further output-size optimization of the legacy spacing/typography suites remain ongoing. Nested responsive blocks retain their outer conditions; responsive values are selected by the innermost query. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
+A read-only integration run now compiles the current eight-file Site A entry with a temporary JSON5 config. This is a compilation check, not visual or behavioral parity, and does not replace the published package. Release packaging remains to be added. Full case-by-case parity and further output-size optimization of the legacy spacing/typography suites remain ongoing. Nested responsive blocks retain their outer conditions; responsive values are selected by the innermost query. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
 
 Migration coverage beyond the checks above, the JavaScript config exporter, and rendered-page comparisons remain work in progress. `&__suffix` and `@nest` still fail compilation until migrated. Recognized unported directives and sizing expressions fail explicitly. Unknown CSS at-rules are passed to Lightning, which can issue warnings. This structural parser is not yet a complete CSS Syntax conformance implementation.
 

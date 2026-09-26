@@ -2,10 +2,11 @@
 use crate::{
     parser::{self, Node},
     sources::Sources,
+    watch::Snapshot,
     Error,
 };
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     fs,
     path::{Path, PathBuf},
 };
@@ -14,9 +15,11 @@ pub(crate) struct Loaded {
     pub nodes: Vec<Node>,
     pub sources: Sources,
     pub output_dir: PathBuf,
+    pub watch: Vec<Snapshot>,
 }
 
 pub(crate) fn load(entry: &Path, output: Option<&Path>) -> Result<Loaded, Error> {
+    let entry_path = entry.to_path_buf();
     let entry = fs::canonicalize(entry)
         .map_err(|e| Error::new("EU_IMPORT", format!("{}: {e}", entry.display()), 0))?;
     let output_dir = match output {
@@ -33,15 +36,45 @@ pub(crate) fn load(entry: &Path, output: Option<&Path>) -> Result<Loaded, Error>
         cache: HashMap::new(),
         stack: Vec::new(),
         nodes: 0,
+        aliases: BTreeSet::from([(entry_path, entry.clone())]),
     };
     let nodes = loader
         .file(&entry, 0)
         .map_err(|error| loader.sources.locate(error))?;
     validate_external_order(&nodes).map_err(|error| loader.sources.locate(error))?;
+    let snapshots: HashMap<_, _> = loader
+        .sources
+        .files
+        .iter()
+        .enumerate()
+        .map(|(index, file)| {
+            (
+                PathBuf::from(&file.name),
+                Snapshot::from_source(
+                    PathBuf::from(&file.name),
+                    loader.sources.content(index).as_bytes(),
+                ),
+            )
+        })
+        .collect();
+    // Include canonical dependencies as well as every authored alias. Changing an
+    // imported symlink must rebuild even when the former target stays unchanged.
+    let mut watch: Vec<_> = loader
+        .sources
+        .files
+        .iter()
+        .map(|f| snapshots[Path::new(&f.name)].clone())
+        .collect();
+    for (path, target) in loader.aliases {
+        if path != target {
+            watch.push(snapshots[&target].clone().at_path(path));
+        }
+    }
     Ok(Loaded {
         nodes,
         sources: loader.sources,
         output_dir,
+        watch,
     })
 }
 
@@ -50,6 +83,7 @@ struct Loader {
     cache: HashMap<PathBuf, Vec<Node>>,
     stack: Vec<PathBuf>,
     nodes: usize,
+    aliases: BTreeSet<(PathBuf, PathBuf)>,
 }
 impl Loader {
     fn file(&mut self, path: &Path, origin: usize) -> Result<Vec<Node>, Error> {
@@ -164,14 +198,15 @@ impl Loader {
                         ));
                     }
                     let filename = percent_decode(filename, node.offset)?;
-                    let resolved = path.parent().unwrap().join(filename);
-                    let resolved = fs::canonicalize(&resolved).map_err(|e| {
+                    let logical_path = path.parent().unwrap().join(filename);
+                    let resolved = fs::canonicalize(&logical_path).map_err(|e| {
                         Error::new(
                             "EU_IMPORT",
-                            format!("Cannot import {}: {e}", resolved.display()),
+                            format!("Cannot import {}: {e}", logical_path.display()),
                             node.offset,
                         )
                     })?;
+                    self.aliases.insert((logical_path, resolved.clone()));
                     let mut children = self.file(&resolved, node.offset)?;
                     if !import.wrappers.is_empty() && contains_import(&children) {
                         return Err(Error::new("EU_IMPORT_ORDER", "A conditional or layered local import cannot contain external @imports; move external imports to the entry stylesheet", node.offset));

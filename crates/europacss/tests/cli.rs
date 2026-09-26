@@ -25,6 +25,121 @@ impl Temp {
     }
 }
 
+struct Watching(std::process::Child);
+impl Drop for Watching {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+fn wait_for(mut ready: impl FnMut() -> bool, message: &str) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !ready() {
+        assert!(std::time::Instant::now() < deadline, "{message}");
+        std::thread::sleep(std::time::Duration::from_millis(40));
+    }
+}
+
+#[test]
+fn watch_rebuilds_config_and_imports_recovers_errors_and_avoids_output_loops() {
+    let dir = Temp::new();
+    let file = |name| dir.0.join(name);
+    let read = |name| fs::read_to_string(file(name)).unwrap_or_default();
+    fs::write(file("app.css"), "@import 'nested.css';").unwrap();
+    fs::write(file("nested.css"), ".x{@color fg brand}").unwrap();
+    fs::write(file("europa.json5"), "{theme:{colors:{brand:'red'}}}").unwrap();
+    let log = fs::File::create(file("watch.log")).unwrap();
+    let mut watching = Watching(
+        dir.command()
+            .args([
+                "app.css",
+                "--watch",
+                "--config",
+                "europa.json5",
+                "--source-map",
+                "-o",
+                "out.css",
+                "--color",
+                "never",
+            ])
+            .stderr(log)
+            .stdout(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    wait_for(|| read("out.css").contains("red"), "initial build");
+    let modified = fs::metadata(file("out.css")).unwrap().modified().unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(650));
+    assert_eq!(
+        fs::metadata(file("out.css")).unwrap().modified().unwrap(),
+        modified,
+        "Output/map files must not trigger a rebuild loop"
+    );
+    fs::write(file("europa.json5"), "{theme:{colors:{brand:'tan'}}}").unwrap();
+    wait_for(|| read("out.css").contains("tan"), "config rebuild");
+    let css = read("out.css");
+    let map = read("out.css.map");
+    fs::write(file("nested.css"), ".broken {").unwrap();
+    wait_for(
+        || read("watch.log").contains("EU_PARSE"),
+        "syntax error must be visible",
+    );
+    assert_eq!(read("out.css"), css);
+    assert_eq!(read("out.css.map"), map);
+    fs::write(file("nested.css"), "@import 'new.css'; .x{@color fg brand}").unwrap();
+    wait_for(
+        || read("watch.log").contains("Cannot import"),
+        "new missing import",
+    );
+    fs::write(file("new.css"), ".new{color:green}").unwrap();
+    wait_for(
+        || read("out.css").contains("green"),
+        "missing import creation must recover",
+    );
+    let css = read("out.css");
+    let log_length = read("watch.log").len();
+    fs::remove_file(file("new.css")).unwrap();
+    wait_for(
+        || read("watch.log").len() > log_length,
+        "deleted import must be noticed",
+    );
+    assert_eq!(read("out.css"), css);
+    fs::write(file("new.css"), ".new{color:purple}").unwrap();
+    wait_for(
+        || read("out.css").contains("purple"),
+        "deleted import restoration",
+    );
+    fs::write(file("replacement.css"), ".done{display:block}").unwrap();
+    fs::rename(file("replacement.css"), file("app.css")).unwrap();
+    wait_for(
+        || read("out.css").contains(".done"),
+        "editor atomic replacement",
+    );
+    let modified = fs::metadata(file("out.css")).unwrap().modified().unwrap();
+    fs::write(file("nested.css"), ".no_longer_used{color:black}").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(650));
+    assert_eq!(
+        fs::metadata(file("out.css")).unwrap().modified().unwrap(),
+        modified,
+        "Removed dependencies must stop triggering builds"
+    );
+    assert!(watching.0.try_wait().unwrap().is_none());
+    assert!(read("watch.log").contains("watching"));
+}
+
+#[test]
+fn watch_requires_file_input_and_output() {
+    let dir = Temp::new();
+    for args in [
+        vec!["-", "--watch", "-o", "out.css"],
+        vec!["app.css", "--watch"],
+    ] {
+        let result = dir.command().args(args).output().unwrap();
+        assert!(!result.status.success());
+        assert!(String::from_utf8_lossy(&result.stderr).contains("--watch requires"));
+    }
+}
+
 #[test]
 fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
     let dir = Temp::new();

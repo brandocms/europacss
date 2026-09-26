@@ -1,7 +1,8 @@
 mod cli_migration;
 mod cli_output;
+mod cli_watch;
 use cli_output::{Build, Color, Ui};
-use europacss::{compile, compile_file, Request};
+use europacss::{compile, compile_file, watch::Snapshot, Request};
 use std::{
     env, fs,
     io::{self, Read, Write},
@@ -10,12 +11,17 @@ use std::{
     time::Instant,
 };
 
-fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
+fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String> {
     let started = Instant::now();
+    let build_args: Vec<_> = args
+        .iter()
+        .filter(|arg| arg.as_str() != "--watch")
+        .cloned()
+        .collect();
     let mut args = args.into_iter().peekable();
     if args.peek().map(String::as_str) == Some("migrate") {
         args.next();
-        return cli_migration::run(args.collect(), ui);
+        return cli_migration::run(args.collect(), ui).map(|_| Vec::new());
     }
     if args.peek().map(String::as_str) == Some("migrate-config") {
         args.next();
@@ -39,7 +45,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
         file.write_all(json5.as_bytes())
             .map_err(|e| e.to_string())?;
         ui.migrated(&output);
-        return Ok(());
+        return Ok(Vec::new());
     }
     let mut input = None;
     let mut output: Option<PathBuf> = None;
@@ -47,15 +53,16 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
     let mut browsers = Vec::new();
     let mut minify = false;
     let mut source_map = false;
+    let mut watch = false;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--help" | "-h" => {
                 print!("{}", Ui::stdout(color).help());
-                return Ok(());
+                return Ok(Vec::new());
             }
             "--version" | "-V" => {
                 println!("europa {} (experimental)", env!("CARGO_PKG_VERSION"));
-                return Ok(());
+                return Ok(Vec::new());
             }
             "--config" => config_path = Some(args.next().ok_or("--config needs a path")?),
             "-o" | "--output" => {
@@ -64,6 +71,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
             "--targets" => browsers.push(args.next().ok_or("--targets needs a query")?),
             "--minify" => minify = true,
             "--source-map" => source_map = true,
+            "--watch" => watch = true,
             "-" => {
                 if input.replace(arg).is_some() {
                     return Err("Only one input is supported".into());
@@ -82,6 +90,12 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
     if source_map && output.is_none() {
         return Err("--source-map requires an output path (-o)".into());
     }
+    if watch {
+        if input == "-" || output.is_none() {
+            return Err("--watch requires an input file and output path (-o); stdin/stdout builds cannot be watched".into());
+        }
+        cli_watch::run(|| run(build_args.clone(), ui, color), ui);
+    }
     let source = if input == "-" {
         let mut source = String::new();
         io::stdin()
@@ -91,6 +105,10 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
     } else {
         String::new()
     };
+    let config_snapshot = config_path
+        .as_ref()
+        .map(|path| Snapshot::read(std::path::Path::new(path)).map_err(|e| format!("{path}: {e}")))
+        .transpose()?;
     let config = match &config_path {
         Some(path) => europacss::load_config(&PathBuf::from(path))?,
         None => europacss::resolve_config(serde_json::json!({})).map_err(|e| e.to_string())?,
@@ -121,6 +139,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
             false,
         )
     })?;
+    result.watch.extend(config_snapshot);
     let warning_count = result.warnings.len();
     for warning in &result.warnings {
         eprint!(
@@ -195,7 +214,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
         warnings: warning_count,
         elapsed: started.elapsed(),
     });
-    Ok(())
+    Ok(result.watch)
 }
 
 fn options() -> Result<(Vec<String>, Color, bool), String> {
@@ -231,13 +250,9 @@ fn main() -> ExitCode {
     };
     let ui = Ui::stderr(color, quiet);
     match run(args, &ui, color) {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(_) => ExitCode::SUCCESS,
         Err(message) => {
-            if message.starts_with('\n') {
-                eprint!("{message}");
-            } else {
-                eprintln!("{}", ui.failure(&message));
-            }
+            ui.error(&message);
             ExitCode::FAILURE
         }
     }

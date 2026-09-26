@@ -56,6 +56,8 @@ Migration checks in [migration.rs](migration.rs) and [cli.rs](cli.rs) cover the 
 
 Reviewed semantic findings can be accepted only against the same complete source/config snapshot. Migration tests also check partial acceptance, stale imports/configuration, changed finding identities, and rejection of accepted syntax errors or incomplete analysis. A saved report without explicit decisions accepts nothing.
 
+Watch integration tests run the standalone binary with an empty `PATH`. They check config/import edits, retained CSS/maps on syntax errors, missing/deleted import recovery, editor file replacement, changing dependency graphs, and absence of output-triggered rebuild loops. Import snapshot tests cover restored timestamps and symlink retargets.
+
 Sizing corrections to include in migration analysis:
 
 - `between()` uses the same viewport interval for its lower endpoint and slope. In the smallest breakpoint, spacing previously substituted 320px after calculating the slope from zero, while typography already used 320px in the slope. The shared formula follows typography and requires a positive interval. Fluid endpoints must use matching px or rem units.

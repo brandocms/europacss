@@ -120,6 +120,7 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
         map,
         warnings,
         dependencies: Vec::new(),
+        watch: Vec::new(),
     })
 }
 
