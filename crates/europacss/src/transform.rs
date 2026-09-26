@@ -144,6 +144,23 @@ impl Compiler<'_, '_> {
                 }
                 let args = arguments(&params).map_err(|e| error(&node, &e.code, e.message))?;
                 match name.as_str() {
+                    "europa" => {
+                        arity(&node, &args, 1, 1)?;
+                        if ctx.style || node.children.is_some() { return Err(error(&node, "EU_CONTEXT", "@europa must be a statement at root or inside a layer/conditional group")); }
+                        let sources: &[&str] = match args[0] {
+                            "base" => &[include_str!("../assets/normalize.css"), include_str!("../assets/base.css")],
+                            "arrows" => &[include_str!("../assets/arrows.css")],
+                            _ => return Err(error(&node, "EU_ARGUMENTS", "Unknown Europa bundle; expected base or arrows")),
+                        };
+                        fn origin(nodes: &mut [Node], offset: usize) {
+                            for node in nodes { node.offset = offset; if let Some(children) = &mut node.children { origin(children, offset); } }
+                        }
+                        for source in sources {
+                            let mut nodes = crate::parser::parse(source).map_err(|e| error(&node, &e.code, e.message))?;
+                            origin(&mut nodes, node.offset);
+                            result.extend(self.nodes(nodes, ctx, depth + 1)?);
+                        }
+                    }
                     "iterate" => {
                         arity(&node, &args, 1, 1)?;
                         if !ctx.style { return Err(error(&node, "EU_CONTEXT", "@iterate must be inside a style rule")); }
@@ -204,7 +221,7 @@ impl Compiler<'_, '_> {
                     "nest" => return Err(error(&node, "EU_LEGACY_NEST", "Replace legacy @nest with a native nested selector")),
                     "import" => return Err(error(&node, "EU_UNSUPPORTED", "Import resolution is not implemented in the experimental compiler; supply a bundled stylesheet")),
                     "row" => return Err(error(&node, "EU_DEPRECATED", "@row is deprecated; use @display flex/row/wrap and @space gap 1")),
-                    "europa" | "at-root" => {
+                    "at-root" => {
                         return Err(error(&node, "EU_UNSUPPORTED", format!("@{name} is not implemented in the experimental compiler yet")));
                     }
                     _ => {

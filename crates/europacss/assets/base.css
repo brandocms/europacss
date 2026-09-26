@@ -1,0 +1,441 @@
+:root {
+  /* Breakpoint vars */
+  @iterate theme.breakpoints {
+    --breakpoint-$key: $value;
+  }
+  --ec-zoom: 1;
+  --font-base-px: theme('typography.base');
+  --font-base-vw: theme('typography.base');
+  @unpack gridGutter;
+  @unpack containerPadding;
+}
+
+/**
+ * Manually forked from SUIT CSS Base: https://github.com/suitcss/base
+ * A thin layer on top of normalize.css that provides a starting point more
+ * suitable for web applications.
+ */
+
+/**
+ * 1. Prevent padding and border from affecting element width
+ * https://goo.gl/pYtbK7
+ * 2. Change the default font family in all browsers (opinionated)
+ */
+
+html {
+  box-sizing: border-box; /* 1 */
+  font-family: sans-serif; /* 2 */
+  font-size: theme('typography.base');
+  height: 100%;
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+
+  &[data-loading] {
+    cursor: wait;
+  }
+}
+
+body {
+  font-family: theme('typography.families.main');
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+/**
+ * Removes the default spacing and border for appropriate elements.
+ */
+
+blockquote,
+dl,
+dd,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+figure,
+p,
+pre {
+  margin: 0;
+}
+
+button {
+  background: transparent;
+  padding: 0;
+}
+
+/**
+ * Work around a Firefox/IE bug where the transparent `button` background
+ * results in a loss of the default `button` focus styles.
+ */
+
+button:focus {
+  outline: 1px dotted;
+  outline: 5px auto -webkit-focus-ring-color;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+}
+
+ol,
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: inherit;
+  opacity: 0.5;
+}
+
+button,
+[role='button'] {
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/**
+ * Reset links to optimize for opt-in styling instead of
+ * opt-out.
+ */
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/**
+ * Nicer looking underlines
+ */
+
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
+
+/**
+ * Reset form element properties that are easy to forget to
+ * style explicitly so you don't inadvertently introduce
+ * styles that deviate from your design system. These styles
+ * supplement a partial reset that is already applied by
+ * normalize.css.
+ */
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  padding: 0;
+  line-height: inherit;
+  color: inherit;
+}
+
+/**
+ * Use the configured 'mono' font family for elements that
+ * are expected to be rendered with a monospace font, falling
+ * back to the system monospace stack if there is no configured
+ * 'mono' font family.
+ */
+
+pre,
+code,
+kbd,
+samp {
+  font-family: theme('typography.families.mono');
+}
+
+address {
+  font-style: initial;
+}
+
+/**
+ * Make replaced elements `display: block` by default as that's
+ * the behavior you want almost all of the time. Inspired by
+ * CSS Remedy, with `svg` added as well.
+ *
+ * https://github.com/mozdevs/cssremedy/issues/14
+ */
+
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  vertical-align: middle;
+}
+
+/**
+ * Constrain images and videos to the parent width and preserve
+ * their instrinsic aspect ratio.
+ *
+ * Images are handled as having .img-fluid in bootstrap
+ *
+ * https://github.com/mozdevs/cssremedy/issues/14
+ */
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/**
+ * Screenreaders
+ */
+
+.sr-only,
+.sr-only-focusable:not(:focus) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/**
+* Moonwalk
+*/
+
+html.moonwalk {
+  [data-moonwalk],
+  [data-moonwalk-section],
+  [data-moonwalk-run] {
+    opacity: 0;
+  }
+
+  [data-moonwalk-section][data-moonwalk-section-ready] {
+    opacity: 1;
+  }
+}
+
+html.prefers-reduced-motion {
+  * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  [data-moonwalk] {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/** Lazyload fix for Chrome.
+ *  Sometimes IntersectionObserver doesn't pick up the image
+ */
+
+img[data-src],
+img[data-srcset] {
+  min-height: 1px;
+  min-width: 1px;
+}
+
+/**
+* Breakpoint debug
+*/
+
+.dbg-breakpoints {
+  position: fixed;
+  height: 25px;
+  bottom: 4px;
+  left: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  z-index: 99;
+  display: block;
+  text-transform: uppercase;
+  color: black;
+  background-color: #fff;
+  font-style: normal;
+  padding: 4px 5px;
+  border-radius: 6px;
+  font-family: Fira Code, Menlo, Monaco, monospace;
+  font-size: 9px;
+}
+
+.dbg-breakpoints .breakpoint,
+.dbg-breakpoints .user-agent {
+  float: left;
+}
+
+.dbg-breakpoints .user-agent {
+  line-height: 20px;
+  padding-left: 3px;
+  padding-right: 4px;
+}
+
+.dbg-breakpoints .user-agent span {
+  color: darkblue;
+  cursor: pointer;
+}
+
+.dbg-breakpoints .breakpoint:after {
+  line-height: 20px;
+  padding-left: 3px;
+  padding-right: 4px;
+
+  @iterate theme.breakpoints {
+    @responsive $key {
+      content: '$key';
+    }
+  }
+}
+
+.dbg-breakpoints .brand {
+  height: 20px;
+  width: 20px;
+  float: left;
+}
+
+/**
+* Grid overlay
+*/
+
+.dbg-grid {
+  @space container;
+  display: none;
+  user-select: none;
+  pointer-events: none;
+  width: 100%;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+
+  @space grid-column-gap 1;
+  grid-template-rows: 1fr;
+
+  @iterate theme.columns.count {
+    @responsive $key {
+      grid-template-columns: repeat($value, 1fr);
+    }
+  }
+
+  &.visible {
+    display: grid;
+  }
+
+  > * {
+    user-select: none;
+  }
+
+  b {
+    width: auto;
+    position: relative;
+
+    height: 100%;
+    content: ' ';
+    background-color: theme(colors.grid, #0095ff33);
+  }
+}
+
+/**
+* Image/picture setup that works 99.9% of the time
+*/
+
+img {
+  display: inline-block;
+  border: 0;
+  vertical-align: middle;
+  height: auto;
+  max-width: 100%;
+  min-width: 100%;
+}
+
+picture {
+  display: block;
+}
+
+/* Only render when in viewport */
+/* DISABLED for now due to some lame bugs
+  1. gsap.set in looping sliders will make the image flicker, since it is so far out the viewport
+  2. screws with the scrolling logic for hiding showing headers
+*/
+/* main img {
+  content-visibility: auto;
+} */
+
+/**
+* Outlines
+*/
+
+:root {
+  --outline-size: max(2px, 0.08em);
+  --outline-style: solid;
+  --outline-color: currentColor;
+}
+
+[data-outline='false'] {
+  a,
+  button,
+  input,
+  label,
+  option,
+  select,
+  video,
+  textarea {
+    outline: none !important;
+  }
+
+  button:not(:focus) {
+    outline: 0;
+  }
+}
+
+[data-outline='true'] {
+  :is(a, button, input, textarea, summary):focus {
+    outline: var(--outline-size) var(--outline-style) var(--outline-color);
+    outline-offset: var(--outline-offset, var(--outline-size));
+  }
+}
+
+.no-js {
+  picture {
+    img {
+      display: none;
+    }
+    noscript img {
+      display: block !important;
+    }
+  }
+}
