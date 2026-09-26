@@ -163,6 +163,12 @@ A clean report covers only the checks listed in its JSON. It does not prove unch
 
 The [Site A comparison](../../research/parser-feasibility/rendered-comparison.md) now includes 20 rendered samples after deliberate migration edits. A second [Site B comparison](../../research/parser-feasibility/by-comparison.md) exercises older installed compiler output, missing tokens/placeholders, multiple placeholder extensions, and menu/list ordering. Both use temporary copies; these are sampled comparisons, not universal visual parity.
 
+Site B's follow-up [60-sample browser matrix](../../research/parser-feasibility/by-browser-comparison.md)
+covers Chromium, Firefox and WebKit, including breakpoint edges and interaction
+states. After explicit migration edits, it found no stable geometry difference
+of 0.1px or more; color/number serialization differences and a small Firefox
+control variation remain documented.
+
 All 86 old spacing and 52 font-size source cases now have native fixture assertions, with intentional semantic and backend differences recorded per case. Further audit of other feature families, browsers, breakpoint boundaries and interactive states remains useful. Public distribution still needs the other-platform CI runs, completed upstream notices and a supported platform policy. Detailed source maps and further output compaction are separate improvements.
 
 Nested responsive blocks retain their outer conditions; sizes are selected by the innermost query. Placeholders are root definitions and `@extend %one, %two` expands them in listed order at the use site. Arbitrary selector extensions remain unsupported. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
