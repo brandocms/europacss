@@ -166,7 +166,7 @@ async function compile() {
     $('#breakpoints').replaceChildren();
     for (const [name, px] of data.breakpoints) {
       const button = element(document, 'button', null, `${name} ${px}px`); button.dataset.name = name;
-      button.addEventListener('click', () => { $('#width').value = Math.max(280, px); layout(); });
+      button.addEventListener('click', () => { $('#width').value = px === 0 ? 375 : Math.max(280, px); layout(); });
       $('#breakpoints').append(button);
     }
     syncFromEditor();
