@@ -16,11 +16,25 @@ struct Context {
 }
 
 pub fn transform(nodes: Vec<Node>, config: &Config<'_>) -> Result<Vec<Node>, Error> {
+    transform_mode(nodes, config, false)
+}
+
+/// Keep suffix selectors available to migration analysis; compilation still rejects them.
+pub(crate) fn for_migration(nodes: Vec<Node>, config: &Config<'_>) -> Result<Vec<Node>, Error> {
+    transform_mode(nodes, config, true)
+}
+
+fn transform_mode(
+    nodes: Vec<Node>,
+    config: &Config<'_>,
+    migration: bool,
+) -> Result<Vec<Node>, Error> {
     let mut compiler = Compiler {
         config,
         placeholders: HashMap::new(),
         expanding: Vec::new(),
         visited: 0,
+        migration,
     };
     for node in &nodes {
         if node.text.starts_with('%') {
@@ -85,6 +99,7 @@ struct Compiler<'a, 'b> {
     placeholders: HashMap<String, Vec<Node>>,
     expanding: Vec<String>,
     visited: usize,
+    migration: bool,
 }
 
 fn error(node: &Node, code: &str, message: impl Into<String>) -> Error {
@@ -391,7 +406,7 @@ impl Compiler<'_, '_> {
                     }
                     continue;
                 }
-                if let Some(offset) = suffix_offset(&node.text)? {
+                if let Some(offset) = suffix_offset(&node.text)?.filter(|_| !self.migration) {
                     return Err(Error::new("EU_LEGACY_SUFFIX", "Identifier suffix nesting is not supported; migrate to an explicit selector such as .card__title", node.offset + if ctx.iteration.is_some() { 0 } else { offset }));
                 }
                 let children = node.children.take().unwrap();

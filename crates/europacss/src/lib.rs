@@ -3,6 +3,7 @@ mod config;
 mod config_file;
 mod emit;
 mod imports;
+pub mod migration;
 mod optimize;
 pub mod parser;
 mod size;

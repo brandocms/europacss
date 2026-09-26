@@ -52,6 +52,8 @@ Expected CSS follows the agreed in-place expansion and native nesting semantics.
 
 Structural parser checks in [parser.rs](parser.rs), [backend.rs](backend.rs), and [imports.rs](imports.rs) distinguish [CSS URL tokens](https://drafts.csswg.org/css-syntax-3/#consume-url-token) from ordinary function blocks. Braces, brackets, semicolons, and comment-looking text inside unquoted URLs remain payload; escaped/case-insensitive `url` names are recognized. URL payloads are excluded from value rewriting, and malformed unquoted URLs fail with an authored location. This is focused syntax coverage, not a claim of complete CSS Syntax conformance or browser-style error recovery.
 
+Migration checks in [migration.rs](migration.rs) and [cli.rs](cli.rs) cover the explicit legacy version, selector-aware specificity differences and quiet cases, multi-level/generated selectors, pseudo-element matching risks, local shorthand/importance/order conflicts, bounded suffix fixes, stale/overlapping edits, imported source locations, read-only JSON reports, selective file edits, idempotence, and nonzero status when review remains. They do not certify the full cascade or rendered appearance.
+
 Sizing corrections to include in migration analysis:
 
 - `between()` uses the same viewport interval for its lower endpoint and slope. In the smallest breakpoint, spacing previously substituted 320px after calculating the slope from zero, while typography already used 320px in the slope. The shared formula follows typography and requires a positive interval. Fluid endpoints must use matching px or rem units.

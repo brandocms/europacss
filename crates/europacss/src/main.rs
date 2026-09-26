@@ -1,3 +1,4 @@
+mod cli_migration;
 mod cli_output;
 use cli_output::{Build, Color, Ui};
 use europacss::{compile, compile_file, Request};
@@ -12,6 +13,10 @@ use std::{
 fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<(), String> {
     let started = Instant::now();
     let mut args = args.into_iter().peekable();
+    if args.peek().map(String::as_str) == Some("migrate") {
+        args.next();
+        return cli_migration::run(args.collect(), ui);
+    }
     if args.peek().map(String::as_str) == Some("migrate-config") {
         args.next();
         let input = args

@@ -24,6 +24,141 @@ impl Temp {
         command
     }
 }
+
+#[test]
+fn migration_check_reports_imported_specificity_and_order_without_writing() {
+    let dir = Temp::new();
+    let entry = "@import 'nested.css';";
+    let nested = ".a,#b{.child{color:red}} .button{@space height 50px md;height:40px}";
+    fs::write(dir.0.join("app.css"), entry).unwrap();
+    fs::write(dir.0.join("nested.css"), nested).unwrap();
+    let result = dir
+        .command()
+        .args([
+            "migrate",
+            "app.css",
+            "--from",
+            "1.0.0-beta.16",
+            "--check",
+            "--json",
+            "--color",
+            "always",
+        ])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["analysis_complete"], true);
+    assert_eq!(report["fixed_files"], 0);
+    let findings = report["findings"].as_array().unwrap();
+    assert!(findings
+        .iter()
+        .any(|f| f["code"] == "EU_MIGRATION_SPECIFICITY"));
+    assert!(findings.iter().any(|f| f["code"] == "EU_MIGRATION_ORDER"));
+    assert!(findings
+        .iter()
+        .all(|f| f["filename"].as_str().unwrap().ends_with("nested.css")));
+    assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), entry);
+    assert_eq!(
+        fs::read_to_string(dir.0.join("nested.css")).unwrap(),
+        nested
+    );
+    assert_eq!(fs::read_dir(&dir.0).unwrap().count(), 2);
+}
+
+#[test]
+fn migration_fix_only_changes_supported_syntax_and_rechecks_remaining_findings() {
+    let dir = Temp::new();
+    let entry = "@import 'nested.css'; .a,#b{.child{color:red}}";
+    fs::write(dir.0.join("app.css"), entry).unwrap();
+    fs::write(
+        dir.0.join("nested.css"),
+        "/* retained */ .card{color:red;&__title{color:blue}color:green}",
+    )
+    .unwrap();
+    let run = || {
+        dir.command()
+            .args([
+                "migrate",
+                "app.css",
+                "--from",
+                "1.0.0-beta.16",
+                "--fix",
+                "--json",
+            ])
+            .output()
+            .unwrap()
+    };
+    let result = run();
+    assert!(
+        !result.status.success(),
+        "Specificity still needs a human decision"
+    );
+    let report: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["fixed_files"], 1);
+    assert_eq!(report["findings"].as_array().unwrap().len(), 1);
+    let fixed = fs::read_to_string(dir.0.join("nested.css")).unwrap();
+    assert!(fixed.contains("/* retained */"));
+    assert!(fixed.contains(".card__title"));
+    assert!(!fixed.contains("&__title"));
+    assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), entry);
+    let report: serde_json::Value = serde_json::from_slice(&run().stdout).unwrap();
+    assert_eq!(report["fixed_files"], 0);
+    assert_eq!(fs::read_to_string(dir.0.join("nested.css")).unwrap(), fixed);
+    assert_eq!(
+        fs::read_dir(&dir.0).unwrap().count(),
+        2,
+        "No temporary files remain"
+    );
+    fs::write(dir.0.join("app.css"), "@import 'nested.css';").unwrap();
+    let result = run();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+#[test]
+fn migration_requires_a_known_source_version_and_keeps_diagnostics_visible() {
+    let dir = Temp::new();
+    let source = ".card:hover{&__title{color:red}}";
+    fs::write(dir.0.join("app.css"), source).unwrap();
+    for args in [
+        vec!["migrate", "app.css", "--fix"],
+        vec!["migrate", "app.css", "--from", "1.0.0", "--fix"],
+        vec![
+            "migrate",
+            "app.css",
+            "--from",
+            "1.0.0-beta.16",
+            "--check",
+            "--fix",
+        ],
+    ] {
+        assert!(!dir.command().args(args).output().unwrap().status.success());
+        assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), source);
+    }
+    let result = dir
+        .command()
+        .args([
+            "migrate",
+            "app.css",
+            "--from",
+            "1.0.0-beta.16",
+            "--quiet",
+            "--color",
+            "always",
+        ])
+        .output()
+        .unwrap();
+    let error = String::from_utf8_lossy(&result.stderr);
+    assert!(error.contains("\x1b["));
+    assert!(error.contains("EU_MIGRATION_SUFFIX"));
+    assert!(error.contains("app.css:1:"));
+    assert!(error.contains("Flatten this subtree manually"));
+    assert!(result.stdout.is_empty());
+}
 impl Drop for Temp {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.0);

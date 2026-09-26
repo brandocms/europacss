@@ -75,7 +75,7 @@ impl Ui {
         self.paint("2", text)
     }
     pub fn help(&self) -> String {
-        format!("\n  {} {}\n\n  {}\n    europa <input.css|-> [options]\n    europa migrate-config resolved.json -o europa.json5\n\n  {}\n    -o, --output <file>    Write CSS to a file (default: stdout)\n    --config <file>        JSON5 or JSON configuration\n    --targets <query>      Browserslist targets (default: defaults)\n    --minify              Produce compact CSS\n    --source-map          Write an adjacent source map (requires -o)\n    --color <mode>        auto, always, or never (default: auto)\n    -q, --quiet            Hide success summaries\n    -h, --help             Show this help\n    -V, --version          Show the compiler version\n\n  {}\n    europa css/app.css --config europa.json5 -o public/app.css\n    europa css/app.css --minify --source-map -o public/app.min.css\n    cat app.css | europa - --minify > app.min.css\n\n  {}\n\n", self.paint("1;36", "europa"), self.dim(concat!(env!("CARGO_PKG_VERSION"), " · experimental Rust compiler")), self.paint("1", "Usage"), self.paint("1", "Options"), self.paint("1", "Examples"), self.dim("No Node runtime. Configuration is data; JavaScript is not executed."))
+        format!("\n  {} {}\n\n  {}\n    europa <input.css|-> [options]\n    europa migrate-config resolved.json -o europa.json5\n    europa migrate <entry.css> --from 1.0.0-beta.16 [--check | --fix] [--json]\n\n  {}\n    -o, --output <file>    Write CSS to a file (default: stdout)\n    --config <file>        JSON5 or JSON configuration\n    --targets <query>      Browserslist targets (default: defaults)\n    --minify              Produce compact CSS\n    --source-map          Write an adjacent source map (requires -o)\n    --color <mode>        auto, always, or never (default: auto)\n    -q, --quiet            Hide success summaries\n    -h, --help             Show this help\n    -V, --version          Show the compiler version\n\n  {}\n    europa css/app.css --config europa.json5 -o public/app.css\n    europa css/app.css --minify --source-map -o public/app.min.css\n    cat app.css | europa - --minify > app.min.css\n\n  {}\n\n", self.paint("1;36", "europa"), self.dim(concat!(env!("CARGO_PKG_VERSION"), " · experimental Rust compiler")), self.paint("1", "Usage"), self.paint("1", "Options"), self.paint("1", "Examples"), self.dim("No Node runtime. Configuration is data; JavaScript is not executed."))
     }
     pub fn failure(&self, message: &str) -> String {
         format!("\n  {} {}\n", self.paint("1;31", "✗ error"), clean(message))
@@ -204,6 +204,23 @@ impl Ui {
                 self.dim("Exported data → JSON5")
             );
         }
+    }
+    pub fn migration_help(&self, help: &str, fix: Option<&str>) {
+        eprintln!("  {} {}", self.paint("1;36", "help"), clean(help));
+        if let Some(fix) = fix {
+            eprintln!("  {} {}", self.paint("1;32", "--fix"), clean(fix));
+        }
+    }
+    pub fn migration_summary(&self, files: usize, findings: usize, fixed: usize, complete: bool) {
+        if self.quiet && findings == 0 && complete {
+            return;
+        }
+        let label = if findings == 0 && complete {
+            "✓ no findings in the checks performed"
+        } else {
+            "! migration review required"
+        };
+        eprintln!("\n  {}  {}\n          {files} files · {findings} findings · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if findings == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, suffix syntax, and local declaration order; rendered-page comparison remains necessary."));
     }
 }
 

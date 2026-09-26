@@ -42,6 +42,7 @@ The numbers above illustrate the display, not benchmark results.
 - Native nesting specificity and declaration order. Conditional output stays inside its enclosing `@supports` / `@layer`. No global media sorting or duplicate-selector combining.
 - JSON5 configuration with comments, existing default data, theme-section replacement, `theme.extend`, and `{path.to.token}` references. Full references preserve object/array types; embedded references require strings or numbers. Unknown references and cycles fail.
 - A data conversion command: `europa migrate-config resolved.json -o europa.json5`. It validates references and refuses to overwrite an existing output. Arrays, objects, nulls, token references, and key order survive conversion.
+- Versioned migration checks for nesting specificity, nested pseudo-elements, suffix syntax, and local declaration-order conflicts. `europa migrate` reads the entry and local imports with the actual JSON5 config. Supported suffix fixes preserve conditions and declaration order; appearance choices remain explicit.
 
 ## Configuration
 
@@ -90,11 +91,31 @@ The JSON-to-JSON5 command is only the data-conversion part of migration. An expo
 
 A future [config studio](../../research/config-studio.md) could provide visual typography, grid, and spacing editors with responsive previews driven by the same compiler. This is a proposal, not an implemented CLI feature.
 
+## Migration review
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check --json > migration.json
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
+```
+
+The source version is required. The currently modeled profile is exactly `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
+
+Specificity checks expand legacy selector alternatives and compare them with native `:is()` parent semantics using Lightning's selector parser, including `:where()`, `:is()`, `:not()`, `:has()`, and `:nth-child(... of ...)`. Conditions containing only declarations do not trigger selector-list warnings. Iterators and placeholders are expanded with the real config. Limits or unsupported selector contexts produce an incomplete-analysis finding rather than a clean result.
+
+Matching checks also flag pseudo-element parents and multiple top-level `&` selectors separated by combinators. For example, `.a, .b { & + & {} }` used to expand to `.a + .a, .b + .b`; native CSS can additionally match `.a + .b` and `.b + .a`, despite equal specificity. General matching equivalence inside selector functions is not modeled.
+
+Local order checks compare overlapping properties, including shorthand longhands and importance. For example, `@fontsize base; line-height: normal` reports the shared base value appended by the old compiler and the later authored value in the new compiler. Earlier media output conflicting with a later fallback is also reported. Keeping corrected authored order needs no source edit. The diagnostic explains how to preserve an old fallback/override order deliberately; `--fix` never makes that appearance choice.
+
+`--fix` currently flattens a suffix subtree only when it has one plain class/ID parent, suffix-only child selectors, and CSS declarations or supported conditions without Europa directives. It retains comments, declaration order, and enclosing scopes. It declines complex/generated cases and bounds proposed edits. Rewrites use source snapshots, reject stale/overlapping edits, preserve file permissions, replace individual files atomically, and rerun analysis afterward. A multi-file invocation is not a filesystem transaction; earlier successful edits remain if a later file write fails.
+
+A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, sizing formula corrections, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
+
 ## Remaining work before migrating a site
 
 A read-only integration run now compiles the current eight-file Site A entry with a temporary JSON5 config. This is a compilation check, not visual or behavioral parity, and does not replace the published package. Still to port: watch/build integration and release packaging. Full case-by-case parity and further output-size optimization of the legacy spacing/typography suites remain ongoing. Nested responsive blocks retain their outer conditions; responsive values are selected by the innermost query. Breakpoint-dependent sizes in custom arrow ranges are emitted as intersecting media conditions. Placeholders are currently root definitions only. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
 
-The migration linter, version-aware specificity/order warnings, suffix autofixes, JavaScript config exporter, and rendered-page comparisons remain separate work. `&__suffix` and `@nest` currently fail with actionable diagnostics. Recognized unported directives and sizing expressions fail explicitly. Unknown CSS at-rules are passed to Lightning, which can issue warnings. This structural parser is not yet a complete CSS Syntax conformance implementation.
+Migration coverage beyond the checks above, acceptance tracking for reviewed semantic changes, the JavaScript config exporter, and rendered-page comparisons remain work in progress. `&__suffix` and `@nest` still fail compilation until migrated. Recognized unported directives and sizing expressions fail explicitly. Unknown CSS at-rules are passed to Lightning, which can issue warnings. This structural parser is not yet a complete CSS Syntax conformance implementation.
 
 The Rust tests cover parsing/error paths, directive expansion, configuration, final backend semantics, composed maps, and CLI behavior with an empty `PATH`. The [rule porting tracker](tests/README.md) records which legacy cases have been translated and which semantics intentionally differ. This is not a claim that the old 337-test suite passes against the new compiler. No speedup is claimed until representative transforms and import handling are implemented and benchmarked.
 

@@ -427,6 +427,69 @@ pub fn suffix_offset(selector: &str) -> Result<Option<usize>, Error> {
     Ok(None)
 }
 
+/// Authored nesting selectors, excluding attributes, strings, comments and escapes.
+pub(crate) fn nesting_offsets(selector: &str) -> Result<Vec<usize>, Error> {
+    let mut scanner = Scanner {
+        source: selector,
+        pos: 0,
+    };
+    let mut offsets = Vec::new();
+    while let Some(c) = scanner.byte() {
+        if matches!(c, b'(' | b')') {
+            scanner.pos += 1;
+        } else if scanner.opaque(0)? {
+            continue;
+        } else {
+            if c == b'&' {
+                offsets.push(scanner.pos);
+            }
+            scanner.advance();
+        }
+    }
+    Ok(offsets)
+}
+
+pub(crate) fn nesting_crosses_combinator(selector: &str) -> Result<bool, Error> {
+    let mut scanner = Scanner {
+        source: selector,
+        pos: 0,
+    };
+    let mut seen = false;
+    let mut combinator = false;
+    while let Some(c) = scanner.byte() {
+        if scanner.opaque(0)? {
+            continue;
+        }
+        if c == b'&' {
+            if seen && combinator {
+                return Ok(true);
+            }
+            seen = true;
+        } else if seen && (space(c) || matches!(c, b'>' | b'+' | b'~')) {
+            combinator = true;
+        }
+        scanner.advance();
+    }
+    Ok(false)
+}
+
+pub(crate) fn block_end(source: &str, offset: usize) -> Result<usize, Error> {
+    let mut scanner = Scanner {
+        source,
+        pos: offset,
+    };
+    while scanner.byte().is_some() {
+        if scanner.byte() == Some(b'{') {
+            scanner.component(0)?;
+            return Ok(scanner.pos);
+        }
+        if !scanner.opaque(0)? {
+            scanner.advance();
+        }
+    }
+    Err(scanner.error("Expected a block"))
+}
+
 fn space(c: u8) -> bool {
     matches!(c, b' ' | b'\n' | b'\r' | b'\t' | 12)
 }
