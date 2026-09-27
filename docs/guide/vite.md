@@ -2,7 +2,7 @@
 
 The optional adapter runs the native `europa` executable before Vite's CSS pipeline. It provides builds, HMR, dependency watching and source maps without native Node bindings. Vite still needs Node; the standalone compiler and Studio do not.
 
-The adapter is a private, local package in this checkout, tested with Vite 6.4.3. There is no published native-adapter npm installation yet.
+The adapter is a private, local package in this checkout, tested with Vite 6.4.3 and 8.3.0. There is no published native-adapter npm installation yet.
 
 ## Install from your checkout
 

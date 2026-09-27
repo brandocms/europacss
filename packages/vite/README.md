@@ -1,6 +1,6 @@
 # EuropaCSS native compiler adapter for Vite
 
-Experimental, local-only package. Tested with Vite 6.4.3. The compiler remains a
+Experimental, local-only package. Tested with Vite 6.4.3 and 8.3.0. The compiler remains a
 standalone Rust executable; this optional JavaScript adapter only connects it to
 Vite. There are no N-API bindings or JavaScript config evaluation.
 

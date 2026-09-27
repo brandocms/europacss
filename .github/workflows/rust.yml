@@ -40,6 +40,10 @@ jobs:
 
   vite:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        vite: ['6.4.3', '8.3.0']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@v4
@@ -50,6 +54,10 @@ jobs:
       - name: Install optional adapter test dependencies
         working-directory: packages/vite
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Vite matrix version
+        if: matrix.vite != '6.4.3'
+        working-directory: packages/vite
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund vite@${{ matrix.vite }}
       - name: Test Vite build and HMR integration
         working-directory: packages/vite
         run: npm test
