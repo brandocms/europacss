@@ -75,6 +75,7 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
             "EU_MIGRATION_SPECIFICITY"
                 | "EU_MIGRATION_MATCHING"
                 | "EU_MIGRATION_ORDER"
+                | "EU_MIGRATION_BUNDLE_ORDER"
                 | "EU_MIGRATION_SIZE"
                 | "EU_MIGRATION_BREAKPOINT"
                 | "EU_MIGRATION_COLUMN_SIGN"

@@ -114,6 +114,35 @@ fn bundles_warn_about_legacy_prepending_and_retained_scopes() {
 }
 
 #[test]
+fn reviewed_bundle_placement_can_be_accepted_without_implicit_acceptance() {
+    for version in [
+        LEGACY_VERSION,
+        migration::LEGACY_BETA6,
+        migration::LEGACY_BETA11,
+    ] {
+        let source = ".x{color:red}@europa arrows;";
+        let mut report = migration::analyze(&request(source, config()), version).unwrap();
+        assert!(report.analysis_complete);
+        let mut review = serde_json::to_value(&report).unwrap();
+        migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+        assert!(report.findings.iter().all(|finding| !finding.accepted));
+        let index = report
+            .findings
+            .iter()
+            .position(|finding| finding.diagnostic.code == "EU_MIGRATION_BUNDLE_ORDER")
+            .unwrap();
+        review["findings"][index]["accepted"] = true.into();
+        migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+        assert!(report.findings[index].accepted);
+
+        let mut changed =
+            migration::analyze(&request(".x{color:blue}@europa arrows;", config()), version)
+                .unwrap();
+        assert!(migration::apply_acceptances(&mut changed, &review.to_string()).is_err());
+    }
+}
+
+#[test]
 fn pseudo_element_parent_diagnostics_show_the_explicit_legacy_selector() {
     let source = "@layer components { .swiper { .bullet { &::before { .paused & { animation-play-state:paused } } } } }";
     let report = migration::analyze(&request(source, config()), migration::LEGACY_BETA6).unwrap();
