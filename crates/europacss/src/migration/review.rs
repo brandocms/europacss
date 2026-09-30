@@ -1,6 +1,7 @@
 use super::{Edit, Report, REPORT_VERSION};
 use crate::{sources::Sources, Error, Request};
 use serde::Deserialize;
+use std::collections::HashMap;
 
 pub(super) fn snapshot(sources: &Sources, request: &Request, from: &str) -> String {
     let mut hash = blake3::Hasher::new();
@@ -68,6 +69,7 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
         return Err(fail("Use --apply-fixes for apply_fix:true decisions, then review a fresh report before --accept".into()));
     }
     // Validate all decisions before changing any acceptance state.
+    let indices = finding_indices(report);
     let mut accepted = Vec::new();
     for decision in review.findings.iter().filter(|f| f.accepted) {
         if !matches!(
@@ -80,10 +82,11 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
                 | "EU_MIGRATION_BREAKPOINT"
                 | "EU_MIGRATION_COLUMN_SIGN"
                 | "EU_MIGRATION_LEGACY6"
+                | "EU_MIGRATION_LEGACY11"
         ) {
             return Err(fail(format!("{} is not an acceptable semantic change; resolve this syntax or analysis diagnostic", decision.code)));
         }
-        accepted.push(finding_index(report, decision)?);
+        accepted.push(finding_index(&indices, decision)?);
     }
     for index in accepted {
         report.findings[index].accepted = true;
@@ -109,17 +112,40 @@ fn validate_review(report: &Report, review: &Review) -> Result<(), Error> {
     Ok(())
 }
 
-fn finding_index(report: &Report, decision: &Decision) -> Result<usize, Error> {
+type FindingKey<'a> = (Option<&'a str>, usize, &'a str, &'a str);
+
+fn finding_indices(report: &Report) -> HashMap<FindingKey<'_>, usize> {
     report
         .findings
         .iter()
-        .position(|finding| {
+        .enumerate()
+        .map(|(index, finding)| {
             let diagnostic = &finding.diagnostic;
-            diagnostic.filename == decision.filename
-                && diagnostic.offset == decision.offset
-                && diagnostic.code == decision.code
-                && diagnostic.message == decision.message
+            (
+                (
+                    diagnostic.filename.as_deref(),
+                    diagnostic.offset,
+                    diagnostic.code.as_str(),
+                    diagnostic.message.as_str(),
+                ),
+                index,
+            )
         })
+        .collect()
+}
+
+fn finding_index(
+    indices: &HashMap<FindingKey<'_>, usize>,
+    decision: &Decision,
+) -> Result<usize, Error> {
+    indices
+        .get(&(
+            decision.filename.as_deref(),
+            decision.offset,
+            decision.code.as_str(),
+            decision.message.as_str(),
+        ))
+        .copied()
         .ok_or_else(|| {
             Error::new(
                 "EU_MIGRATION_REVIEW",
@@ -141,9 +167,10 @@ pub fn reviewed_edits(report: &Report, source: &str) -> Result<Vec<Edit>, Error>
         ));
     }
     let mut edits = Vec::new();
+    let indices = finding_indices(report);
     let mut selected = std::collections::HashSet::new();
     for decision in review.findings.iter().filter(|f| f.apply_fix) {
-        let index = finding_index(report, decision)?;
+        let index = finding_index(&indices, decision)?;
         if !selected.insert(index) {
             continue;
         }

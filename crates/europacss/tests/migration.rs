@@ -63,7 +63,7 @@ fn beta11_profile_distinguishes_its_changes_from_beta6_and_beta16() {
 #[test]
 fn beta11_reviews_are_bound_to_the_source_version() {
     let req = request(".x{@responsive $sm{@fontsize 20px}}", config());
-    let report = migration::analyze(&req, migration::LEGACY_BETA11).unwrap();
+    let mut report = migration::analyze(&req, migration::LEGACY_BETA11).unwrap();
     let mut review = serde_json::to_value(&report).unwrap();
     for finding in review["findings"].as_array_mut().unwrap() {
         finding["accepted"] = true.into();
@@ -72,6 +72,122 @@ fn beta11_reviews_are_bound_to_the_source_version() {
         let mut other = migration::analyze(&req, from).unwrap();
         assert!(migration::apply_acceptances(&mut other, &review.to_string()).is_err());
     }
+    migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+    assert!(report.findings.iter().all(|f| f.accepted));
+}
+
+#[test]
+fn large_reports_keep_every_conflict_and_support_explicit_review() {
+    // The old pairwise scan spent its budget comparing unrelated custom
+    // properties. Every property here has exactly one real ordering conflict.
+    let mut source = String::from(".large { @media (min-width: 800px) {");
+    for i in 0..1500 {
+        source.push_str(&format!("--property-{i}: old;"));
+    }
+    source.push('}');
+    for i in 0..1500 {
+        source.push_str(&format!("--property-{i}: new;"));
+    }
+    source.push('}');
+    let mut report = analyze(&source);
+    assert!(report.analysis_complete);
+    assert_eq!(report.findings.len(), 1500);
+    assert!(report
+        .findings
+        .iter()
+        .all(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
+    assert!(report
+        .findings
+        .last()
+        .unwrap()
+        .diagnostic
+        .message
+        .contains("--property-1499"));
+    let mut review = serde_json::to_value(&report).unwrap();
+    for finding in review["findings"].as_array_mut().unwrap() {
+        finding["accepted"] = true.into();
+    }
+    migration::apply_acceptances(&mut report, &review.to_string()).unwrap();
+    assert!(report.findings.iter().all(|f| f.accepted));
+
+    // Unsupported analysis late in a large file must still be visible and block
+    // acceptance, even if all ordinary findings have been reviewed.
+    source.push_str("@scope (.scope) { .a { color: red } }");
+    let mut incomplete = analyze(&source);
+    assert!(!incomplete.analysis_complete);
+    assert!(incomplete
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_MIGRATION_INCOMPLETE"));
+    let mut review = serde_json::to_value(&incomplete).unwrap();
+    for finding in review["findings"].as_array_mut().unwrap() {
+        finding["accepted"] = true.into();
+    }
+    assert!(migration::apply_acceptances(&mut incomplete, &review.to_string()).is_err());
+}
+
+#[test]
+fn large_resolved_sizing_reports_are_not_truncated() {
+    let source: String = (0..600)
+        .map(|i| format!(".s{i}{{@responsive tablet{{@fontsize 20px}}}}\n"))
+        .collect();
+    let report = migration::analyze(&request(&source, config()), migration::LEGACY_BETA11).unwrap();
+    assert!(report.analysis_complete);
+    let sizing: Vec<_> = report
+        .findings
+        .iter()
+        .filter(|f| f.diagnostic.code == "EU_MIGRATION_LEGACY11")
+        .collect();
+    assert_eq!(sizing.len(), 600);
+    assert_eq!(sizing.last().unwrap().diagnostic.line, 600);
+    // Breakpoint notices are still deduplicated across all use sites.
+    assert_eq!(
+        report
+            .findings
+            .iter()
+            .filter(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn large_repeated_selector_histories_compare_only_overlapping_properties() {
+    let mut source = String::from("@media (min-width: 800px) {");
+    for i in 0..1500 {
+        source.push_str(&format!(".shared{{--property-{i}:old}}"));
+    }
+    source.push_str("}.shared{");
+    for i in 0..1500 {
+        source.push_str(&format!("--property-{i}:new;"));
+    }
+    source.push('}');
+    let report = analyze(&source);
+    assert!(report.analysis_complete);
+    assert_eq!(report.findings.len(), 1500);
+    assert!(report.findings.iter().all(|f| f
+        .diagnostic
+        .message
+        .contains("Repeated selector path `.shared`")));
+    assert!(report
+        .findings
+        .last()
+        .unwrap()
+        .diagnostic
+        .message
+        .contains("--property-1499"));
+}
+
+#[test]
+fn genuinely_expensive_order_analysis_remains_incomplete() {
+    let source = format!(".large {{{}}}", "color:red;".repeat(1500));
+    let report = analyze(&source);
+    assert!(!report.analysis_complete);
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_MIGRATION_INCOMPLETE"
+            && f.diagnostic.message.contains("comparison budget")));
 }
 
 #[test]

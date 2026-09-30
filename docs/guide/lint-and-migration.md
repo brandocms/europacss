@@ -53,10 +53,13 @@ Check [replacement and extension semantics](./configuration#defaults-and-extensi
 
 ```sh
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --summary
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > migration.json
 ```
 
-Replace the version with your actual supported source version. Both commands are read-only. The entry and its local imports are checked using the supplied config. Exit 1 means unresolved findings or incomplete analysis, so a report can be useful even when the command fails. `--json` writes the report to stdout; no CSS build is produced.
+Replace the version with your actual supported source version. These commands are read-only. The entry and its local imports are checked using the supplied config. Exit 1 means unresolved findings or incomplete analysis, so a report can be useful even when the command fails. `--json` writes the full report to stdout; no CSS build is produced.
+
+For a large site, `--summary` groups unresolved findings by file and diagnostic code. It changes only terminal output: every check still runs, the exit status is unchanged, and no findings are accepted. Use `--json` separately for the detailed review. Neither the general report nor sizing warnings stop at 512 findings anymore. Selector-expansion and declaration-comparison budgets remain; reaching one still marks analysis incomplete and blocks acceptance.
 
 Checks include:
 
@@ -97,6 +100,8 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept r
 ```
 
 Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply-fixes` and `--accept` as separate stages.
+
+Analyzer version 9 removes finding-count truncation and supports explicit acceptance of beta.11-specific warnings. Regenerate and review older reports; changing their version field does not make them current. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
 ## Verify the site
 

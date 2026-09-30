@@ -261,6 +261,71 @@ fn migration_check_reports_imported_specificity_and_order_without_writing() {
 }
 
 #[test]
+fn migration_summary_groups_large_imported_reports_without_accepting_or_hiding_findings() {
+    let dir = Temp::new();
+    let nested: String = (0..600)
+        .map(|i| format!(".a{i},#b{i}{{.child{{color:red}}}}\n"))
+        .collect();
+    fs::write(dir.0.join("app.css"), "@import 'nested.css';").unwrap();
+    fs::write(dir.0.join("nested.css"), &nested).unwrap();
+    let run = |extra: &[&str]| {
+        dir.command()
+            .args([
+                "migrate",
+                "app.css",
+                "--from",
+                "1.0.0-beta.16",
+                "--color",
+                "never",
+            ])
+            .args(extra)
+            .output()
+            .unwrap()
+    };
+    let summary = run(&["--summary"]);
+    assert!(!summary.status.success());
+    assert!(summary.stdout.is_empty());
+    let text = String::from_utf8(summary.stderr).unwrap();
+    assert!(text.contains("nested.css"));
+    assert!(text.contains("600  EU_MIGRATION_SPECIFICITY"));
+    assert!(text.contains("600 unresolved"));
+    assert!(text.len() < 1500);
+
+    let json = run(&["--json"]);
+    assert!(!json.status.success());
+    let mut report: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
+    assert_eq!(report["analysis_complete"], true);
+    assert_eq!(report["findings"].as_array().unwrap().len(), 600);
+    assert_eq!(report["findings"][599]["line"], 600);
+    for finding in report["findings"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .take(599)
+    {
+        finding["accepted"] = true.into();
+    }
+    fs::write(dir.0.join("review.json"), report.to_string()).unwrap();
+    let partial = run(&["--accept", "review.json", "--summary"]);
+    assert!(!partial.status.success());
+    let text = String::from_utf8(partial.stderr).unwrap();
+    assert!(text.contains("1  EU_MIGRATION_SPECIFICITY"));
+    assert!(text.contains("1 unresolved · 599 accepted"));
+    assert!(!run(&["--summary", "--json"]).status.success());
+    assert_eq!(
+        fs::read_to_string(dir.0.join("nested.css")).unwrap(),
+        nested
+    );
+
+    fs::write(dir.0.join("nested.css"), "@scope (.scope) {.a{color:red}}").unwrap();
+    let incomplete = run(&["--summary"]);
+    assert!(!incomplete.status.success());
+    let text = String::from_utf8(incomplete.stderr).unwrap();
+    assert!(text.contains("EU_MIGRATION_INCOMPLETE"));
+    assert!(text.contains("Analysis incomplete"));
+}
+
+#[test]
 fn migration_fix_only_changes_supported_syntax_and_rechecks_remaining_findings() {
     let dir = Temp::new();
     let entry = "@import 'nested.css'; .a,#b{.child{color:red}}";

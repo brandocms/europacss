@@ -155,6 +155,7 @@ Edits stay in the browser tab; Export downloads the exact JSON5 text, including 
 
 ```sh
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --summary
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check --json > migration.json
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
 ```
@@ -171,7 +172,7 @@ Local order checks compare overlapping properties, including shorthand longhands
 
 To record intentional semantic changes, save a `--json` report and set `"accepted": true` on each finding you have reviewed. Rerun with `--accept migration.json`; accepted findings remain visible in JSON, and status 0 means no unresolved findings remain in the listed checks. Saving a report alone accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Review decisions are bound to the analyzer revision and a BLAKE3 snapshot of every source path/content, resolved configuration, and target query; any changed input requires a fresh review. Reports currently refer to canonical paths in the same checkout. Apply `--fix` before generating the review report; it cannot be combined with `--accept`.
 
-`EU_MIGRATION_BREAKPOINT` reports used named upper boundaries that now close the old final-pixel gap, once per boundary at its first use. Accept the correction after review; `--fix` makes no boundary edits. Standard CSS media queries, explicit arrow ranges and `between()` interpolation anchors are unchanged. Reports use analyzer version 8, so earlier saved decisions require a fresh review.
+`EU_MIGRATION_BREAKPOINT` reports used named upper boundaries that now close the old final-pixel gap, once per boundary at its first use. Accept the correction after review; `--fix` makes no boundary edits. Standard CSS media queries, explicit arrow ranges and `between()` interpolation anchors are unchanged. Reports use analyzer version 9, so earlier saved decisions require a fresh review.
 
 Resolved sizing checks follow actual token expansion and breakpoint selection. They flag the zero-width breakpoint correction in spacing `between()`, additive scalar calculations in `vertical-rhythm()` that are now multiplied as a whole, and object font modifiers that now retain their other properties. These findings identify the authored directive and affected breakpoint; unused config tokens do not warn. Formula changes require review and can be explicitly accepted; `--fix` does not change them.
 
@@ -185,7 +186,9 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > r
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes review.json
 ```
 
-This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 8 invalidates earlier saved reviews, and review snapshots include the source version.
+This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 9 invalidates earlier saved reviews, and review snapshots include the source version.
+
+Large reports retain every unique finding, including sizing/profile warnings; there is no 512-finding cutoff. Declaration checks index expanded longhands and importance so unrelated properties do not consume the comparison budget. Selector expansion and comparison work remain bounded, and exhausted analysis still cannot be accepted. `--summary` groups unresolved counts by file and diagnostic code without changing checks or exit status; `--json` retains the complete detail. Reviewed JSON input is limited to 16 MiB, and proposed edits have a separate size budget.
 
 A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
 

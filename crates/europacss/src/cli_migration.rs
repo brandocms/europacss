@@ -11,6 +11,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut fix = false;
     let mut check = false;
     let mut json = false;
+    let mut summary = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -28,9 +29,10 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             "--fix" => fix = true,
             "--check" => check = true,
             "--json" => json = true,
+            "--summary" => summary = true,
             "--help" | "-h" => {
                 println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json] [--accept review.json | --apply-fixes review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply-fixes applies only proposals marked apply_fix:true in a saved report, then reruns analysis.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary] [--accept review.json | --apply-fixes review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply-fixes applies only proposals marked apply_fix:true in a saved report, then reruns analysis.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--summary groups unresolved findings by file and diagnostic code; it does not skip checks or accept findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(());
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
@@ -46,6 +48,9 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     }
     if fix && check {
         return Err("Choose --check or --fix".into());
+    }
+    if summary && json {
+        return Err("Choose --summary for grouped text or --json for the full report".into());
     }
     if fix && accept.is_some() {
         return Err("Apply syntax fixes first, then review a fresh report with --accept".into());
@@ -116,12 +121,28 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?
         );
     } else {
-        for finding in report.findings.iter().filter(|f| !f.accepted) {
-            eprint!("{}", ui.diagnostic(&finding.diagnostic, &input, None, true));
-            ui.migration_help(
-                &finding.help,
-                finding.fix.as_ref().map(|f| f.description.as_str()),
-            );
+        if summary {
+            let mut groups =
+                std::collections::BTreeMap::<_, std::collections::BTreeMap<_, usize>>::new();
+            for finding in report.findings.iter().filter(|f| !f.accepted) {
+                let diagnostic = &finding.diagnostic;
+                *groups
+                    .entry(diagnostic.filename.as_deref().unwrap_or(&input))
+                    .or_default()
+                    .entry(diagnostic.code.as_str())
+                    .or_default() += 1;
+            }
+            for (filename, counts) in groups {
+                ui.migration_group(filename, &counts);
+            }
+        } else {
+            for finding in report.findings.iter().filter(|f| !f.accepted) {
+                eprint!("{}", ui.diagnostic(&finding.diagnostic, &input, None, true));
+                ui.migration_help(
+                    &finding.help,
+                    finding.fix.as_ref().map(|f| f.description.as_str()),
+                );
+            }
         }
         ui.migration_summary(
             report.files.len(),

@@ -1,11 +1,18 @@
 use crate::Error;
 use serde_json::Value;
 use std::cell::RefCell;
+use std::collections::HashSet;
+
+#[derive(Default)]
+pub struct MigrationWarnings {
+    pub items: Vec<Error>,
+    seen: HashSet<(String, usize, String)>,
+}
 
 pub struct Config<'a> {
     pub value: &'a Value,
     pub breakpoints: Vec<(String, f64)>,
-    pub migration_warnings: Option<RefCell<Vec<Error>>>,
+    pub migration_warnings: Option<RefCell<MigrationWarnings>>,
     pub migration_beta6: bool,
     pub migration_beta11: bool,
 }
@@ -85,25 +92,20 @@ impl<'a> Config<'a> {
             return;
         };
         let mut warnings = warnings.borrow_mut();
-        if warnings.len() > 512 {
-            return;
-        }
         let message = message();
-        if warnings.iter().any(|e| {
-            (e.offset == offset || code == "EU_MIGRATION_BREAKPOINT") && e.message == message
-        }) {
+        // Boundary corrections are reported once per boundary, at the first use.
+        let key_offset = if code == "EU_MIGRATION_BREAKPOINT" {
+            0
+        } else {
+            offset
+        };
+        if !warnings
+            .seen
+            .insert((code.into(), key_offset, message.clone()))
+        {
             return;
         }
-        let error = if warnings.len() == 512 {
-            Error::new(
-                "EU_MIGRATION_INCOMPLETE",
-                "Sizing migration exceeded its finding budget",
-                offset,
-            )
-        } else {
-            Error::new(code, message, offset)
-        };
-        warnings.push(error);
+        warnings.items.push(Error::new(code, message, offset));
     }
     pub fn get(&self, base: &str, key: &str) -> Option<&'a Value> {
         lookup(self.value.pointer(base)?, key)

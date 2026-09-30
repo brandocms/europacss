@@ -237,6 +237,20 @@ impl Ui {
             eprintln!("  {} {}", self.paint("1;32", "--fix"), clean(fix));
         }
     }
+    pub fn migration_group(
+        &self,
+        filename: &str,
+        counts: &std::collections::BTreeMap<&str, usize>,
+    ) {
+        eprintln!("\n  {}", self.paint("1;36", &display_path(filename)));
+        for (code, count) in counts {
+            eprintln!(
+                "    {}  {}",
+                self.paint("1;33", &format!("{count:>5}")),
+                clean(code)
+            );
+        }
+    }
     pub fn migration_summary(
         &self,
         files: usize,
@@ -255,6 +269,9 @@ impl Ui {
             "! migration review required"
         };
         eprintln!("\n  {}  {}\n          {files} files · {unresolved} unresolved · {accepted} accepted · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."));
+        if !complete {
+            eprintln!("  {}\n", self.paint("1;31", "Analysis incomplete — resolve the analysis diagnostics before accepting this report."));
+        }
     }
 }
 

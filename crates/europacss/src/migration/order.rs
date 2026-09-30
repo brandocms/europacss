@@ -135,8 +135,56 @@ fn appended(origin: &Origins, declaration: &Declaration) -> bool {
 }
 
 fn overlaps(a: &str, b: &str) -> bool {
-    let resettable = |p: &str| !p.starts_with("--") && !matches!(p, "direction" | "unicode-bidi");
     a == b || a == "all" && resettable(b) || b == "all" && resettable(a)
+}
+
+fn resettable(property: &str) -> bool {
+    !property.starts_with("--") && !matches!(property, "direction" | "unicode-bidi")
+}
+
+/// Index expanded longhands, including `all`'s reset semantics. Source-order
+/// indices keep diagnostics deterministic; unrelated properties cost no comparisons.
+#[derive(Default)]
+struct DeclarationIndex {
+    properties: HashMap<(String, bool), Vec<usize>>,
+    resettable: [Vec<usize>; 2],
+}
+impl DeclarationIndex {
+    fn insert(&mut self, index: usize, declaration: &Declaration) {
+        for value in &declaration.values {
+            self.properties
+                .entry((value.property.clone(), value.important))
+                .or_default()
+                .push(index);
+            if resettable(&value.property) {
+                self.resettable[usize::from(value.important)].push(index);
+            }
+        }
+    }
+
+    fn candidates(&self, current: &Declaration) -> Vec<usize> {
+        let mut indices = Vec::new();
+        for value in &current.values {
+            if value.property == "all" {
+                indices.extend(&self.resettable[usize::from(value.important)]);
+            } else {
+                if let Some(found) = self
+                    .properties
+                    .get(&(value.property.clone(), value.important))
+                {
+                    indices.extend(found);
+                }
+                if resettable(&value.property) {
+                    if let Some(found) = self.properties.get(&("all".into(), value.important)) {
+                        indices.extend(found);
+                    }
+                }
+            }
+        }
+        indices.sort_unstable();
+        indices.dedup();
+        indices
+    }
 }
 
 // The legacy pipeline groups/sorts media globally and can collapse uniform
@@ -231,11 +279,18 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                             .insert(declaration.conditions.clone());
                     }
                 }
+                let mut index = DeclarationIndex::default();
                 for (at, current) in declarations.iter().enumerate() {
+                    let candidates = index.candidates(current);
+                    index.insert(at, current);
                     if appended(origins, current) {
                         continue;
                     }
-                    for previous in &declarations[..at] {
+                    for candidate in candidates {
+                        let previous = &declarations[candidate];
+                        if previous.offset == current.offset {
+                            continue;
+                        }
                         *work += 1;
                         if *work > 1_000_000 {
                             audit.incomplete(
@@ -243,9 +298,6 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                                 "Declaration-order analysis exceeded its comparison budget",
                             );
                             return Ok(());
-                        }
-                        if previous.offset == current.offset {
-                            continue;
                         }
                         let append = appended(origins, previous)
                             && previous.conditions == current.conditions;
@@ -329,11 +381,16 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
 pub(super) fn repeated_selectors(nodes: &[Node], audit: &mut Audit<'_>) {
     type SelectorScope = (Vec<String>, Vec<(String, usize)>);
     #[derive(Default)]
+    struct History {
+        declarations: Vec<(usize, Declaration)>,
+        index: DeclarationIndex,
+    }
+    #[derive(Default)]
     struct Context {
         selectors: Vec<String>,
         scopes: Vec<(String, usize)>,
         media: Vec<String>,
-        seen: HashMap<SelectorScope, Vec<(usize, Declaration)>>,
+        seen: HashMap<SelectorScope, History>,
         work: usize,
     }
     fn visit(nodes: &[Node], owner: usize, ctx: &mut Context, audit: &mut Audit<'_>) -> bool {
@@ -390,7 +447,12 @@ pub(super) fn repeated_selectors(nodes: &[Node], audit: &mut Audit<'_>) {
                     .seen
                     .entry((ctx.selectors.clone(), ctx.scopes.clone()))
                     .or_default();
-                for (previous_owner, previous) in history.iter() {
+                for candidate in history.index.candidates(&current) {
+                    let (previous_owner, previous) = &history.declarations[candidate];
+                    // The existing local check covers declarations from one rule.
+                    if *previous_owner == owner || previous.offset == current.offset {
+                        continue;
+                    }
                     ctx.work += 1;
                     if ctx.work > 1_000_000 {
                         audit.incomplete(
@@ -399,11 +461,7 @@ pub(super) fn repeated_selectors(nodes: &[Node], audit: &mut Audit<'_>) {
                         );
                         return false;
                     }
-                    // The existing local check covers declarations from one rule.
-                    if *previous_owner == owner
-                        || previous.offset == current.offset
-                        || !packing_risk(&previous.conditions, &current.conditions)
-                    {
+                    if !packing_risk(&previous.conditions, &current.conditions) {
                         continue;
                     }
                     for old in &previous.values {
@@ -420,10 +478,69 @@ pub(super) fn repeated_selectors(nodes: &[Node], audit: &mut Audit<'_>) {
                         }
                     }
                 }
-                history.push((owner, current));
+                history.index.insert(history.declarations.len(), &current);
+                history.declarations.push((owner, current));
             }
         }
         true
     }
     visit(nodes, 0, &mut Context::default(), audit);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn property_index_preserves_shorthand_all_custom_property_and_importance_conflicts() {
+        let inputs = [
+            "margin:1px 2px",
+            "color:red",
+            "--custom:old",
+            "direction:rtl",
+            "unicode-bidi:bidi-override",
+            "all:initial",
+            "padding:3px",
+            "margin-left:4px",
+            "color:blue!important",
+            "all:unset!important",
+            "--custom:new",
+            "direction:ltr",
+            "unicode-bidi:normal",
+            "all:revert",
+            "padding-top:5px!important",
+            "all:initial!important",
+        ];
+        let declarations: Vec<_> = inputs
+            .iter()
+            .enumerate()
+            .map(|(offset, text)| Declaration {
+                offset,
+                conditions: Vec::new(),
+                values: values(text).unwrap(),
+                raw_property: text.split_once(':').unwrap().0.into(),
+            })
+            .collect();
+        let mut index = DeclarationIndex::default();
+        for (at, current) in declarations.iter().enumerate() {
+            let expected: Vec<_> = declarations[..at]
+                .iter()
+                .enumerate()
+                .filter_map(|(i, previous)| {
+                    previous
+                        .values
+                        .iter()
+                        .any(|old| {
+                            current.values.iter().any(|new| {
+                                old.important == new.important
+                                    && overlaps(&old.property, &new.property)
+                            })
+                        })
+                        .then_some(i)
+                })
+                .collect();
+            assert_eq!(index.candidates(current), expected, "{}", inputs[at]);
+            index.insert(at, current);
+        }
+    }
 }

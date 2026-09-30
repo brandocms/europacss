@@ -22,7 +22,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 8;
+pub const REPORT_VERSION: u32 = 9;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Edit {
@@ -107,7 +107,7 @@ fn report(
     from: &str,
 ) -> Result<Report, Error> {
     let mut config = Config::new(&request.config)?;
-    config.migration_warnings = Some(std::cell::RefCell::new(Vec::new()));
+    config.migration_warnings = Some(std::cell::RefCell::default());
     config.migration_beta6 = from == LEGACY_BETA6;
     config.migration_beta11 = from == LEGACY_BETA11;
     let mut audit = Audit {
@@ -151,7 +151,7 @@ fn report(
                 "Resolve this compiler diagnostic and rerun migration; generated selectors have not been fully checked.", None);
         }
     }
-    for warning in config.migration_warnings.unwrap().into_inner() {
+    for warning in config.migration_warnings.unwrap().into_inner().items {
         if warning.code == "EU_MIGRATION_BREAKPOINT" {
             audit.add(&warning.code, warning.message, warning.offset,
                 "This closes the legacy one-pixel gap. Review widths immediately below the next breakpoint and accept the correction. Authored CSS media queries and explicit pixel arrow ranges are unchanged; --fix does not rewrite them.", None);
@@ -275,23 +275,8 @@ impl Audit<'_> {
         help: &str,
         fix: Option<Fix>,
     ) {
-        if self.findings.len() >= 512 {
-            self.complete = false;
-            if self.findings.len() == 512 {
-                self.findings.push(Finding {
-                    diagnostic: self.sources.locate(Error::new(
-                        "EU_MIGRATION_INCOMPLETE",
-                        "Migration report reached its 512-finding limit",
-                        offset,
-                    )),
-                    help: "Resolve findings and rerun, or audit smaller entry points.".into(),
-                    accepted: false,
-                    apply_fix: false,
-                    fix: None,
-                });
-            }
-            return;
-        }
+        // Findings are evidence, not a work budget. Keep every unique result;
+        // selector expansion and declaration comparisons have their own limits.
         let message = message.into();
         if !self.seen.insert((code.into(), offset, message.clone())) {
             return;
