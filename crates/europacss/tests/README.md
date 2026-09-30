@@ -4,6 +4,28 @@ Work in feature families, implementing shared parsing and value handling before 
 
 The original JS suite remains the behavior reference, with intentional native nesting and source-order changes recorded separately. Do not reproduce global media packing or declaration relocation merely to match old serialized output.
 
+## Complete source-case audit
+
+All **337 cases in 28 legacy suites** are accounted for: **335 have executable native assertions**, and two JS-only contracts are explicitly retired. These are source cases, not 335 individually named Cargo tests; table-driven runners group related cases.
+
+| Legacy cases | Native coverage | Count |
+| --- | --- | ---: |
+| Spacing and font size | [legacy_sizing.rs](legacy_sizing.rs), [reviewed fixtures](fixtures/legacy-sizing.json) | 138 |
+| Every remaining rule case (including both bundles, config references, and the complete tag-cloud example) | [legacy_rules.rs](legacy_rules.rs), [reviewed fixtures](fixtures/legacy-rules.json) | 137 |
+| All three large output fixtures | [legacy_rules.rs](legacy_rules.rs) | 3 |
+| `theme()` and `ease()` | [legacy_rules.rs](legacy_rules.rs) | 3 |
+| Query builders, breakpoint selection, and parsed query intervals | `config::legacy_query_tests` in [config.rs](../src/config.rs), [utility fixtures](fixtures/legacy-utilities.json) | 31 |
+| Typed/interpolated/chained references and error cases | [legacy_utilities.rs](legacy_utilities.rs) | 14 |
+| Media packing | [legacy_utilities.rs](legacy_utilities.rs), with corrected source-order expectations | 6 |
+| Default CSS, media lowering and IE10 flex prefixing | [legacy_utilities.rs](legacy_utilities.rs), using native browser targets | 3 |
+| Retired: `presetEnv.disable` and JavaScript object mutation | Exact old IDs and reasons in [utility fixtures](fixtures/legacy-utilities.json) | 2 |
+
+The 143-case remaining-rule/output/function fixture has 89 legacy CSS expectations with reviewed breakpoint corrections, 34 reviewed native output snapshots, 16 explicit error expectations, two bundle behavior assertions, and two unresolved-config reference assertions. Every case retains its old title and a note. Config callbacks have been frozen as data; tests do not execute JavaScript. The two reference cases specifically retain their raw references so resolution is tested.
+
+Snapshot changes were reviewed against the old assertions and input: in-place expansion, native `:is()` nesting, exclusive named-breakpoint upper bounds, equivalent media unions, grouped arithmetic, and removal of redundant parent media wrappers. Explicit pixel arrow ranges retain their inclusive endpoint. No matcher globally sorts CSS or regenerates expectations from the compiler under test. The complete large examples now run too; focused interaction tests remain useful alongside them.
+
+The retired cases concern removed implementation contracts: Rust consumes owned JSON rather than mutating a caller's JS object, and the standalone backend has no PostCSS preset-env on/off switch. Keeping dummy equivalents would add no protection. Media-sorting cases remain active, with assertions that protect authored order instead of restoring the old sorting behavior.
+
 ## First rule-by-rule batch
 
 | Legacy suite in `__tests__/rules/` | Rust coverage | Notes |
@@ -13,7 +35,7 @@ The original JS suite remains the behavior reference, with intentional native ne
 | `substituteAbs100AtRules.test.js` (9 cases) | [helpers.rs](helpers.rs) | Base/important declarations, breakpoints, collections, comparisons, responsive parents, invalid children/root/query combinations. Adds arrow ranges and source-order overrides. |
 | `substituteEmbedResponsiveAtRules.test.js` (1 case) | [helpers.rs](helpers.rs) | Existing pseudo-element layout. Adds ratio validation, conditional scopes, parent-list specificity, and later overrides. |
 
-These 22 legacy cases are represented by Rust assertions, sometimes grouped in one test or expanded into several. They are not the original Jest tests running against Rust. The pre-existing compiler/backend/config/CLI suites cover the earlier milestone; their legacy suites still need systematic case-by-case porting.
+These 22 legacy cases are represented by Rust assertions, sometimes grouped in one test or expanded into several. They are not the original Jest tests running against Rust. The pre-existing compiler/backend/config/CLI suites cover the earlier milestone; the completed source-case runners above now complement those focused suites.
 
 ## Basic directive audit
 
@@ -40,15 +62,15 @@ Expected CSS follows the agreed in-place expansion and native nesting semantics.
 
 ## Typography audit
 
-[typography.rs](typography.rs) covers the font-size suite's scalar/object/wildcard combinations, line-height suffixes, modifiers, hierarchical and literal slash keys, viewport/design-pixel conversion and caps, reference-width precedence, fluid sizing, shared `__base__` properties, responsive scopes, and later overrides. Legacy callback fixtures are expressed as typed JSON5 references: `{typography.families.brand.regular}` can supply an array or string, and `{colors.ink}` can be mixed with static properties. No JavaScript executes. Missing references fail config resolution; unsupported property arrays and malformed styles fail at the directive. The large legacy mixed-layout example is represented by focused nesting and directive-interaction cases, rather than copied globally reordered CSS snapshots.
+[typography.rs](typography.rs) covers the font-size suite's scalar/object/wildcard combinations, line-height suffixes, modifiers, hierarchical and literal slash keys, viewport/design-pixel conversion and caps, reference-width precedence, fluid sizing, shared `__base__` properties, responsive scopes, and later overrides. Legacy callback fixtures are expressed as typed JSON5 references: `{typography.families.brand.regular}` can supply an array or string, and `{colors.ink}` can be mixed with static properties. No JavaScript executes. Missing references fail config resolution; unsupported property arrays and malformed styles fail at the directive. The complete legacy mixed-layout input now also runs in legacy_rules.rs, with reviewed native nesting and source-order output.
 
-## Next feature families
+## Feature-family coverage
 
 1. The spacing/font-size source-case audit is complete: [legacy_sizing.rs](legacy_sizing.rs) runs all 86 spacing and 52 font-size cases from [static fixtures](fixtures/legacy-sizing.json), without Node. Every case includes its old title, input/config and reviewed standard-CSS expectation or diagnostic. Intentional changes have per-case notes: authored order, exact media ranges, fluid formulas, object line-height overrides, `system-ui` backend fallbacks, and strict rejection of undefined font tokens. Six callback fixtures use static data/token references. One old mixed-layout success case deliberately becomes an error because its expected CSS contained undefined font names; focused valid mixed-layout coverage remains in [typography.rs](typography.rs). The existing focused/table-driven suites add malformed input and interaction coverage. This is not a claim that the legacy output is unchanged.
 2. Value functions are now covered in [functions.rs](functions.rs): the three legacy function cases, every easing table entry, lazy/nested fallbacks, scalar arrays, literal exclusions, cycle detection, and source locations.
 3. Bundled `@europa` styles are covered in [bundles.rs](bundles.rs): both legacy bundle cases, config overrides, conditional scope, directive ordering, embedded asset consistency, and diagnostics at the authored directive.
 4. Import resolution and dependency tracking are covered in [imports.rs](imports.rs) and [cli.rs](cli.rs): repeated/nested imports, import conditions and layers, escaped keywords and adjacent CSS token boundaries, escaping/BOMs, URL rebasing, per-file frontend/backend diagnostics and maps, remote import ordering, cycles/limits, and protecting source dependencies from output writes. These are native Rust cases; package/glob resolution and namespaces remain unsupported.
-5. [responsive.rs](responsive.rs) adds query forms, the `@mq` alias, root/sibling ordering, nested intersections, responsive sizes, unpack/placeholder interactions, and malformed queries. Continue the remaining rule audit, migration diagnostics, and watch/build integration.
+5. [responsive.rs](responsive.rs) adds query forms, the `@mq` alias, root/sibling ordering, nested intersections, responsive sizes, unpack/placeholder interactions, and malformed queries. The complete case audit above complements these focused cases and the migration/watch/build integration tests.
 
 Structural parser checks in [parser.rs](parser.rs), [backend.rs](backend.rs), and [imports.rs](imports.rs) distinguish [CSS URL tokens](https://drafts.csswg.org/css-syntax-3/#consume-url-token) from ordinary function blocks. Braces, brackets, semicolons, and comment-looking text inside unquoted URLs remain payload; escaped/case-insensitive `url` names are recognized. URL payloads are excluded from value rewriting, and malformed unquoted URLs fail with an authored location. This is focused syntax coverage, not a claim of complete CSS Syntax conformance or browser-style error recovery.
 
@@ -92,3 +114,8 @@ unmodified-object path ignored now produce a resolved migration warning.
 
 The Site B audit adds zero-argument constant theme resolver conversion (without JS
 evaluation), comma-separated placeholder extension order, invalid lists and cycles.
+
+
+## Declaration source maps and font labels
+
+[source_maps.rs](source_maps.rs), [imports.rs](imports.rs), and Vite integration tests check declaration/directive locations, composed imported origins, token names, optional disabled-property comments, prefixes, responsive output, minification, UTF-16 authored columns, and production omission. Ambiguous merged declarations retain rule locations. Unmapped keyframe steps cannot inherit another selector's location. Lightning's printer can miscount generated columns after non-ASCII text on the same line; untrusted upstream points are discarded, while declarations within an earlier correctly mapped rule can still be refined.

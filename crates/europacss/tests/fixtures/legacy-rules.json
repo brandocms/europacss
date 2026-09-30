@@ -1,0 +1,2389 @@
+{
+  "configs": [
+    {
+      "theme": {
+        "colors": {
+          "green": {
+            "dark": "#22AA22",
+            "light": "#AAFFAA",
+            "test": {
+              "one": "#ffffff",
+              "two": "#000000"
+            }
+          },
+          "gray": {
+            "100": "#111111",
+            "200": "#222222"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "480px",
+          "ipad_portrait": "768px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1200px",
+          "desktop_lg": "1440px",
+          "desktop_xl": "1920px"
+        },
+        "breakpointCollections": {
+          "$mobile": "<=mobile",
+          "$tablet": "ipad_portrait/ipad_landscape",
+          "$desktop": ">=desktop_md",
+          "$lg": ">=ipad_landscape",
+          "$sm": "<=ipad_portrait"
+        },
+        "colors": {
+          "black": "#000000",
+          "white": "#ffffff",
+          "dark": "#2b2b2b",
+          "light": "#f9f7f4",
+          "transparent": "transparent",
+          "dbg": "pink",
+          "beige": "#F5EED6",
+          "dark_gray": "#1F2117",
+          "dark_grey": "#1F2117",
+          "yellow": "#F5E3A3",
+          "light_yellow": "#fefbf1",
+          "dark_blue": "#0E1527",
+          "off_white": "#FFFEFB",
+          "body": {
+            "foreground": "#000",
+            "background": "#FFFEFB"
+          },
+          "link": {
+            "regular": {
+              "text": "#000000",
+              "border": "#000000"
+            },
+            "hover": {
+              "text": "#000000",
+              "border": "#000000"
+            }
+          },
+          "gray": {
+            "900": "#858585"
+          },
+          "fader": {
+            "background": "#f9f7f4",
+            "foreground": "#2b2b2b"
+          },
+          "footer": {
+            "background": "#f9ece5"
+          },
+          "header": {
+            "background": "#f9f7f4",
+            "foreground": "#000000"
+          },
+          "navigation": {
+            "backgroundAlt": "ghostwhite"
+          }
+        },
+        "container": {
+          "maxWidth": {
+            "iphone": "100%",
+            "mobile": "560px",
+            "ipad_portrait": "810px",
+            "ipad_landscape": "100%",
+            "desktop_md": "100%",
+            "desktop_lg": "100%",
+            "desktop_xl": "1920px"
+          },
+          "padding": {
+            "iphone": "20px",
+            "mobile": "20px",
+            "ipad_portrait": "20px",
+            "ipad_landscape": "20px",
+            "desktop_md": "1.389vw",
+            "desktop_lg": "1.389vw",
+            "desktop_xl": "1.389vw"
+          }
+        },
+        "columns": {
+          "count": {
+            "iphone": 4,
+            "mobile": 4,
+            "ipad_portrait": 4,
+            "ipad_landscape": 12,
+            "desktop_md": 12,
+            "desktop_lg": 12,
+            "desktop_xl": 12
+          },
+          "gutters": {
+            "iphone": "20px",
+            "mobile": "20px",
+            "ipad_portrait": "20px",
+            "ipad_landscape": "20px",
+            "desktop_md": "1.5vw",
+            "desktop_lg": "1.5vw",
+            "desktop_xl": "1.5vw"
+          }
+        },
+        "typography": {
+          "base": "20px",
+          "lineHeight": {
+            "iphone": 1.5,
+            "mobile": 1.5,
+            "ipad_portrait": 1.5,
+            "ipad_landscape": 1.5,
+            "desktop_md": 1.5,
+            "desktop_lg": 1.5,
+            "desktop_xl": 1.5
+          },
+          "sizes": {
+            "base": {
+              "iphone": "16px",
+              "mobile": "4.25vw",
+              "ipad_portrait": "2.1vw",
+              "ipad_landscape": "1.6vw",
+              "desktop_md": "1.5vw",
+              "desktop_lg": "1.5vw",
+              "desktop_xl": "1.5vw"
+            },
+            "nav": {
+              "iphone": "32px",
+              "mobile": "32px",
+              "ipad_portrait": "32px",
+              "*": "12px"
+            },
+            "mono": {
+              "iphone": "11px/115%",
+              "mobile": "11px/115%",
+              "*": "12px/115%"
+            },
+            "mono_responsive": {
+              "iphone": "11px/115%",
+              "mobile": "11px/115%",
+              "ipad_portrait": "12px/115%",
+              "ipad_landscape": "12px/115%",
+              "desktop_md": "12px/115%",
+              "desktop_lg": "0.857vw/115%",
+              "desktop_xl": "0.857vw/115%"
+            },
+            "mono_spaced": {
+              "iphone": "11px/155%",
+              "mobile": "11px/155%",
+              "*": "12px/155%"
+            },
+            "body": {
+              "iphone": "16px/140%",
+              "mobile": "16px/140%",
+              "ipad_portrait": "16px/140%",
+              "ipad_landscape": "18px/140%",
+              "desktop_md": "18px/140%",
+              "*": "1.25vw/140%"
+            },
+            "small": {
+              "iphone": "16px/140%",
+              "mobile": "16px/140%",
+              "ipad_portrait": "16px/140%",
+              "*": "1.111vw/140%"
+            },
+            "xsmall": {
+              "*": "0.972vw/125%"
+            },
+            "h0": {
+              "*": "5.556vw/120%"
+            },
+            "h1": {
+              "iphone": {
+                "font-size": "32px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "mobile": {
+                "font-size": "32px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "ipad_portrait": {
+                "font-size": "48px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "ipad_landscape": {
+                "font-size": "52px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "desktop_md": {
+                "font-size": "56px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "*": {
+                "font-size": "3.889vw",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              }
+            },
+            "h2": {
+              "iphone": {
+                "font-size": "28px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "mobile": {
+                "font-size": "28px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "ipad_portrait": {
+                "font-size": "36px",
+                "line-height": "120%",
+                "letter-spacing": "-0.02em"
+              },
+              "*": "2.778vw/120%"
+            },
+            "h3": {
+              "iphone": {
+                "font-size": "24px",
+                "line-height": "130%",
+                "letter-spacing": "-0.02em"
+              },
+              "mobile": {
+                "font-size": "24px",
+                "line-height": "130%",
+                "letter-spacing": "-0.02em"
+              },
+              "ipad_portrait": {
+                "font-size": "28px",
+                "line-height": "130%",
+                "letter-spacing": "-0.02em"
+              },
+              "ipad_landscape": {
+                "font-size": "32px",
+                "line-height": "130%",
+                "letter-spacing": "-0.02em"
+              },
+              "desktop_md": {
+                "font-size": "32px",
+                "line-height": "130%",
+                "letter-spacing": "-0.02em"
+              },
+              "*": "2.222vw/130%"
+            },
+            "artikkel_ingress": {
+              "iphone": "24px/120%",
+              "mobile": "24px/120%",
+              "ipad_portrait": "25px/130%",
+              "ipad_landscape": "25px/130%",
+              "desktop_md": "27px/130%",
+              "*": {
+                "font-size": "1.9vw",
+                "line-height": "130%"
+              }
+            },
+            "h4": {
+              "iphone": "20px/130%",
+              "mobile": "20px/130%",
+              "ipad_portrait": "20px/130%",
+              "ipad_landscape": "24px/130%",
+              "desktop_md": "24px/130%",
+              "*": "1.667vw/130%"
+            }
+          },
+          "sections": {
+            "navigation": {
+              "iphone": {
+                "font-size": "34px"
+              },
+              "mobile": {
+                "font-size": "34px"
+              },
+              "ipad_portrait": {
+                "font-size": "42px"
+              },
+              "ipad_landscape": {
+                "font-size": "20px"
+              },
+              "desktop_md": {
+                "font-size": "20px"
+              },
+              "desktop_lg": {
+                "font-size": "20px"
+              },
+              "desktop_xl": {
+                "font-size": "20px"
+              }
+            }
+          },
+          "families": {
+            "main": [
+              "Deckard",
+              "-apple-system",
+              "BlinkMacSystemFont",
+              "\"Segoe UI\"",
+              "Roboto",
+              "\"Helvetica Neue\"",
+              "Arial",
+              "sans-serif"
+            ],
+            "serif": [
+              "Martina Plantijn",
+              "Georgia",
+              "Cambria",
+              "\"Times New Roman\"",
+              "Times",
+              "serif"
+            ],
+            "mono": [
+              "ABC Rom Mono",
+              "Menlo",
+              "Monaco",
+              "Consolas",
+              "\"Liberation Mono\"",
+              "\"Courier New\"",
+              "monospace"
+            ]
+          }
+        },
+        "spacing": {
+          "block": {
+            "iphone": "40px",
+            "mobile": "40px",
+            "ipad_portrait": "80px",
+            "*": "5.714vw"
+          },
+          "block_half": {
+            "iphone": "20px",
+            "mobile": "20px",
+            "ipad_portrait": "40px",
+            "*": "2.857vw"
+          },
+          "block_double": {
+            "iphone": "80px",
+            "mobile": "80px",
+            "ipad_portrait": "80px",
+            "*": "11.111vw"
+          },
+          "block_triple": {
+            "iphone": "120px",
+            "mobile": "120px",
+            "ipad_portrait": "120px",
+            "*": "16.667vw"
+          },
+          "xs": {
+            "iphone": "15px",
+            "mobile": "between(15px-18px)",
+            "ipad_portrait": "between(18px-20px)",
+            "ipad_landscape": "between(20px-25px)",
+            "desktop_md": "between(25px-35px)",
+            "desktop_lg": "between(35px-45px)",
+            "desktop_xl": "50px"
+          }
+        },
+        "header": {
+          "sections": {
+            "brand": {
+              "iphone": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "mobile": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "ipad_portrait": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "ipad_landscape": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "desktop_md": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "desktop_lg": {
+                "width": "100px",
+                "height": "100px"
+              },
+              "desktop_xl": {
+                "width": "100px",
+                "height": "100px"
+              }
+            }
+          },
+          "padding": {
+            "small": {
+              "iphone": {
+                "padding-top": "30px",
+                "padding-bottom": "30px"
+              },
+              "mobile": {
+                "padding-top": "30px",
+                "padding-bottom": "30px"
+              },
+              "ipad_portrait": {
+                "padding-top": "40px",
+                "padding-bottom": "40px"
+              },
+              "ipad_landscape": {
+                "padding-top": "40px",
+                "padding-bottom": "40px"
+              },
+              "desktop_md": {
+                "padding-top": "40px",
+                "padding-bottom": "35px"
+              },
+              "desktop_lg": {
+                "padding-top": "40px",
+                "padding-bottom": "35px"
+              },
+              "desktop_xl": {
+                "padding-top": "60px",
+                "padding-bottom": "60px"
+              }
+            },
+            "large": {
+              "iphone": {
+                "padding-top": "15px",
+                "padding-bottom": "15px"
+              },
+              "mobile": {
+                "padding-top": "15px",
+                "padding-bottom": "15px"
+              },
+              "ipad_portrait": {
+                "padding-top": "40px",
+                "padding-bottom": "40px"
+              },
+              "ipad_landscape": {
+                "padding-top": "40px",
+                "padding-bottom": "60px"
+              },
+              "desktop_md": {
+                "padding-top": "40px",
+                "padding-bottom": "20px"
+              },
+              "desktop_lg": {
+                "padding-top": "70px",
+                "padding-bottom": "35px"
+              },
+              "desktop_xl": {
+                "padding-top": "80px",
+                "padding-bottom": "40px"
+              }
+            }
+          }
+        }
+      },
+      "setMaxForVw": true,
+      "dpxViewportSize": 1440
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$desktop": "desktop",
+          "$mobile": "mobile/tablet"
+        }
+      }
+    },
+    {
+      "theme": {}
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "mobile": "0",
+          "tablet": "740px",
+          "desktop": "1024px"
+        },
+        "breakpointCollections": {
+          "$sm": "mobile/tablet",
+          "$lg": "desktop",
+          "$desktop": "desktop"
+        },
+        "colors": {
+          "green": {
+            "dark": "#22AA22",
+            "light": "#AAFFAA",
+            "test": {
+              "one": "#ffffff",
+              "two": "#000000"
+            }
+          },
+          "gray": {
+            "100": "#111111",
+            "200": "#222222"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "spacing": {
+          "md": {
+            "xs": "25px",
+            "sm": "50px",
+            "md": "75px"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "20px",
+            "sm": "30px",
+            "md": "50px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "1024px"
+          }
+        },
+        "spacing": {
+          "md": {
+            "xs": "5vw",
+            "sm": "10vw",
+            "md": "15vw"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "2vw",
+            "sm": "2vw",
+            "md": "2vw"
+          }
+        }
+      },
+      "setMaxForVw": true
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1250px",
+          "xl": "1920px"
+        },
+        "spacing": {
+          "md": {
+            "xs": "25px",
+            "sm": "50px",
+            "md": "75px",
+            "lg": "95px",
+            "xl": "115px"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "20px",
+            "sm": "30px",
+            "md": "50px",
+            "lg": "70px",
+            "xl": "90px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "1024px"
+          },
+          "padding": {
+            "xs": "4vw",
+            "sm": "4vw",
+            "md": "4vw"
+          }
+        },
+        "spacing": {
+          "md": {
+            "xs": "5vw",
+            "sm": "10vw",
+            "md": "15vw"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "2vw",
+            "sm": "2vw",
+            "md": "2vw"
+          }
+        }
+      },
+      "setMaxForVw": true
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "1024px"
+          },
+          "padding": {
+            "xs": "4vw",
+            "sm": "4vw",
+            "md": "4vw"
+          }
+        },
+        "spacing": {
+          "md": {
+            "xs": "5vw",
+            "sm": "10vw",
+            "md": "15vw"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "2vw",
+            "sm": "2vw",
+            "md": "2vw"
+          }
+        }
+      },
+      "setMaxForVw": false
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "740px",
+            "md": "1024px",
+            "lg": "1372px"
+          },
+          "padding": {
+            "xs": "20px",
+            "sm": "30px",
+            "md": "50px",
+            "lg": "* 30px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "740px",
+            "md": "1024px",
+            "lg": "1372px"
+          },
+          "padding": {
+            "xs": "20px",
+            "sm": "30px",
+            "md": "50px",
+            "lg": "* 40dpx"
+          }
+        }
+      },
+      "dpxViewportSize": 1440
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "740px",
+            "md": "1024px",
+            "lg": "1372px"
+          },
+          "padding": {
+            "xs": "20px",
+            "sm": "30px",
+            "md": "50px",
+            "lg": "*"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "480px",
+          "ipad_portrait": "768px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1200px",
+          "desktop_lg": "1560px",
+          "desktop_xl": "1920px"
+        },
+        "container": {
+          "maxWidth": {
+            "iphone": "100%",
+            "mobile": "560px",
+            "ipad_portrait": "810px",
+            "ipad_landscape": "100%",
+            "desktop_md": "100%",
+            "desktop_lg": "1860px",
+            "desktop_xl": "1920px"
+          },
+          "padding": {
+            "iphone": "15px",
+            "mobile": "15px",
+            "ipad_portrait": "50px",
+            "ipad_landscape": "30px",
+            "desktop_md": "30px",
+            "desktop_lg": "30px",
+            "desktop_xl": "30px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "480px",
+          "ipad_portrait": "768px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1200px",
+          "desktop_lg": "1560px",
+          "desktop_xl": "1920px"
+        },
+        "breakpointCollections": {
+          "$lg": "desktop_lg/desktop_xl"
+        },
+        "container": {
+          "maxWidth": {
+            "iphone": "100%",
+            "mobile": "560px",
+            "ipad_portrait": "810px",
+            "ipad_landscape": "100%",
+            "desktop_md": "100%",
+            "desktop_lg": "1860px",
+            "desktop_xl": "1920px"
+          },
+          "padding": {
+            "iphone": "15px",
+            "mobile": "15px",
+            "ipad_portrait": "50px",
+            "ipad_landscape": "30px",
+            "desktop_md": "30px",
+            "desktop_lg": "30px",
+            "desktop_xl": "30px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1440px"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "100%",
+            "lg": "1440px"
+          },
+          "padding": {
+            "xs": "20px",
+            "sm": "20px",
+            "md": "20px",
+            "lg": "50px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "typography": {
+          "families": {
+            "body/regular": [
+              "Helvetica",
+              "Arial",
+              "sans-serif"
+            ],
+            "body/strong": [
+              "Helvetica Neue",
+              "Arial",
+              "sans-serif"
+            ],
+            "header/display": [
+              "Georgia",
+              "Times",
+              "serif"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "families": {
+            "body/regular": [
+              "Helvetica",
+              "Arial",
+              "sans-serif"
+            ],
+            "header/display": [
+              "Georgia",
+              "Times",
+              "serif"
+            ]
+          },
+          "sizes": {
+            "header/large": {
+              "xs": "24px",
+              "sm": "28px",
+              "md": "32px"
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "typography": {
+          "families": {
+            "body": {
+              "regular": [
+                "Helvetica",
+                "Arial",
+                "sans-serif"
+              ],
+              "strong": [
+                "Helvetica Neue",
+                "Arial",
+                "sans-serif"
+              ]
+            },
+            "header": {
+              "display": [
+                "Georgia",
+                "Times",
+                "serif"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "typography": {
+          "families": {
+            "body/regular": [
+              "Custom Font",
+              "Arial",
+              "sans-serif"
+            ],
+            "body": {
+              "regular": [
+                "Default Font",
+                "Helvetica",
+                "sans-serif"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "typography": {
+          "optimizeLegibility": true
+        }
+      }
+    },
+    {
+      "theme": {
+        "typography": {
+          "optimizeLegibility": false
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "spacing": {
+          "md": {
+            "xs": "25px",
+            "sm": "50px",
+            "md": "75px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "iphone": "0",
+          "mobile": "480px",
+          "ipad_portrait": "768px",
+          "ipad_landscape": "1024px",
+          "desktop_md": "1200px",
+          "desktop_lg": "1560px",
+          "desktop_xl": "1920px"
+        },
+        "columns": {
+          "count": {
+            "iphone": 2,
+            "mobile": 2,
+            "ipad_portrait": 6,
+            "ipad_landscape": 6,
+            "desktop_md": 6,
+            "desktop_lg": 6,
+            "desktop_xl": 6
+          },
+          "gutters": {
+            "iphone": "40px",
+            "mobile": "40px",
+            "ipad_portrait": "35px",
+            "ipad_landscape": "70px",
+            "desktop_md": "80px",
+            "desktop_lg": "100px",
+            "desktop_xl": "120px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "container": {
+          "padding": {
+            "xs": "25px",
+            "sm": "5.555556vw",
+            "md": "5.555556vw"
+          }
+        },
+        "columns": {
+          "count": {
+            "xs": 4,
+            "sm": 6,
+            "md": 12
+          },
+          "gutters": {
+            "xs": "15px",
+            "sm": "40px",
+            "md": "4.1667vw"
+          }
+        },
+        "typography": {
+          "sections": {
+            "navigation": {
+              "xs": {
+                "font-size": "17px",
+                "line-height": "17px",
+                "letter-spacing": "0.12rem"
+              },
+              "sm": {
+                "font-size": "17px",
+                "line-height": "17px",
+                "letter-spacing": "0.12rem"
+              },
+              "md": {
+                "font-size": "12px",
+                "line-height": "12px",
+                "letter-spacing": "0.12rem"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px"
+        },
+        "typography": {
+          "sections": {
+            "navigation": {
+              "xs": {
+                "font-size": "17px",
+                "line-height": "17px",
+                "letter-spacing": "0.12rem"
+              },
+              "sm": {
+                "font-size": "17px",
+                "line-height": "17px",
+                "letter-spacing": "0.12rem"
+              },
+              "md": {
+                "font-size": "12px",
+                "line-height": "12px",
+                "letter-spacing": "0.12rem"
+              }
+            },
+            "simple": {
+              "xs": {
+                "color": "red"
+              },
+              "sm": {
+                "color": "green"
+              },
+              "md": {
+                "color": "blue"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "md": "1024px"
+        },
+        "container": {
+          "padding": {
+            "xs": "75dpx",
+            "md": "50dpx"
+          }
+        },
+        "columns": {
+          "gutters": {
+            "xs": "25dpx",
+            "md": "30dpx"
+          }
+        }
+      },
+      "dpxViewportSize": 1440
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1399px",
+          "xl": "1900px"
+        },
+        "breakpointCollections": {
+          "$mobile": "xs/sm"
+        },
+        "colors": {
+          "red": "#f00",
+          "blue": "#00f",
+          "primary": "{colors.red}",
+          "secondary": "{colors.blue}"
+        },
+        "border": {
+          "default": "1px solid {colors.red}"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "100%",
+            "lg": "100%",
+            "xl": "100%"
+          },
+          "padding": {
+            "xs": "15px",
+            "sm": "35px",
+            "md": "50px",
+            "lg": "100px",
+            "xl": "100px"
+          }
+        },
+        "columns": {
+          "count": {},
+          "gutters": {
+            "xs": "3vw",
+            "sm": "3vw",
+            "md": "2.5vw",
+            "lg": "2.5vw",
+            "xl": "48px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "breakpoints": {
+          "xs": "0",
+          "sm": "740px",
+          "md": "1024px",
+          "lg": "1399px",
+          "xl": "1900px"
+        },
+        "breakpointCollections": {
+          "$mobile": "xs/sm"
+        },
+        "colors": {
+          "red": "#f00",
+          "blue": "#00f",
+          "primary": "{colors.red}",
+          "secondary": "{colors.blue}",
+          "danger": "{colors.primary}"
+        },
+        "border": {
+          "default": "1px solid {colors.red}"
+        },
+        "container": {
+          "maxWidth": {
+            "xs": "100%",
+            "sm": "100%",
+            "md": "100%",
+            "lg": "100%",
+            "xl": "100%"
+          },
+          "padding": {
+            "xs": "15px",
+            "sm": "35px",
+            "md": "50px",
+            "lg": "100px",
+            "xl": "100px"
+          }
+        },
+        "columns": {
+          "count": {},
+          "gutters": {
+            "xs": "3vw",
+            "sm": "3vw",
+            "md": "2.5vw",
+            "lg": "2.5vw",
+            "xl": "48px"
+          }
+        }
+      }
+    },
+    {
+      "theme": {
+        "colors": {
+          "red": "#ff0000"
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "rules/basic:1",
+      "title": "basic test",
+      "config": 0,
+      "input": "\n  html {\n    color: red;\n  }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  html {\n    color: red;\n  }\n  "
+    },
+    {
+      "id": "rules/basic:2",
+      "title": "basic nesting",
+      "config": 0,
+      "input": "\n  html {\n    body {\n      color: red;\n      header {\n        color: blue;\n        h2 {\n          font-size: 16px;\n        }\n      }\n    }\n  }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    html body {\n      color: red;\n    }\n    html body header {\n      color: #00f;\n    }\n    html body header h2 {\n      font-size: 16px;\n    }\n  "
+    },
+    {
+      "id": "rules/basic:3",
+      "title": "@extend",
+      "config": 0,
+      "input": "\n  %action_button {\n    color: black;\n    font-size: 14px;\n    background-color: yellow;\n    padding: 5px 15px;\n    border-radius: 6px;\n  }\n\n  html {\n    body {\n      color: red;\n      header {\n        color: blue;\n        button {\n          @extend %action_button;\n        }\n      }\n    }\n  }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    html body {\n      color: red;\n    }\n    html body header {\n      color: #00f;\n    }\n    html body header button {\n      color: #000;\n      background-color: #ff0;\n      border-radius: 6px;\n      padding: 5px 15px;\n      font-size: 14px;\n    }\n  "
+    },
+    {
+      "id": "rules/basic:4",
+      "title": "@color",
+      "config": 0,
+      "input": "\n  html {\n    body {\n      font-size: 16px;\n      @color bg black;\n      @color fg white;\n    }\n  }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    html body {\n      color: #fff;\n      background-color: #000;\n      font-size: 16px;\n    }\n  "
+    },
+    {
+      "id": "rules/basic:5",
+      "title": "combine selectors",
+      "config": 0,
+      "input": "\n    article.test {\n      color: red;\n    }\n\n    h1 {\n      font-size: 24px;\n    }\n\n    article.test {\n      background-color: blue;\n    }\n  ",
+      "note": "Keep separated selectors in authored order; do not move declarations past h1. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article.test{color:red}h1{font-size:24px}article.test{background-color:#00f}"
+    },
+    {
+      "id": "rules/basic:6",
+      "title": "combine mq",
+      "config": 0,
+      "input": "\n    @media (min-width: 768px) {\n      article.test {\n        color: red;\n      }\n    }\n\n    h1 {\n      font-size: 24px;\n    }\n\n    @media (min-width: 768px) {\n      h1 {\n        font-size: 48px;\n      }\n    }\n\n    @media (min-width: 1024px) {\n      h1 {\n        font-size: 48px;\n      }\n    }\n\n    @media (min-width: 1024px) {\n      h1 {\n        line-height: 48px;\n      }\n    }\n  ",
+      "note": "Only locally safe media packing; h1 base stays between the first and second 768px blocks. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:768px){article.test{color:red}}h1{font-size:24px}@media (min-width:768px),(min-width:1024px){h1{font-size:48px}}@media (min-width:1024px){h1{line-height:48px}}"
+    },
+    {
+      "id": "rules/basic:7",
+      "title": "combine mqs when using @responsive",
+      "config": 0,
+      "input": "\n    article {\n      @responsive xs {\n        font-size: 12px;\n        color: blue;\n      }\n\n      color: red;\n\n      @responsive xs {\n        background-color: red;\n      }\n    }\n  ",
+      "note": "Later authored red wins over the earlier responsive blue. Do not hoist red ahead of the media rule. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{color:#00f;font-size:12px}}article{color:red}@media not (min-width:740px){article{background-color:red}}"
+    },
+    {
+      "id": "rules/basic:8",
+      "title": "combine mqs when using @space",
+      "config": 0,
+      "input": "\n    article {\n      color: red;\n      @space padding-top 15px xs;\n      @space padding-bottom 15px xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: red;\n    }\n\n    @media (width < 740px) {\n      article {\n        padding-top: 15px;\n        padding-bottom: 15px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/basic:9",
+      "title": "combine mqs when using @responsive and @space",
+      "config": 0,
+      "input": "\n    article {\n      color: red;\n      @responsive xs {\n        padding-top: 15px;\n      }\n      @space padding-bottom 15px xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: red;\n    }\n\n    @media (width < 740px) {\n      article {\n        padding-top: 15px;\n        padding-bottom: 15px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/basic:10",
+      "title": "combine mqs when advanced",
+      "config": 0,
+      "input": "\n    article {\n      @color bg black;\n      @color fg white;\n\n      .inner {\n        @space container;\n\n        article {\n          @responsive md {\n            font-size: 12px;\n            color: blue;\n          }\n\n          @responsive xs {\n            font-size: 10px;\n            color: blue;\n          }\n\n          @space padding-top 15px xs;\n        }\n      }\n    }\n  ",
+      "note": "Container then nested article queries stay in authored order; container widths and paddings retain the legacy values. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{color:#fff;background-color:#000}@media not (min-width:740px){article .inner{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding-left:15px;padding-right:15px}}@media (min-width:740px) and (not (min-width:1024px)){article .inner{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:35px;padding-right:35px}}@media (min-width:1024px) and (not (min-width:1399px)){article .inner{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}@media (min-width:1399px) and (not (min-width:1900px)),(min-width:1900px){article .inner{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:100px;padding-right:100px}}@media (min-width:1024px) and (not (min-width:1399px)){article .inner article{color:#00f;font-size:12px}}@media not (min-width:740px){article .inner article{color:#00f;padding-top:15px;font-size:10px}}"
+    },
+    {
+      "id": "rules/basic:11",
+      "title": "nested @extend",
+      "config": 0,
+      "input": "\n    article {\n      color: blue;\n      header {\n        .something {\n          font-size: 10px;\n          [data-script=\"article\"] & {\n            font-size: 12px;\n          }\n        }\n      }\n    }\n  ",
+      "note": "Native nesting retains :is() around the complex parent selector. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{color:#00f}article header .something{font-size:10px}[data-script=article] :is(article header .something){font-size:12px}"
+    },
+    {
+      "id": "rules/basic:12",
+      "title": "nested @extend &",
+      "config": 0,
+      "input": "\n    %list {\n      list-style-type: none;\n      font-size: 12px;\n    }\n\n    article {\n      color: blue;\n      header {\n        .something {\n          font-size: 10px;\n          [data-script=\"article\"] & {\n            @extend %list;\n          }\n        }\n      }\n    }\n  ",
+      "note": "Placeholder expands at the use site, with native :is() nesting. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{color:#00f}article header .something{font-size:10px}[data-script=article] :is(article header .something){font-size:12px;list-style-type:none}"
+    },
+    {
+      "id": "rules/basic:13",
+      "title": "nested @extend fancy %",
+      "config": 1,
+      "input": "\n    %tag {\n      a,\n      button {\n        @font mono mono;\n        @space letter-spacing 0.3px >=ipad_portrait;\n        background-color: #f7f5ed;\n        text-transform: uppercase;\n        display: flex;\n        height: 30px;\n        padding: 5px 13px 4px 13px;\n        justify-content: center;\n        align-items: center;\n        gap: 10px;\n        border-radius: 40px;\n        border: none;\n        transition:\n          background-color 150ms ease,\n          color 150ms ease !important;\n        user-select: none;\n\n        span {\n          transition:\n            transform 150ms ease,\n            color 150ms ease !important;\n        }\n\n        &:hover {\n          @responsive >=ipad_portrait {\n            @color bg dark_grey;\n            @color fg white;\n          }\n          span {\n            transform: translateX(3px);\n            transition:\n              transform 150ms ease,\n              color 0ms ease !important;\n          }\n        }\n\n        &.active,\n        &[data-active] {\n          @color bg dark_grey;\n          @color fg white;\n          span {\n            transform: translateX(3px);\n            transition:\n              transform 150ms ease,\n              color 0ms ease !important;\n          }\n        }\n      }\n    }\n\n    [b-tpl=\"tag cloud\"] {\n      @space container;\n      @space! padding-top 0 $lg;\n      @space! margin-top calc(var[block] * -1) $lg;\n\n      .inner {\n        @display flex;\n        align-items: center;\n\n        @responsive ipad_portrait {\n          flex-direction: column;\n          gap: 50px;\n        }\n\n        @responsive $mobile {\n          flex-direction: column;\n          gap: 50px;\n        }\n\n        > .tags {\n          @display flex;\n          @column 5/12 $lg;\n          @column 12/12 ipad_portrait;\n          @column 12/12 $mobile;\n          justify-content: center;\n          align-items: center;\n\n          .tags-inner {\n            display: flex;\n            flex-wrap: wrap;\n            justify-content: center;\n            align-items: center;\n            @space width 400px $lg;\n            @space width 400px ipad_portrait;\n            @space gap 0.25em;\n            @space gap 0.25em ipad_portrait;\n            @space gap 0.25em $mobile;\n            @extend %tag;\n\n            button {\n              position: relative;\n              overflow: clip;\n\n              &[data-active] {\n                background-color: #000 !important;\n              }\n\n              &:hover {\n                background-color: #000 !important;\n              }\n\n              span {\n                z-index: 1;\n                transform: translateX(0) !important;\n              }\n\n              .progress {\n                z-index: 0;\n                transform: scale(0, 1);\n                transform-origin: 0% 50%;\n                position: absolute;\n                width: 100%;\n                height: 100%;\n                top: 0;\n                left: 0;\n                transition: background-color 250ms ease;\n\n                &.running {\n                  background-color: #18306d;\n                }\n\n                &.done {\n                  background-color: transparent;\n                }\n              }\n            }\n          }\n        }\n\n        > .cases {\n          @column 7/12 $lg;\n          @column 1/1 ipad_portrait;\n          @space width 100% ipad_portrait;\n\n          .canvas {\n            display: grid;\n            grid-template-areas: \"stack\";\n            place-items: center;\n            position: relative;\n            display: none;\n            height: 100%;\n\n            @responsive $lg {\n              aspect-ratio: 1/1;\n            }\n\n            @responsive ipad_portrait {\n              @space padding-bottom 75px;\n            }\n\n            @responsive $mobile {\n              @space padding-bottom 75px;\n            }\n\n            &[data-active] {\n              display: grid;\n            }\n\n            .case-card {\n              grid-area: stack;\n              position: relative;\n              max-width: none;\n              user-select: none;\n              transform: translateZ(0px);\n              -webkit-transform: translateZ(0px);\n\n              &:hover {\n                img {\n                  transform: none;\n                  user-select: none;\n                  pointer-events: none;\n                }\n              }\n\n              .reveal-tags {\n                pointer-events: all;\n              }\n\n              .meta {\n                opacity: 0;\n                transition: opacity 0.5s ease;\n              }\n\n              &[data-active] + .case-card {\n                .meta {\n                  @responsive >=ipad_portrait {\n                    opacity: 1;\n                  }\n\n                  .button {\n                    @responsive >=ipad_portrait {\n                      background-color: black;\n                    }\n                  }\n                }\n              }\n\n              &:nth-child(1),\n              &:nth-child(2) {\n                z-index: 1;\n                transform: translate(0, 0);\n                @space width 450px >=desktop_lg;\n                @space width 350px desktop_md;\n                @space width 325px ipad_landscape;\n                @space width 290px ipad_portrait;\n                @space width 150px $mobile;\n\n                .cover-and-link {\n                  animation:\n                    hoverV 1.5s alternate infinite ease-in-out,\n                    hoverH 2.5s alternate infinite ease-in-out;\n                }\n              }\n              &:nth-child(2) {\n                z-index: 50;\n                pointer-events: none;\n              }\n\n              &:nth-child(3),\n              &:nth-child(4) {\n                z-index: 2;\n                @space width 275px >=desktop_lg;\n                @space width 225px desktop_md;\n                @space width 225px ipad_landscape;\n                @space width 225px ipad_portrait;\n                @space width 125px $mobile;\n                transform: translate(-100%, 15%);\n\n                .cover-and-link {\n                  animation:\n                    hoverV 4.5s alternate infinite ease-in-out,\n                    hoverH 2s alternate infinite ease-in-out;\n                }\n              }\n              &:nth-child(4) {\n                z-index: 51;\n                pointer-events: none;\n              }\n\n              &:nth-child(5),\n              &:nth-child(6) {\n                z-index: 3;\n                @space width 275px >=desktop_lg;\n                @space width 225px desktop_md;\n                @space width 225px ipad_landscape;\n                @space width 225px ipad_portrait;\n                @space width 125px $mobile;\n                transform: translate(85%, -12%);\n\n                .cover-and-link {\n                  animation:\n                    hoverV 2.5s alternate infinite ease-in-out,\n                    hoverH 3s alternate infinite ease-in-out;\n                }\n              }\n              &:nth-child(6) {\n                z-index: 56;\n                pointer-events: none;\n              }\n            }\n          }\n        }\n      }\n    }\n  ",
+      "note": "Full tag-cloud fixture reviewed: native :is() selectors and use-site placeholder expansion; container, column, font, card-width and gutter values retained. Media ranges use exclusive upper bounds and stay in source order. Do not restore global media/selector packing. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:480px){[b-tpl=tag\\ cloud]{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}}@media (min-width:480px) and (not (min-width:768px)){[b-tpl=tag\\ cloud]{width:100%;max-width:560px;margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}}@media (min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud]{width:100%;max-width:810px;margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}}@media (min-width:1024px) and (not (min-width:1200px)){[b-tpl=tag\\ cloud]{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)){[b-tpl=tag\\ cloud]{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:1.389vw;padding-right:1.389vw}}@media (min-width:1920px){[b-tpl=tag\\ cloud]{width:100%;max-width:1920px;margin-left:auto;margin-right:auto;padding-left:26.6688px;padding-right:26.6688px}}@media (min-width:1024px){[b-tpl=tag\\ cloud]{padding-top:0!important}}@media (min-width:1024px) and (not (min-width:1200px)),(min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)){[b-tpl=tag\\ cloud]{margin-top:-5.714vw!important}}@media (min-width:1920px){[b-tpl=tag\\ cloud]{margin-top:-109.709px!important}}[b-tpl=tag\\ cloud] .inner{align-items:center;display:flex}@media (min-width:768px) and (not (min-width:1024px)),not (min-width:768px){[b-tpl=tag\\ cloud] .inner{flex-direction:column;gap:50px}}[b-tpl=tag\\ cloud] .inner>.tags{display:flex}@media (min-width:1024px) and (not (min-width:1200px)){[b-tpl=tag\\ cloud] .inner>.tags{flex:0 0 calc(41.6667% - 11.6667px);max-width:calc(41.6667% - 11.6667px);position:relative}}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)){[b-tpl=tag\\ cloud] .inner>.tags{flex:0 0 calc(41.6667% - .875vw);max-width:calc(41.6667% - .877vw);position:relative}}@media (min-width:1920px){[b-tpl=tag\\ cloud] .inner>.tags{flex:0 0 calc(41.6667% - 16.8px);max-width:calc(41.6667% - 16.8px);position:relative}}@media (min-width:768px) and (not (min-width:1024px)),not (min-width:480px),(min-width:480px) and (not (min-width:768px)){[b-tpl=tag\\ cloud] .inner>.tags{flex:0 0 100%;max-width:100%;position:relative}}[b-tpl=tag\\ cloud] .inner>.tags{justify-content:center;align-items:center}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner{flex-wrap:wrap;justify-content:center;align-items:center;display:flex}@media (min-width:1024px),(min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud] .inner>.tags .tags-inner{width:400px}}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner{gap:.25em}@media (min-width:768px) and (not (min-width:1024px)),not (min-width:768px){[b-tpl=tag\\ cloud] .inner>.tags .tags-inner{gap:.25em}}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{font-family:ABC Rom Mono,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace}@media not (min-width:480px),(min-width:480px) and (not (min-width:768px)){[b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{font-size:11px;line-height:115%}}@media (min-width:768px) and (not (min-width:1024px)),(min-width:1024px) and (not (min-width:1200px)),(min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)),(min-width:1920px){[b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{font-size:12px;line-height:115%}}@media (min-width:768px){[b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{letter-spacing:.3px}}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{text-transform:uppercase;user-select:none;background-color:#f7f5ed;border:none;border-radius:40px;justify-content:center;align-items:center;gap:10px;height:30px;padding:5px 13px 4px;display:flex;transition:background-color .15s,color .15s!important}:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button) span{transition:transform .15s,color .15s!important}@media (min-width:768px){:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button):hover{color:#fff;background-color:#1f2117}}:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button):hover span{transform:translate(3px);transition:transform .15s,color!important}:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button).active,:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button)[data-active]{color:#fff;background-color:#1f2117}:is(:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button).active,:is([b-tpl=tag\\ cloud] .inner>.tags .tags-inner a,[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button)[data-active]) span{transform:translate(3px);transition:transform .15s,color!important}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button{position:relative;overflow:clip}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button[data-active],[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button:hover{background-color:#000!important}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button span{z-index:1;transform:translate(0)!important}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button .progress{z-index:0;transform-origin:0%;width:100%;height:100%;transition:background-color .25s;position:absolute;top:0;left:0;transform:scaleX(0)}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button .progress.running{background-color:#18306d}[b-tpl=tag\\ cloud] .inner>.tags .tags-inner button .progress.done{background-color:#0000}@media (min-width:1024px) and (not (min-width:1200px)){[b-tpl=tag\\ cloud] .inner>.cases{flex:0 0 calc(58.3333% - 8.33333px);max-width:calc(58.3333% - 8.33333px);position:relative}}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)){[b-tpl=tag\\ cloud] .inner>.cases{flex:0 0 calc(58.3333% - .625vw);max-width:calc(58.3333% - .627vw);position:relative}}@media (min-width:1920px){[b-tpl=tag\\ cloud] .inner>.cases{flex:0 0 calc(58.3333% - 12px);max-width:calc(58.3333% - 12px);position:relative}}@media (min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud] .inner>.cases{flex:0 0 100%;width:100%;max-width:100%;position:relative}}[b-tpl=tag\\ cloud] .inner>.cases .canvas{grid-template-areas:\"stack\";place-items:center;height:100%;display:none;position:relative}@media (min-width:1024px){[b-tpl=tag\\ cloud] .inner>.cases .canvas{aspect-ratio:1}}@media (min-width:768px) and (not (min-width:1024px)),not (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas{padding-bottom:75px}}[b-tpl=tag\\ cloud] .inner>.cases .canvas[data-active]{display:grid}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card{user-select:none;grid-area:stack;max-width:none;position:relative;transform:translateZ(0)}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:hover img{user-select:none;pointer-events:none;transform:none}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card .reveal-tags{pointer-events:all}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card .meta{opacity:0;transition:opacity .5s}@media (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card[data-active]+.case-card .meta{opacity:1}}@media (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card[data-active]+.case-card .meta .button{background-color:#000}}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){z-index:1;transform:translate(0)}@media (min-width:1440px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){width:450px}}@media (min-width:1200px) and (not (min-width:1440px)){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){width:350px}}@media (min-width:1024px) and (not (min-width:1200px)){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){width:325px}}@media (min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){width:290px}}@media not (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){width:150px}}:is([b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:first-child,[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2)) .cover-and-link{animation:1.5s ease-in-out infinite alternate hoverV,2.5s ease-in-out infinite alternate hoverH}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(2){z-index:50;pointer-events:none}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){z-index:2}@media (min-width:1440px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){width:275px}}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1024px) and (not (min-width:1200px)),(min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){width:225px}}@media not (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){width:125px}}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){transform:translate(-100%,15%)}:is([b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(3),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4)) .cover-and-link{animation:4.5s ease-in-out infinite alternate hoverV,2s ease-in-out infinite alternate hoverH}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(4){z-index:51;pointer-events:none}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){z-index:3}@media (min-width:1440px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){width:275px}}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1024px) and (not (min-width:1200px)),(min-width:768px) and (not (min-width:1024px)){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){width:225px}}@media not (min-width:768px){[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){width:125px}}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){transform:translate(85%,-12%)}:is([b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(5),[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6)) .cover-and-link{animation:2.5s ease-in-out infinite alternate hoverV,3s ease-in-out infinite alternate hoverH}[b-tpl=tag\\ cloud] .inner>.cases .canvas .case-card:nth-child(6){z-index:56;pointer-events:none}"
+    },
+    {
+      "id": "rules/basic:14",
+      "title": "it fails on missing breakpoint",
+      "config": 0,
+      "input": "\n    html {\n      @responsive >=desktop_md {\n        @space! width 285px;\n        @space right 25px;\n        @space bottom 25px;\n        @space padding-x 0.4;\n        @space padding-y 0.4;\n\n        left: auto;\n        border-radius: 10px;\n        border: 1px solid var(--brando-color-dark);\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_BREAKPOINT"
+    },
+    {
+      "id": "rules/basic:15",
+      "title": "but works on existing breakpoint",
+      "config": 1,
+      "input": "\n    html {\n      @responsive >=desktop_md {\n        @space! width 285px;\n        @space right 25px;\n        @space bottom 25px;\n        @space padding-x 0.4;\n        @space padding-y 0.4;\n\n        left: auto;\n        border-radius: 10px;\n        border: 1px solid var(--brando-color-dark);\n      }\n    }\n  ",
+      "note": "Declarations following generated padding media remain after them. Equivalent repeated ranges may remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:1200px){html{bottom:25px;right:25px;width:285px!important}@media (min-width:1200px) and (not (min-width:1440px)),(min-width:1440px) and (not (min-width:1920px)){html{padding:.6vw}}@media (min-width:1920px){html{padding:11.52px}}html{border:1px solid var(--brando-color-dark);border-radius:10px;left:auto}}"
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:1",
+      "title": "applies abs100 without breakpoint",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    .element {\n      position: absolute;\n      width: 100%;\n      height: 100%;\n      top: 0;\n      left: 0;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:2",
+      "title": "applies abs100 with important flag",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100!;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    .element {\n      position: absolute !important;\n      width: 100% !important;\n      height: 100% !important;\n      top: 0 !important;\n      left: 0 !important;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:3",
+      "title": "applies abs100 with specific breakpoint",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100 tablet;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 740px) and (width < 1024px) {\n      .element {\n        position: absolute;\n        width: 100%;\n        height: 100%;\n        top: 0;\n        left: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:4",
+      "title": "applies abs100 with breakpoint collection",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100 $desktop;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1024px) {\n      .element {\n        position: absolute;\n        width: 100%;\n        height: 100%;\n        top: 0;\n        left: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:5",
+      "title": "applies abs100 with advanced breakpoint query",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100 >=tablet;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 740px) {\n      .element {\n        width: 100%;\n        height: 100%;\n        position: absolute;\n        top: 0;\n        left: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:6",
+      "title": "applies abs100 inside @responsive",
+      "config": 2,
+      "input": "\n    .element {\n      @responsive tablet {\n        @abs100;\n      }\n    }\n  ",
+      "note": "Use the parent responsive condition once; legacy generated a redundant nested copy. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:740px) and (not (min-width:1024px)){.element{width:100%;height:100%;position:absolute;top:0;left:0}}"
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:7",
+      "title": "fails when @abs100 has children",
+      "config": 2,
+      "input": "\n    .element {\n      @abs100 {\n        color: red;\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:8",
+      "title": "fails when @abs100 is used at root",
+      "config": 2,
+      "input": "\n    @abs100;\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_CONTEXT"
+    },
+    {
+      "id": "rules/substituteAbs100AtRules:9",
+      "title": "fails when @abs100 is nested under @responsive and has breakpoint",
+      "config": 2,
+      "input": "\n    .element {\n      @responsive tablet {\n        @abs100 desktop;\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_RESPONSIVE"
+    },
+    {
+      "id": "rules/substituteAtRuleAliases:1",
+      "title": "aliases @column-offset",
+      "config": 3,
+      "input": "\n    article {\n      @column-offset 1/12;\n    }\n  ",
+      "note": "Same positive fraction formula; equivalent adjacent ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{margin-left:calc(8.33333% - 22.9167px)}}@media (min-width:740px) and (not (min-width:1024px)){article{margin-left:calc(8.33333% - 32.0833px)}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){article{margin-left:calc(8.33333% - 45.8333px)}}@media (min-width:1900px){article{margin-left:calc(8.33333% - 55px)}}"
+    },
+    {
+      "id": "rules/substituteAtRuleAliases:2",
+      "title": "aliases @column-offset negative value",
+      "config": 3,
+      "input": "\n    article {\n      @column-offset -1/12;\n    }\n  ",
+      "note": "Retain the established signed-column formula, not whole-width negation. Equivalent ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{margin-left:calc(-8.33333% - 27.0833px)}}@media (min-width:740px) and (not (min-width:1024px)){article{margin-left:calc(-8.33333% - 37.9167px)}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){article{margin-left:calc(-8.33333% - 54.1667px)}}@media (min-width:1900px){article{margin-left:calc(-8.33333% - 65px)}}"
+    },
+    {
+      "id": "rules/substituteAtRuleAliases:3",
+      "title": "aliases @column-offset for single bp",
+      "config": 3,
+      "input": "\n    article {\n      @column-offset 1/12 xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        margin-left: calc(8.33333% - 22.9167px);\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:1",
+      "title": "parses @color",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green.dark;\n      @color bg green.light;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #22AA22;\n      background-color: #AAFFAA;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:2",
+      "title": "parses @color! as !important",
+      "config": 4,
+      "input": "\n    article {\n      @color! fg green.dark;\n      @color! bg green.light;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #22AA22 !important;\n      background-color: #AAFFAA !important;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:3",
+      "title": "parses @color w/number key",
+      "config": 4,
+      "input": "\n    article {\n      @color fg gray.100;\n      @color bg gray.200;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #111111;\n      background-color: #222222;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:4",
+      "title": "parses @color w/deep key",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green.test.one;\n      @color bg green.test.two;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #ffffff;\n      background-color: #000000;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:5",
+      "title": "parses @color w/deep key inside @responsive",
+      "config": 4,
+      "input": "\n    article {\n      @responsive $desktop {\n        @color fg green.test.one;\n        @color bg green.test.two;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (min-width: 1024px) {\n      article {\n        color: #ffffff;\n        background-color: #000000\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:6",
+      "title": "parses @color with single breakpoint",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green.dark desktop;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1024px) {\n      article {\n        color: #22AA22;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:7",
+      "title": "parses @color with breakpoint collection",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green.dark $lg;\n      @color bg green.light $sm;\n    }\n  ",
+      "note": "One contiguous range per collection; preserve directive order. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:1024px){article{color:#2a2}}@media not (min-width:1024px){article{background-color:#afa}}"
+    },
+    {
+      "id": "rules/substituteColorAtRules:8",
+      "title": "parses @color with range query (>=)",
+      "config": 4,
+      "input": "\n    article {\n      @color bg green.light >=tablet;\n    }\n  ",
+      "note": "A contiguous comparison query is one range. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:740px){article{background-color:#afa}}"
+    },
+    {
+      "id": "rules/substituteColorAtRules:9",
+      "title": "parses @color with range query (<=)",
+      "config": 4,
+      "input": "\n    article {\n      @color fg gray.100 <=tablet;\n    }\n  ",
+      "note": "A contiguous comparison query is one range. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:1024px){article{color:#111}}"
+    },
+    {
+      "id": "rules/substituteColorAtRules:10",
+      "title": "parses @color with multiple breakpoints (slash-separated)",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green.dark mobile/desktop;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        color: #22AA22;\n      }\n    }\n\n    @media (width >= 1024px) {\n      article {\n        color: #22AA22;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:11",
+      "title": "parses @color! with breakpoints as !important",
+      "config": 4,
+      "input": "\n    article {\n      @color! fg green.dark desktop;\n      @color! bg green.light $sm;\n    }\n  ",
+      "note": "Preserve importance and directive order; one contiguous range per collection. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:1024px){article{color:#2a2!important}}@media not (min-width:1024px){article{background-color:#afa!important}}"
+    },
+    {
+      "id": "rules/substituteColorAtRules:12",
+      "title": "throws error when @color has breakpoint query inside @responsive",
+      "config": 4,
+      "input": "\n    article {\n      @responsive $lg {\n        @color fg green.dark desktop;\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_RESPONSIVE"
+    },
+    {
+      "id": "rules/substituteColorAtRules:13",
+      "title": "parses @color with var() without fallback",
+      "config": 4,
+      "input": "\n    article {\n      @color fg var(--baseColor3);\n      @color bg var(--bgColor);\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: var(--baseColor3);\n      background-color: var(--bgColor);\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:14",
+      "title": "parses @color with var() with fallback",
+      "config": 4,
+      "input": "\n    article {\n      @color fg var(--baseColor3, #edae70);\n      @color bg var(--bgColor, rgba(255, 255, 255, 0.5));\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: var(--baseColor3, #edae70);\n      background-color: var(--bgColor, rgba(255, 255, 255, 0.5));\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:15",
+      "title": "parses @color with var() and breakpoint query",
+      "config": 4,
+      "input": "\n    article {\n      @color fg var(--baseColor3, #edae70) desktop;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1024px) {\n      article {\n        color: var(--baseColor3, #edae70);\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:16",
+      "title": "parses @color with slash notation",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green/dark;\n      @color bg green/light;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #22AA22;\n      background-color: #AAFFAA;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:17",
+      "title": "parses @color with slash notation for deep keys",
+      "config": 4,
+      "input": "\n    article {\n      @color fg green/test/one;\n      @color bg green/test/two;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #ffffff;\n      background-color: #000000;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:18",
+      "title": "parses @color with slash notation for number keys",
+      "config": 4,
+      "input": "\n    article {\n      @color fg gray/100;\n      @color bg gray/200;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #111111;\n      background-color: #222222;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColorAtRules:19",
+      "title": "parses @color! with var() as !important",
+      "config": 4,
+      "input": "\n    article {\n      @color! fg var(--baseColor3, #edae70);\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: var(--baseColor3, #edae70) !important;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:1",
+      "title": "fails on root",
+      "config": 3,
+      "input": "\n    @column 3/4;\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_CONTEXT"
+    },
+    {
+      "id": "rules/substituteColumnAtRules:2",
+      "title": "parses regular @column",
+      "config": 5,
+      "input": "\n    article {\n      @column 3/4;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 5px);\n        max-width: calc(75% - 5px)\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 7.5px);\n        max-width: calc(75% - 7.5px)\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 12.5px);\n        max-width: calc(75% - 12.5px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:3",
+      "title": "parses vw @column",
+      "config": 6,
+      "input": "\n    article {\n      @column 3/4;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 0.5vw);\n        max-width: calc(75% - 0.502vw)\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 0.5vw);\n        max-width: calc(75% - 0.502vw)\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 5.12px);\n        max-width: calc(75% - 5.12px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:4",
+      "title": "parses calc()ed @column",
+      "config": 5,
+      "input": "\n    article {\n      @column calc(100vw - var[3/4]);\n    }\n  ",
+      "note": "Equivalent grouped subtraction normalizes as addition of a negative percentage; retain 0.002vw maximum adjustment. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{flex:0 0 calc(100vw + -75% + 5px);max-width:calc(99.998vw + -75% + 5px);position:relative}}@media (min-width:740px) and (not (min-width:1024px)){article{flex:0 0 calc(100vw + -75% + 7.5px);max-width:calc(99.998vw + -75% + 7.5px);position:relative}}@media (min-width:1024px){article{flex:0 0 calc(100vw + -75% + 12.5px);max-width:calc(99.998vw + -75% + 12.5px);position:relative}}"
+    },
+    {
+      "id": "rules/substituteColumnAtRules:5",
+      "title": "parses regular @column + gutter",
+      "config": 5,
+      "input": "\n    article {\n      @column 3:1/4;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 15px);\n        max-width: calc(75% + 15px)\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 22.5px);\n        max-width: calc(75% + 22.5px)\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 37.5px);\n        max-width: calc(75% + 37.5px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:6",
+      "title": "parses regular @column + half gutter",
+      "config": 5,
+      "input": "\n    article {\n      @column 3:0.5/4;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 5px);\n        max-width: calc(75% + 5px)\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 7.5px);\n        max-width: calc(75% + 7.5px)\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% + 12.5px);\n        max-width: calc(75% + 12.5px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:7",
+      "title": "parses regular @column + gutter + total gutter",
+      "config": 5,
+      "input": "\n    article {\n      @column 10:1/12;\n      .inner {\n        @column 2/10:1;\n      }\n\n      .inner2 {\n        @column 2:1/10:1;\n      }\n\n      .inner3 {\n        @column 10/10:1;\n      }\n\n      .inner4 {\n        @column 10:1/10:1;\n      }\n    }\n  ",
+      "note": "Same numerator/denominator gutter formulas; nested selectors keep their authored position instead of global media packing. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{flex:0 0 calc(83.3333% + 16.6667px);max-width:calc(83.3333% + 16.6667px);position:relative}}@media (min-width:740px) and (not (min-width:1024px)){article{flex:0 0 calc(83.3333% + 25px);max-width:calc(83.3333% + 25px);position:relative}}@media (min-width:1024px){article{flex:0 0 calc(83.3333% + 41.6667px);max-width:calc(83.3333% + 41.6667px);position:relative}}@media not (min-width:740px){article .inner{flex:0 0 calc(20% - 20px);max-width:calc(20% - 20px);position:relative}}@media (min-width:740px) and (not (min-width:1024px)){article .inner{flex:0 0 calc(20% - 30px);max-width:calc(20% - 30px);position:relative}}@media (min-width:1024px){article .inner{flex:0 0 calc(20% - 50px);max-width:calc(20% - 50px);position:relative}}@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)),(min-width:1024px){article .inner2{flex:0 0 20%;max-width:20%;position:relative}}@media not (min-width:740px){article .inner3{flex:0 0 calc(100% - 20px);max-width:calc(100% - 20px);position:relative}}@media (min-width:740px) and (not (min-width:1024px)){article .inner3{flex:0 0 calc(100% - 30px);max-width:calc(100% - 30px);position:relative}}@media (min-width:1024px){article .inner3{flex:0 0 calc(100% - 50px);max-width:calc(100% - 50px);position:relative}}@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)),(min-width:1024px){article .inner4{flex:0 0 100%;max-width:100%;position:relative}}"
+    },
+    {
+      "id": "rules/substituteColumnAtRules:8",
+      "title": "fails on old format",
+      "config": 3,
+      "input": "\n    article {\n      @column 3/4@xs;\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteColumnAtRules:9",
+      "title": "parses @column for single bp",
+      "config": 5,
+      "input": "\n    article {\n      @column 3/4 xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 5px);\n        max-width: calc(75% - 5px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:10",
+      "title": "parses multiple @column for different bp",
+      "config": 3,
+      "input": "\n    article {\n      @column 3/4 xs;\n      @column 3/5 sm;\n      @column 1/1 md;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(75% - 6.25px);\n        max-width: calc(75% - 6.25px)\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(60% - 14px);\n        max-width: calc(60% - 14px)\n      }\n    }\n    @media (min-width: 1024px) and (width < 1399px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: 100%;\n        max-width: 100%\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:11",
+      "title": "runs correctly inside @responsive",
+      "config": 5,
+      "input": "\n    article {\n      @responsive xs {\n        @column 2/4;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        flex: 0 0 calc(50% - 10px);\n        max-width: calc(50% - 10px);\n        position: relative;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:12",
+      "title": "runs nested under advanced breakpoint",
+      "config": 7,
+      "input": "\n    article {\n      @responsive >=md {\n        @column 2:1/4;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1024px) {\n      @media (width >= 1024px) and (width < 1250px) {\n        article {\n          flex: 0 0 calc(50% + 25px);\n          max-width: calc(50% + 25px);\n          position: relative;\n        }\n      }\n      @media (width >= 1250px) and (width < 1920px) {\n        article {\n          flex: 0 0 calc(50% + 35px);\n          max-width: calc(50% + 35px);\n          position: relative;\n        }\n      }\n      @media (width >= 1920px) {\n        article {\n          flex: 0 0 calc(50% + 45px);\n          max-width: calc(50% + 45px);\n          position: relative;\n        }\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:13",
+      "title": "runs with advanced breakpoint",
+      "config": 7,
+      "input": "\n    article {\n      @column 2:1/4 >=md;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (min-width: 1024px) and (width < 1250px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% + 25px);\n        max-width: calc(50% + 25px)\n      }\n    }\n    @media (min-width: 1250px) and (width < 1920px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% + 35px);\n        max-width: calc(50% + 35px)\n      }\n    }\n    @media (min-width: 1920px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% + 45px);\n        max-width: calc(50% + 45px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:14",
+      "title": "runs with gutters and breakpoint",
+      "config": 5,
+      "input": "\n    article {\n      @column 2:1/4 xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% + 10px);\n        max-width: calc(50% + 10px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:15",
+      "title": "fails inside @responsive with own breakpointQuery",
+      "config": 3,
+      "input": "\n    article {\n      @responsive xs {\n        @column 2/4 sm;\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_RESPONSIVE"
+    },
+    {
+      "id": "rules/substituteColumnAtRules:16",
+      "title": "parses 12/12",
+      "config": 5,
+      "input": "\n    article {\n      @column 12/12;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: 100%;\n        max-width: 100%\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: 100%;\n        max-width: 100%\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: 100%;\n        max-width: 100%\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteColumnAtRules:17",
+      "title": "parses properly with multiple @column in a row",
+      "config": 5,
+      "input": "\n    article {\n      @column 12/12 xs;\n      @column 6/12 sm/md;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: 100%;\n        max-width: 100%\n      }\n    }\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% - 15px);\n        max-width: calc(50% - 15px)\n      }\n    }\n    @media (min-width: 1024px) {\n      article {\n        position: relative;\n        flex-grow: 0;\n        flex-shrink: 0;\n        flex-basis: calc(50% - 25px);\n        max-width: calc(50% - 25px)\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:1",
+      "title": "fails on root",
+      "config": 3,
+      "input": "\n    @space container;\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_CONTEXT"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:2",
+      "title": "parses @space container with no other decls",
+      "config": 3,
+      "input": "\n    article {\n      @space container;\n    }\n  ",
+      "note": "Same container values; equivalent adjacent ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding-left:15px;padding-right:15px}}@media (min-width:740px) and (not (min-width:1024px)){article{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:35px;padding-right:35px}}@media (min-width:1024px) and (not (min-width:1399px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}@media (min-width:1399px) and (not (min-width:1900px)),(min-width:1900px){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:100px;padding-right:100px}}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:3",
+      "title": "parses container with other decls",
+      "config": 3,
+      "input": "\n    article {\n      @space container;\n      background-color: red;\n      padding-bottom: 50px;\n    }\n  ",
+      "note": "Authored declarations remain after the container expansion. Equivalent ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding-left:15px;padding-right:15px}}@media (min-width:740px) and (not (min-width:1024px)){article{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:35px;padding-right:35px}}@media (min-width:1024px) and (not (min-width:1399px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}@media (min-width:1399px) and (not (min-width:1900px)),(min-width:1900px){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:100px;padding-right:100px}}article{background-color:red;padding-bottom:50px}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:4",
+      "title": "parses @space container with vws and setMax",
+      "config": 8,
+      "input": "\n    article {\n      @space container;\n    }\n  ",
+      "note": "4vw caps at 40.96px at the 1024px maximum. Equivalent lower ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:4vw;padding-right:4vw}}@media (min-width:1024px){article{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:40.96px;padding-right:40.96px}}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:5",
+      "title": "parses @space container with vws without setMax",
+      "config": 9,
+      "input": "\n    article {\n      @space container;\n    }\n  ",
+      "note": "setMaxForVw:false retains 4vw at desktop. Equivalent lower ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:4vw;padding-right:4vw}}@media (min-width:1024px){article{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:4vw;padding-right:4vw}}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:6",
+      "title": "parses @space container for specific breakpoints",
+      "config": 3,
+      "input": "\n    article {\n      @space container xs/sm/xl;\n      background-color: red;\n      padding-bottom: 50px;\n    }\n  ",
+      "note": "Authored background and bottom padding follow container output. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding-left:15px;padding-right:15px}}@media (min-width:740px) and (not (min-width:1024px)){article{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:35px;padding-right:35px}}@media (min-width:1900px){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:100px;padding-right:100px}}article{background-color:red;padding-bottom:50px}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:7",
+      "title": "runs correctly inside @responsive",
+      "config": 3,
+      "input": "\n    article {\n      @responsive xs {\n        @space container;\n      }\n\n      background-color: red;\n      padding-bottom: 50px;\n    }\n  ",
+      "note": "No duplicated parent media condition; later authored declarations remain later. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){article{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding-left:15px;padding-right:15px}}article{background-color:red;padding-bottom:50px}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:8",
+      "title": "parses @container for specific breakpoints",
+      "config": 3,
+      "input": "\n    article {\n      @space container xs;\n      @space container sm;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px){\n    article{\n      padding-left: 15px;\n      padding-right: 15px;\n      max-width: 740px;\n      margin-left: auto;\n      margin-right: auto;\n      width: 100%\n    }\n  }\n  @media (min-width: 740px) and (width < 1024px){\n    article{\n      padding-left: 35px;\n      padding-right: 35px;\n      max-width: 1024px;\n      margin-left: auto;\n      margin-right: auto;\n      width: 100%\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:9",
+      "title": "parses @space container with \"*\" padding and minimum",
+      "config": 10,
+      "input": "\n    article {\n      @space container lg;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (min-width: 1440px) {\n      article {\n        padding-left: max(30px, calc((100vw - 1372px) / 2));\n        padding-right: max(30px, calc((100vw - 1372px) / 2));\n        width: 100vw;\n        margin-left: 0;\n        margin-right: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:10",
+      "title": "parses @space container with \"*\" padding and dpx minimum",
+      "config": 11,
+      "input": "\n    article {\n      @space container lg;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (min-width: 1440px) {\n      article {\n        padding-left: max(calc(2.77778vw * var(--ec-zoom)), calc((100vw - 1372px) / 2));\n        padding-right: max(calc(2.77778vw * var(--ec-zoom)), calc((100vw - 1372px) / 2));\n        width: 100vw;\n        margin-left: 0;\n        margin-right: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:11",
+      "title": "parses @space container with \"*\" padding for dynamic viewport-edge padding",
+      "config": 12,
+      "input": "\n    article {\n      @space container lg;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (min-width: 1440px) {\n      article {\n        padding-left: calc((100vw - 1372px) / 2);\n        padding-right: calc((100vw - 1372px) / 2);\n        width: 100vw;\n        margin-left: 0;\n        margin-right: 0;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:12",
+      "title": "parses @space container with >= operator correctly",
+      "config": 13,
+      "input": "\n    article {\n      @space container >=ipad_portrait;\n    }\n  ",
+      "note": "Same container values; equivalent 1024\u20131560px interval can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:768px) and (not (min-width:1024px)){article{width:100%;max-width:810px;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}@media (min-width:1024px) and (not (min-width:1200px)),(min-width:1200px) and (not (min-width:1560px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:30px;padding-right:30px}}@media (min-width:1560px) and (not (min-width:1920px)){article{width:100%;max-width:1860px;margin-left:auto;margin-right:auto;padding-left:30px;padding-right:30px}}@media (min-width:1920px){article{width:100%;max-width:1920px;margin-left:auto;margin-right:auto;padding-left:30px;padding-right:30px}}"
+    },
+    {
+      "id": "rules/substituteContainerAtRules:13",
+      "title": "parses @space container with breakpoint collection correctly",
+      "config": 14,
+      "input": "\n    article {\n      @space container $lg;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1560px) and (width < 1920px) {\n      article {\n        padding-left: 30px;\n        padding-right: 30px;\n        max-width: 1860px;\n        margin-left: auto;\n        margin-right: auto;\n        width: 100%;\n      }\n    }\n    @media (width >= 1920px) {\n      article {\n        padding-left: 30px;\n        padding-right: 30px;\n        max-width: 1920px;\n        margin-left: auto;\n        margin-right: auto;\n        width: 100%;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteContainerAtRules:14",
+      "title": "optimizes @space container when multiple breakpoints have identical settings",
+      "config": 15,
+      "input": "\n    article {\n      @space container >=xs;\n    }\n  ",
+      "note": "Same container values; equivalent intervals below 1440px can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)),(min-width:1024px) and (not (min-width:1440px)){article{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:20px;padding-right:20px}}@media (min-width:1440px){article{width:100%;max-width:1440px;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}"
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:1",
+      "title": "parses @display",
+      "config": 3,
+      "input": "\n    article {\n      @display flex;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      display: flex;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:2",
+      "title": "parses @display under @responsive",
+      "config": 3,
+      "input": "\n    article {\n      @responsive xs {\n        @display flex;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    article {\n      display: flex\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:3",
+      "title": "parses @display as child under @responsive",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @responsive xs {\n          @display flex;\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    .inner article {\n      display: flex\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:4",
+      "title": "parses @display as nested child under @responsive",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @responsive xs {\n          figure {\n            @display flex;\n          }\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    .inner article figure {\n      display: flex\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:5",
+      "title": "parses @display w/ advanced bpQuery",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @display flex $desktop\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (min-width: 1024px) {\n    .inner article {\n      display: flex\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:6",
+      "title": "parses @display w/ advanced bpQuery and flex dir params",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @display flex/row $desktop\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (min-width: 1024px) {\n    .inner article {\n      display: flex;\n      flex-direction: row\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:7",
+      "title": "parses @display w/ advanced bpQuery and flex dir and wrap params",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @display flex/row/wrap $desktop\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (min-width: 1024px) {\n    .inner article {\n      display: flex;\n      flex-direction: row;\n      flex-wrap: wrap\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteDisplayAtRules:8",
+      "title": "parses multiple @display w/ advanced bpQuery and flex dir and wrap params",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @display flex/row/wrap $desktop;\n        @display flex/column/nowrap $mobile;\n      }\n    }\n  ",
+      "note": "Preserve desktop-then-mobile author order, flex direction and wrapping. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:1024px){.inner article{flex-flow:wrap;display:flex}}@media not (min-width:740px){.inner article{flex-flow:column;display:flex}}"
+    },
+    {
+      "id": "rules/substituteEmbedResponsiveAtRules:1",
+      "title": "parses @embed-responsive",
+      "config": 3,
+      "input": "\n    article {\n      background-color: green;\n      @embed-responsive 16/9;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      background-color: green;\n      position: relative;\n      width: 100%;\n    }\n    article::before {\n      content: \"\";\n      padding-top: 56.25%;\n      display: block;\n    }\n    article iframe,\n      article embed,\n      article object,\n      article video {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      border: 0;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteEuropaAtRules:1",
+      "title": "imports @europa base",
+      "config": 3,
+      "input": "\n    @europa base;\n  ",
+      "note": "Assert bundle behavior and variables; normalized license comments are covered by bundles.rs, not minified formatting.",
+      "contains": [
+        "BlinkMacSystemFont",
+        "font-size:18px",
+        "--font-base-px:18px",
+        "--font-base-vw:18px",
+        "--breakpoint-xs:0",
+        "--breakpoint-sm:740px",
+        "--breakpoint-md:1024px",
+        "--breakpoint-lg:1399px",
+        "--breakpoint-xl:1900px",
+        "--grid-gutter:25px",
+        "box-sizing:border-box"
+      ]
+    },
+    {
+      "id": "rules/substituteEuropaAtRules:2",
+      "title": "imports @europa arrows",
+      "config": 3,
+      "input": "\n    @europa arrows;\n  ",
+      "note": "Backend simplifies calc(5px * -1) to -5px.",
+      "contains": [
+        "translateY(-5px)translate(5px)"
+      ]
+    },
+    {
+      "id": "rules/substituteFontAtRules:1",
+      "title": "parses @font",
+      "config": 3,
+      "input": "\n    article {\n      @font serif;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      font-family: Georgia,Cambria,\"Times New Roman\",Times,serif;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:2",
+      "title": "parses @font inside @responsive",
+      "config": 3,
+      "input": "\n    article {\n      @responsive xs {\n        @font serif;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    article {\n      font-family: Georgia,Cambria,\"Times New Roman\",Times,serif\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:3",
+      "title": "parses @font with size",
+      "config": 3,
+      "input": "\n    article {\n      @font serif xs;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      font-family: Georgia, Cambria, Times New Roman, Times, serif;\n    }\n    @media (width < 740px) {\n      article {\n        font-size: 12px;\n      }\n    }\n    @media (width >= 740px) and (width < 1024px) {\n      article {\n        font-size: 12px;\n      }\n    }\n    @media (width >= 1024px) and (width < 1399px) {\n      article {\n        font-size: 12px;\n      }\n    }\n    @media (width >= 1399px) and (width < 1900px) {\n      article {\n        font-size: 12px;\n      }\n    }\n    @media (width >= 1900px) {\n      article {\n        font-size: 14px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:4",
+      "title": "parses @font with size and breakpoints",
+      "config": 3,
+      "input": "\n    article {\n      @font serif xs/1.53 >=lg;\n      @font serif sm(1.2)/1.53 <=sm;\n    }\n  ",
+      "note": "Each font directive expands in place; preserve its family declaration before its scoped size. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{font-family:Georgia,Cambria,Times New Roman,Times,serif}@media (min-width:1399px) and (not (min-width:1900px)){article{font-size:12px;line-height:1.53}}@media (min-width:1900px){article{font-size:14px;line-height:1.53}}article{font-family:Georgia,Cambria,Times New Roman,Times,serif}@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)){article{font-size:16.8px;line-height:1.53}}"
+    },
+    {
+      "id": "rules/substituteFontAtRules:5",
+      "title": "parses hierarchical @font with slash notation",
+      "config": 16,
+      "input": "\n    article {\n      @font body/regular;\n    }\n    h1 {\n      @font header/display;\n    }\n    strong {\n      @font body/strong;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      font-family: Helvetica,Arial,sans-serif;\n    }\n    h1 {\n      font-family: Georgia,Times,serif;\n    }\n    strong {\n      font-family: Helvetica Neue,Arial,sans-serif;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:6",
+      "title": "parses hierarchical @font with size",
+      "config": 17,
+      "input": "\n    h1 {\n      @font header/display header/large;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    h1 {\n      font-family: Georgia,Times,serif;\n    }\n    @media (width < 740px) {\n      h1 {\n        font-size: 24px;\n      }\n    }\n    @media (width >= 740px) and (width < 1024px) {\n      h1 {\n        font-size: 28px;\n      }\n    }\n    @media (width >= 1024px) {\n      h1 {\n        font-size: 32px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:7",
+      "title": "supports slash notation path traversal for @font",
+      "config": 18,
+      "input": "\n    article {\n      @font body/regular;\n    }\n    h1 {\n      @font header/display;\n    }\n    strong {\n      @font body/strong;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      font-family: Helvetica,Arial,sans-serif;\n    }\n    h1 {\n      font-family: Georgia,Times,serif;\n    }\n    strong {\n      font-family: Helvetica Neue,Arial,sans-serif;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:8",
+      "title": "prioritizes literal string keys over path traversal for @font",
+      "config": 19,
+      "input": "\n    article {\n      @font body/regular;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      font-family: Custom Font,Arial,sans-serif;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteFontAtRules:9",
+      "title": "parses @font with size in pixels and breakpoints",
+      "config": 3,
+      "input": "\n    article {\n      @font serif 18px/1.25 >=lg;\n    }\n  ",
+      "note": "A literal font size uses one contiguous >=lg range. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{font-family:Georgia,Cambria,Times New Roman,Times,serif}@media (min-width:1399px){article{font-size:18px;line-height:1.25}}"
+    },
+    {
+      "id": "rules/substituteGridAtRules:1",
+      "title": "sets column gap and display grid",
+      "config": 3,
+      "input": "\n    article {\n      @grid;\n      color: blue;\n    }\n  ",
+      "note": "Grid/gutter expansion precedes authored color; equivalent gutter ranges can remain a union. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "article{grid-template-columns:repeat(12,1fr);display:grid}@media not (min-width:740px){article{grid-column-gap:25px}}@media (min-width:740px) and (not (min-width:1024px)){article{grid-column-gap:35px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){article{grid-column-gap:50px}}@media (min-width:1900px){article{grid-column-gap:60px}}article{color:#00f}"
+    },
+    {
+      "id": "rules/substituteIfAtRules:1",
+      "title": "parses @if when true",
+      "config": 20,
+      "input": "\n    article {\n      @if theme.typography.optimizeLegibility {\n        text-rendering: optimizeLegibility;\n        -webkit-font-smoothing: antialiased;\n        -moz-osx-font-smoothing: grayscale;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      text-rendering: optimizeLegibility;\n      -webkit-font-smoothing: antialiased;\n      -moz-osx-font-smoothing: grayscale\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIfAtRules:2",
+      "title": "parses @if when false",
+      "config": 21,
+      "input": "\n    article {\n      @if theme.typography.optimizeLegibility {\n        text-rendering: optimizeLegibility;\n        -webkit-font-smoothing: antialiased;\n        -moz-osx-font-smoothing: grayscale;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIfAtRules:3",
+      "title": "parses @if from root level when true",
+      "config": 20,
+      "input": "\n    @if theme.typography.optimizeLegibility {\n      article {\n        text-rendering: optimizeLegibility;\n        -webkit-font-smoothing: antialiased;\n        -moz-osx-font-smoothing: grayscale;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      text-rendering: optimizeLegibility;\n      -webkit-font-smoothing: antialiased;\n      -moz-osx-font-smoothing: grayscale;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIfAtRules:4",
+      "title": "parses @if from root level when false",
+      "config": 21,
+      "input": "\n    @if theme.typography.optimizeLegibility {\n      article {\n        text-rendering: optimizeLegibility;\n        -webkit-font-smoothing: antialiased;\n        -moz-osx-font-smoothing: grayscale;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": ""
+    },
+    {
+      "id": "rules/substituteIterateAtRules:1",
+      "title": "parses @iterate",
+      "config": 22,
+      "input": "\n    article {\n      @iterate theme.spacing.md {\n        @responsive $key {\n          margin-bottom: $value;\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        margin-bottom: 25px\n      }\n    }\n\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        margin-bottom: 50px\n      }\n    }\n\n    @media (min-width: 1024px) {\n      article {\n        margin-bottom: 75px\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIterateAtRules:2",
+      "title": "parses @iterate in context",
+      "config": 22,
+      "input": "\n    article {\n      margin-top: 100px;\n      @iterate theme.spacing.md {\n        @responsive $key {\n          margin-bottom: $value;\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      margin-top: 100px\n    }\n\n    @media (width < 740px) {\n      article {\n        margin-bottom: 25px\n      }\n    }\n\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        margin-bottom: 50px\n      }\n    }\n\n    @media (min-width: 1024px) {\n      article {\n        margin-bottom: 75px\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIterateAtRules:3",
+      "title": "parses @iterate as decls",
+      "config": 22,
+      "input": "\n    :root {\n      @iterate theme.breakpoints {\n        --breakpoint-$key: $value\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    :root {\n      --breakpoint-xs: 0;\n      --breakpoint-sm: 740px;\n      --breakpoint-md: 1024px\n    }\n  "
+    },
+    {
+      "id": "rules/substituteIterateAtRules:4",
+      "title": "fails without children",
+      "config": 3,
+      "input": "\n  body article .test {\n      font-size: 18px;\n      color: red;\n\n      @iterate;\n    }\n    ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteIterateAtRules:5",
+      "title": "fails without params",
+      "config": 3,
+      "input": "\n  body article .test {\n    font-size: 18px;\n    color: red;\n\n    @iterate {\n      font-size: 55px;\n    }\n  }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteIterateAtRules:6",
+      "title": "switches out $key as decl value",
+      "config": 22,
+      "input": "\n    i.dbg {\n      position: fixed;\n\n      &:after {\n        text-align: center;\n\n        @iterate theme.breakpoints {\n          @responsive $key {\n            content: '$key';\n          }\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    i.dbg {\n      position: fixed;\n    }\n\n    i.dbg:after {\n      text-align: center\n    }\n\n    @media (width < 740px) {\n      i.dbg:after {\n        content: 'xs';\n      }\n    }\n\n    @media (min-width: 740px) and (width < 1024px) {\n      i.dbg:after {\n        content: 'sm';\n      }\n    }\n\n    @media (min-width: 1024px) {\n      i.dbg:after {\n        content: 'md';\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteOrderAtRules:1",
+      "title": "parses @order",
+      "config": 3,
+      "input": "\n    article {\n      @order 1;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      order: 1;\n    }\n  "
+    },
+    {
+      "id": "rules/substituteOrderAtRules:2",
+      "title": "parses @order under @responsive",
+      "config": 3,
+      "input": "\n    article {\n      @responsive xs {\n        @order 1;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    article {\n      order: 1\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteOrderAtRules:3",
+      "title": "parses @order as child under @responsive",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @responsive xs {\n          @order 1;\n        }\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (width < 740px) {\n    .inner article {\n      order: 1\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteOrderAtRules:4",
+      "title": "parses @order w/ advanced bpQuery",
+      "config": 3,
+      "input": "\n    .inner {\n      article {\n        @order 1 $desktop\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n  @media (min-width: 1024px) {\n    .inner article {\n      order: 1\n    }\n  }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:1",
+      "title": "parses @responsive for single breakpoint",
+      "config": 3,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      color: red;\n\n      @responsive xs {\n        color: yellow;\n        font-size: 15px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    body article .test {\n      font-size: 18px;\n      color: red\n    }\n\n    @media (width < 740px) {\n      body article .test {\n        color: yellow;\n        font-size: 15px\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:2",
+      "title": "parses @responsive for single breakpoint eq or down",
+      "config": 3,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      color: red;\n\n      @responsive <=sm {\n        color: yellow;\n        font-size: 15px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    body article .test {\n      font-size: 18px;\n      color: red\n    }\n\n    @media (width < 1024px) {\n      body article .test {\n        color: yellow;\n        font-size: 15px\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:3",
+      "title": "parses @responsive for multiple breakpoints",
+      "config": 3,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      color: red;\n\n      @responsive xs/sm/xl {\n        color: yellow;\n        font-size: 15px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    body article .test {\n      font-size: 18px;\n      color: red\n    }\n\n    @media (width < 1024px), (min-width: 1900px) {\n      body article .test {\n        color: yellow;\n        font-size: 15px\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:4",
+      "title": "parses multiple @responsive within same rule",
+      "config": 3,
+      "input": "\n    article {\n      width: 90%;\n      background-color: black;\n\n      @responsive xs/sm {\n        width: 100%;\n      }\n\n      @responsive >sm {\n        width: 80%;\n      }\n\n      @responsive >=md {\n        display: flex;\n        flex-direction: row;\n      }\n\n      @responsive xl {\n        background-color: yellow;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      width: 90%;\n      background-color: black\n    }\n\n    @media (width < 1024px) {\n      article {\n        width: 100%\n      }\n    }\n\n    @media (min-width: 1024px) {\n      article {\n        width: 80%\n      }\n    }\n\n    @media (min-width: 1024px) {\n      article {\n        display: flex;\n        flex-direction: row\n      }\n    }\n\n    @media (min-width: 1900px) {\n      article {\n        background-color: yellow\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:5",
+      "title": "can run from root",
+      "config": 3,
+      "input": "\n    @responsive xs {\n      .alert-yellow {\n        color: yellow;\n      }\n\n      .alert-red {\n        color: red;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      .alert-yellow {\n        color: yellow;\n      }\n      .alert-red {\n        color: red;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:6",
+      "title": "can run multiple from root",
+      "config": 3,
+      "input": "\n    @responsive xs {\n      .alert-yellow {\n        color: yellow;\n      }\n\n      .alert-red {\n        color: red;\n      }\n    }\n\n    @responsive sm {\n      .alert-yellow {\n        display: none;\n      }\n\n      .alert-red {\n        display: none;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      .alert-yellow {\n        color: yellow;\n      }\n      .alert-red {\n        color: red;\n      }\n    }\n\n    @media (min-width: 740px) and (width < 1024px) {\n      .alert-yellow {\n        display: none;\n      }\n      .alert-red {\n        display: none;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:7",
+      "title": "fails without children",
+      "config": 3,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      color: red;\n\n      @responsive;\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:8",
+      "title": "fails without params",
+      "config": 3,
+      "input": "\n    body article .test {\n      font-size: 18px;\n      color: red;\n\n      @responsive {\n        font-size: 55px;\n      }\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_ARGUMENTS"
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:9",
+      "title": "parses advanced nesting",
+      "config": 3,
+      "input": "\n    header[data-nav] {\n      @space container;\n      @unpack theme.header.padding.large;\n\n      nav {\n        color: pink;\n        figure {\n          &.brand {\n            z-index: 5;\n\n            @responsive <=sm {\n              align-items: flex-start;\n            }\n\n            svg {\n              @unpack theme.typography.sections.navigation;\n            }\n          }\n        }\n      }\n    }\n  ",
+      "note": "Container and unpack expansions remain at their authored positions. Values and scoped typography retained; do not globally regroup rules. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px){header[data-nav]{width:100%;max-width:740px;margin-left:auto;margin-right:auto;padding:15px}}@media (min-width:740px) and (not (min-width:1024px)){header[data-nav]{width:100%;max-width:1024px;margin-left:auto;margin-right:auto;padding-left:35px;padding-right:35px}}@media (min-width:1024px) and (not (min-width:1399px)){header[data-nav]{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:50px;padding-right:50px}}@media (min-width:1399px) and (not (min-width:1900px)),(min-width:1900px){header[data-nav]{width:100%;max-width:100%;margin-left:auto;margin-right:auto;padding-left:100px;padding-right:100px}}@media (min-width:740px) and (not (min-width:1024px)),(min-width:1024px) and (not (min-width:1399px)){header[data-nav]{padding-top:40px;padding-bottom:40px}}@media (min-width:1399px) and (not (min-width:1900px)){header[data-nav]{padding-top:70px;padding-bottom:70px}}@media (min-width:1900px){header[data-nav]{padding-top:80px;padding-bottom:80px}}header[data-nav] nav{color:pink}header[data-nav] nav figure.brand{z-index:5}@media not (min-width:1024px){header[data-nav] nav figure.brand{align-items:flex-start}}@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)){header[data-nav] nav figure.brand svg{letter-spacing:.12rem;font-size:17px;line-height:17px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){header[data-nav] nav figure.brand svg{letter-spacing:.12rem;font-size:12px;line-height:12px}}@media (min-width:1900px){header[data-nav] nav figure.brand svg{letter-spacing:2px;font-size:15px;line-height:15px}}"
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:10",
+      "title": "parses multiple space tags inside nesting",
+      "config": 3,
+      "input": "\n    .v-module {\n      &[data-v=\"body+center\"] {\n        @space padding-left 1 >=lg;\n        @space margin-left 3/12 >=lg;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1399px) and (width < 1900px) {\n      .v-module[data-v=\"body+center\"] {\n        margin-left: calc(25% - 37.5px);\n        padding-left: 50px;\n      }\n    }\n    @media (width >= 1900px) {\n      .v-module[data-v=\"body+center\"] {\n        margin-left: calc(25% - 45px);\n        padding-left: 60px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:11",
+      "title": "parses @mq alias for @responsive",
+      "config": 3,
+      "input": "\n    article {\n      @mq xs {\n        font-size: 14px;\n      }\n\n      @mq 400px->800px {\n        font-size: 16px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        font-size: 14px;\n      }\n    }\n\n    @media (width >= 400px) and (width <= 800px) {\n      article {\n        font-size: 16px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:12",
+      "title": "parses custom arrow range with min and max",
+      "config": 3,
+      "input": "\n    article {\n      @responsive 359px->740px {\n        font-size: 16px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 359px) and (width <= 740px) {\n      article {\n        font-size: 16px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:13",
+      "title": "parses custom arrow range with only min (open-ended)",
+      "config": 3,
+      "input": "\n    article {\n      @responsive 500px-> {\n        font-size: 16px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 500px) {\n      article {\n        font-size: 16px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:14",
+      "title": "parses custom arrow range with only max (open-ended)",
+      "config": 3,
+      "input": "\n    article {\n      @responsive ->800px {\n        font-size: 16px;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width <= 800px) {\n      article {\n        font-size: 16px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteResponsiveAtRules:15",
+      "title": "parses multiple breakpoints slashed",
+      "config": 23,
+      "input": "\n    article {\n      @responsive ipad_landscape/desktop_md/desktop_lg/desktop_xl {\n        font-size: 16px;\n        color: red;\n      }\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width >= 1024px) {\n      article {\n        color: red;\n        font-size: 16px;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteRowAtRules:1",
+      "title": "@row is deprecated",
+      "config": 3,
+      "input": "\n    article {\n      @row 3;\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_DEPRECATED"
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:1",
+      "title": "parses @unpack",
+      "config": 24,
+      "input": "\n    article {\n      @unpack theme.typography.sections.navigation;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      article {\n        font-size: 17px;\n        line-height: 17px;\n        letter-spacing: 0.12rem\n      }\n    }\n\n    @media (min-width: 740px) and (width < 1024px) {\n      article {\n        font-size: 17px;\n        line-height: 17px;\n        letter-spacing: 0.12rem\n      }\n    }\n\n    @media (min-width: 1024px) {\n      article {\n        font-size: 12px;\n        line-height: 12px;\n        letter-spacing: 0.12rem\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:2",
+      "title": "parses @unpack containerPadding",
+      "config": 24,
+      "input": "\n    :root {\n      @unpack containerPadding;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      :root {\n        --container-padding: 25px\n      }\n    }\n    @media (width >= 740px) and (width < 1024px) {\n      :root {\n        --container-padding: 5.555556vw\n      }\n    }\n    @media (width >= 1024px) {\n      :root {\n        --container-padding: 5.555556vw\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:3",
+      "title": "parses @unpack gridGutter",
+      "config": 24,
+      "input": "\n    :root {\n      @unpack gridGutter;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 740px) {\n      :root {\n        --grid-gutter: 15px;\n      }\n    }\n    @media (width >= 740px) and (width < 1024px) {\n      :root {\n        --grid-gutter: 40px;\n      }\n    }\n    @media (width >= 1024px) {\n      :root {\n        --grid-gutter: 4.1667vw;\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:4",
+      "title": "parses advanced @unpack",
+      "config": 25,
+      "input": "\n    article {\n      @unpack theme.typography.sections.navigation;\n\n      h1 {\n        color: blue;\n        @unpack theme.typography.sections.simple;\n      }\n    }\n  ",
+      "note": "Unpack expands at its authored position; h1 follows the parent typography expansion. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)){article{letter-spacing:.12rem;font-size:17px;line-height:17px}}@media (min-width:1024px){article{letter-spacing:.12rem;font-size:12px;line-height:12px}}article h1{color:#00f}@media not (min-width:740px){article h1{color:red}}@media (min-width:740px) and (not (min-width:1024px)){article h1{color:green}}@media (min-width:1024px){article h1{color:#00f}}"
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:5",
+      "title": "processes dpx units in containerPadding and gridGutter",
+      "config": 26,
+      "input": "\n    :root {\n      @unpack containerPadding;\n      @unpack gridGutter;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    @media (width < 1024px) {\n      :root {\n        --container-padding: calc(5.20833vw * var(--ec-zoom));\n        --grid-gutter: calc(1.73611vw * var(--ec-zoom));\n      }\n    }\n    @media (width >= 1024px) {\n      :root {\n        --container-padding: calc(3.47222vw * var(--ec-zoom));\n        --grid-gutter: calc(2.08333vw * var(--ec-zoom));\n      }\n    }\n  "
+    },
+    {
+      "id": "rules/substituteUnpackAtRules:6",
+      "title": "fails without params",
+      "config": 3,
+      "input": "\n  @unpack;\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_CONTEXT"
+    },
+    {
+      "id": "rules/tokenReferences:1",
+      "title": "resolves color token references in @color rule",
+      "config": 27,
+      "input": "\n    article {\n      @color fg primary;\n      @color bg secondary;\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #f00;\n      background-color: #00f;\n    }\n  "
+    },
+    {
+      "id": "rules/tokenReferences:2",
+      "title": "resolves interpolated token references in theme values",
+      "config": 27,
+      "input": "",
+      "note": "Keep references unresolved in the fixture so native config resolution is actually tested.",
+      "configAssertions": {
+        "/theme/border/default": "1px solid #f00"
+      }
+    },
+    {
+      "id": "rules/tokenReferences:3",
+      "title": "resolves chained token references",
+      "config": 28,
+      "input": "",
+      "note": "Keep references unresolved in the fixture so native config resolution is actually tested.",
+      "configAssertions": {
+        "/theme/colors/danger": "#f00"
+      }
+    },
+    {
+      "id": "output/output:1",
+      "title": "parses advanced @space nesting under @responsive",
+      "config": 3,
+      "input": "ul {\n  color: pink;\n\n  @responsive >=md {\n    width: 100%;\n    flex-direction: row;\n  }\n\n  @responsive <=sm {\n    align-items: center;\n    justify-content: center;\n  }\n\n  > li {\n    @responsive >=md {\n      color: theme(colors.transparent);\n      line-height: 1;\n\n      display: inline-block;\n      white-space: nowrap;\n\n      &.test {\n        color: blue;\n      }\n\n      &:not(:last-of-type) {\n        margin-right: 2vw;\n      }\n    }\n  }\n}",
+      "note": "Retain desktop-before-mobile source order and nested li conditions. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "ul{color:pink}@media (min-width:1024px){ul{flex-direction:row;width:100%}}@media not (min-width:1024px){ul{justify-content:center;align-items:center}}@media (min-width:1024px){ul>li{color:#0000;white-space:nowrap;line-height:1;display:inline-block}ul>li.test{color:#00f}ul>li:not(:last-of-type){margin-right:2vw}}"
+    },
+    {
+      "id": "output/output:2",
+      "title": "parses advanced nesting 2 levels under @responsive",
+      "config": 3,
+      "input": "figure {\n  @column 7/12 sm/md;\n  @responsive >=md {\n    &:first-of-type {\n      @space margin-right -1;\n      @space padding-left 1.5;\n      @space padding-top 3.5;\n    }\n\n    &:last-of-type {\n      @space margin-top -2;\n      @space margin-left -1;\n      @space margin-right 1;\n      @space padding-right 0.5;\n    }\n\n    &.center {\n      @space padding-x 4;\n      @space margin-top -2;\n    }\n  }\n}",
+      "note": "Keep the column directive before the responsive block and each child selector in place; same signed gutters and padding multipliers. Named breakpoint upper bounds are exclusive.",
+      "snapshot": "@media (min-width:740px) and (not (min-width:1024px)){figure{flex:0 0 calc(58.3333% - 14.5833px);max-width:calc(58.3333% - 14.5833px);position:relative}}@media (min-width:1024px) and (not (min-width:1399px)){figure{flex:0 0 calc(58.3333% - 20.8333px);max-width:calc(58.3333% - 20.8333px);position:relative}}@media (min-width:1024px){@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){figure:first-of-type{margin-right:-50px;padding-top:175px;padding-left:75px}}@media (min-width:1900px){figure:first-of-type{margin-right:-60px;padding-top:210px;padding-left:90px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){figure:last-of-type{margin-top:-100px;margin-left:-50px;margin-right:50px;padding-right:25px}}@media (min-width:1900px){figure:last-of-type{margin-top:-120px;margin-left:-60px;margin-right:60px;padding-right:30px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){figure.center{margin-top:-100px;padding-left:200px;padding-right:200px}}@media (min-width:1900px){figure.center{margin-top:-120px;padding-left:240px;padding-right:240px}}}"
+    },
+    {
+      "id": "output/output:3",
+      "title": "parses advanced @extend with at-rules",
+      "config": 3,
+      "input": "%wide-button {\n  @responsive xs {\n    color: pink;\n  }\n  @responsive >xs {\n    color: blue;\n  }\n  @space padding md;\n}\n\n.button-one {\n  font-family: Arial;\n  @extend %wide-button;\n}\n\n.button-two {\n  font-family: Helvetica;\n  @extend %wide-button;\n}\n\n%pill {\n  display: flex;\n  padding: 0.6em 1em 0.6em 1em;\n  justify-content: center;\n  align-items: center;\n  gap: 8px;\n  width: fit-content;\n\n  border-radius: 40px;\n  border: 1px solid currentColor;\n  box-shadow: 0px 4px 20px 0px rgba(69, 69, 61, 0.04);\n\n  color: currentColor;\n  @font serif sm;\n\n  @space letter-spacing 0.3px >=md;\n  text-transform: uppercase;\n\n  transition:\n    color 250ms ease,\n    background-color 250ms ease;\n\n  &:hover {\n    @color fg white;\n    @color bg black;\n  }\n}\n\n.pill-button {\n  @extend %pill;\n}",
+      "note": "Expand each placeholder at each use site; keep pill typography, letter spacing and following declarations in order. Do not globally coalesce placeholder users. Named breakpoint upper bounds are exclusive.",
+      "snapshot": ".button-one{font-family:Arial}@media not (min-width:740px){.button-one{color:pink;padding:35px}}@media (min-width:740px){.button-one{color:#00f}}@media (min-width:740px) and (not (min-width:1024px)){.button-one{padding:40px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){.button-one{padding:50px}}@media (min-width:1900px){.button-one{padding:70px}}.button-two{font-family:Helvetica}@media not (min-width:740px){.button-two{color:pink;padding:35px}}@media (min-width:740px){.button-two{color:#00f}}@media (min-width:740px) and (not (min-width:1024px)){.button-two{padding:40px}}@media (min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){.button-two{padding:50px}}@media (min-width:1900px){.button-two{padding:70px}}.pill-button{color:currentColor;border:1px solid;border-radius:40px;justify-content:center;align-items:center;gap:8px;width:fit-content;padding:.6em 1em;font-family:Georgia,Cambria,Times New Roman,Times,serif;display:flex;box-shadow:0 4px 20px #45453d0a}@media not (min-width:740px),(min-width:740px) and (not (min-width:1024px)),(min-width:1024px) and (not (min-width:1399px)),(min-width:1399px) and (not (min-width:1900px)){.pill-button{font-size:14px}}@media (min-width:1900px){.pill-button{font-size:17px}}@media (min-width:1024px){.pill-button{letter-spacing:.3px}}.pill-button{text-transform:uppercase;transition:color .25s,background-color .25s}.pill-button:hover{color:#fff;background-color:#000}"
+    },
+    {
+      "id": "utils/functions:1",
+      "title": "parses theme() function",
+      "config": 29,
+      "input": "\n    article {\n      color: theme(colors.red);\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    article {\n      color: #ff0000;\n    }\n  "
+    },
+    {
+      "id": "utils/functions:2",
+      "title": "parses ease() function with valid easing type",
+      "config": 3,
+      "input": "\n    .element {\n      transition: all 300ms ease('power3.out');\n    }\n  ",
+      "note": "Preserve valid legacy behavior. Generated named ranges use exclusive next-breakpoint bounds; explicit pixel ranges keep their authored endpoints.",
+      "expected": "\n    .element {\n      transition: all 300ms cubic-bezier(0.165, 0.84, 0.44, 1);\n    }\n  "
+    },
+    {
+      "id": "utils/functions:3",
+      "title": "throws error for invalid ease() function type",
+      "config": 3,
+      "input": "\n    .element {\n      transition: all 300ms ease('invalid-easing');\n    }\n  ",
+      "note": "Invalid input remains an explicit native diagnostic; do not silently drop it or emit invalid CSS.",
+      "error": "EU_FUNCTION"
+    }
+  ]
+}

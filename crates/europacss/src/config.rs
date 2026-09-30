@@ -250,3 +250,39 @@ fn range(min: f64, max: Option<f64>, upper: &str) -> String {
         (true, Some(max)) => format!("(width >= {min}px) and (width {upper} {max}px)"),
     }
 }
+
+#[cfg(test)]
+mod legacy_query_tests {
+    use super::Config;
+    use serde_json::{json, Value};
+
+    #[test]
+    fn all_31_legacy_query_selection_and_range_cases() {
+        let cases: Vec<Value> =
+            serde_json::from_str(include_str!("../tests/fixtures/legacy-utilities.json")).unwrap();
+        let mut count = 0;
+        for case in cases.iter().filter(|case| case.get("query").is_some()) {
+            count += 1;
+            let value = json!({"theme": case["theme"]});
+            let config = Config::new(&value).unwrap();
+            let query = case["query"].as_str().unwrap();
+            if let Some(expected) = case.get("media") {
+                assert_eq!(
+                    config.media(query, 0).unwrap(),
+                    expected.as_str().unwrap(),
+                    "{}",
+                    case["id"]
+                );
+            } else {
+                let keys: Vec<_> = config
+                    .select(query, 0)
+                    .unwrap()
+                    .into_iter()
+                    .map(|i| config.breakpoints[i].0.as_str())
+                    .collect();
+                assert_eq!(json!(keys), case["keys"], "{}", case["id"]);
+            }
+        }
+        assert_eq!(count, 31);
+    }
+}
