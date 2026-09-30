@@ -72,7 +72,7 @@ are deliberately left to Vite.
 Local imports and JSON5 configuration are watched. Normal edits update affected
 CSS modules through HMR; file creation/deletion uses a full reload to recover
 missing inputs. Compiler errors retain their original filename/line/column.
-Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped.
+Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 
 For font token labels in Chrome's Styles pane, enable `europa({ debugTokens: true })`. The development CSS includes comments such as:
 

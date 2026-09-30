@@ -9,7 +9,7 @@ use lightningcss::{
     targets::Targets,
 };
 use parcel_sourcemap::{OriginalLocation, SourceMap};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 struct Atom(String, bool);
@@ -181,6 +181,27 @@ struct Annotation {
     text: String,
 }
 
+// Parcel permits duplicate generated coordinates. Keep one mapping per point,
+// with the latest (refined or explicitly unmapped) entry taking precedence.
+fn replace_mappings(map: &mut SourceMap, mappings: Vec<parcel_sourcemap::Mapping>) {
+    let mut replacement = SourceMap::new(&map.project_root);
+    replacement.add_sources(map.get_sources().clone());
+    replacement.add_names(map.get_names().clone());
+    for (index, content) in map.get_sources_content().iter().enumerate() {
+        replacement
+            .set_source_content(index, content)
+            .expect("existing source index");
+    }
+    let mut points = BTreeMap::new();
+    for m in mappings {
+        points.insert((m.generated_line, m.generated_column), m.original);
+    }
+    for ((line, column), original) in points {
+        replacement.add_mapping(line, column, original);
+    }
+    *map = replacement;
+}
+
 /// Add mappings to the intermediate CSS before composing with Europa's source
 /// map. Comments are inserted after final printing and shift downstream mappings.
 pub(crate) fn refine(
@@ -196,6 +217,32 @@ pub(crate) fn refine(
     };
     let input_positions = positions(input, &input_nodes);
     let output_positions = positions(output, &output_nodes);
+    // Lightning's printer mixes byte and character column counts for non-ASCII
+    // text. After the first such character on a generated line its rule columns
+    // cannot be trusted. Drop those upstream points instead of guessing; an
+    // earlier, correctly mapped rule can still supply precise declaration maps.
+    let unicode_columns: HashMap<u32, u32> = output
+        .lines()
+        .enumerate()
+        .filter_map(|(line, text)| {
+            for (column, c) in text.chars().enumerate() {
+                if !c.is_ascii() {
+                    return Some((line as u32, column as u32));
+                }
+            }
+            None
+        })
+        .collect();
+    let trusted: Vec<_> = map
+        .get_mappings()
+        .into_iter()
+        .filter(|m| {
+            unicode_columns
+                .get(&m.generated_line)
+                .is_none_or(|column| m.generated_column <= *column)
+        })
+        .collect();
+    replace_mappings(map, trusted);
     let mut index = Index::default();
     index.collect(
         &input_nodes,
@@ -364,6 +411,7 @@ pub(crate) fn refine(
             }
         }
     }
+    replace_mappings(map, map.get_mappings());
     // Reverse insertion keeps original byte offsets valid. Each inserted comment
     // is one line, so only columns at and after that insertion move.
     annotations.sort_by_key(|a| a.offset);

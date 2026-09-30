@@ -159,6 +159,34 @@ test('dev token labels survive Vite injection and production always omits them',
   const map = JSON.parse(Buffer.from(result.code.match(/sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/)[1], 'base64').toString());
   assert.ok(map.sources.some(source => source.endsWith('/nested/child.css')));
   assert.ok(map.names.includes('typography.sizes.base'));
+  // Decode the standard VLQ map at the injected CSS property's exact position.
+  const prefix = css.slice(0, css.indexOf('font-size:'));
+  const targetLine = prefix.split('\n').length - 1;
+  const targetColumn = prefix.split('\n').at(-1).length;
+  let source = 0, line = 0, column = 0, found;
+  for (const [generatedLine, row] of map.mappings.split(';').entries()) {
+    let generatedColumn = 0;
+    for (const segment of row.split(',').filter(Boolean)) {
+      const fields = [];
+      let value = 0, shift = 0;
+      for (const char of segment) {
+        const digit = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.indexOf(char);
+        value |= (digit & 31) << shift;
+        if (digit & 32) { shift += 5; continue; }
+        fields.push((value & 1 ? -1 : 1) * (value >>> 1));
+        value = 0; shift = 0;
+      }
+      generatedColumn += fields[0];
+      if (fields.length >= 4) { source += fields[1]; line += fields[2]; column += fields[3]; }
+      if (generatedLine === targetLine && generatedColumn <= targetColumn) {
+        found = fields.length >= 4 ? { source: map.sources[source], line, column } : undefined;
+      }
+    }
+  }
+  assert.ok(found.source.endsWith('/nested/child.css'));
+  assert.equal(found.line, 1);
+  assert.equal(found.column, 2);
+
   for (const cssMinify of [false, 'lightningcss']) {
     const output = await build({ ...config, build: { write: false, cssMinify } });
     const css = output.output.find(asset => asset.fileName.endsWith('.css')).source;

@@ -155,3 +155,24 @@ fn a_single_directive_can_supply_a_shorthand_but_literal_sizes_have_no_token_lab
         output.css
     );
 }
+
+#[test]
+fn non_ascii_output_does_not_create_false_maps_for_later_minified_rules() {
+    let input = ".🙂 { content: 'é🙂'; color: red; } .later { width: 14px; }";
+    for minify in [false, true] {
+        let mut req = request(input, config());
+        req.minify = minify;
+        let output = compile(&req).unwrap();
+        assert_origin(&output, "color:", input, "color:");
+        if minify {
+            let (line, column) = location(&output.css, output.css.find("width:").unwrap());
+            let mut map = SourceMap::from_json("/", output.map.as_deref().unwrap()).unwrap();
+            assert!(map
+                .find_closest_mapping(line, column)
+                .and_then(|m| m.original)
+                .is_none());
+        } else {
+            assert_origin(&output, "width:", input, "width:");
+        }
+    }
+}

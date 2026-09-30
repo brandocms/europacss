@@ -1005,3 +1005,27 @@ fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
         "The old review must be stale after edits"
     );
 }
+
+#[test]
+fn development_font_token_labels_are_opt_in_and_minification_removes_them() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("input.css"), ".card { @fontsize base; }").unwrap();
+    for (args, labels) in [
+        (vec!["input.css"], false),
+        (vec!["input.css", "--debug-tokens"], true),
+        (vec!["input.css", "--debug-tokens", "--minify"], false),
+    ] {
+        let result = dir.command().args(args).output().unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let css = String::from_utf8(result.stdout).unwrap();
+        assert_eq!(
+            css.contains("/* --ec-font-token: \"typography.sizes.base\"; */"),
+            labels
+        );
+        assert!(css.contains("font-size:"));
+    }
+}

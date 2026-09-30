@@ -79,7 +79,7 @@ Stdin does not resolve local imports. Diagnostics and build summaries go to stde
 | `-h`, `--help` | Show usage. |
 | `-V`, `--version` | Show the native compiler version. |
 
-A compilation failure exits with status 1. Diagnostics include a source file, line, column and error code. Source maps locate individual declarations and Europa directives when the origin is unambiguous. Shorthands combined from several authored declarations retain the containing rule location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. For migration-specific checks, use [the migration command](./lint-and-migration).
+A compilation failure exits with status 1. Diagnostics include a source file, line, column and error code. Source maps locate individual declarations and Europa directives when the origin is unambiguous. Shorthands combined from several authored declarations retain the containing rule location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule. For migration-specific checks, use [the migration command](./lint-and-migration).
 
 
 ## Font token labels in DevTools

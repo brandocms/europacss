@@ -77,7 +77,7 @@ Update the executable and local adapter together when updating this preview. The
 
 The Rust bundler resolves relative CSS imports before Vite sees the result. Use exact relative paths, including `.css`. Vite aliases, package imports, globs and virtual Vue/Svelte styles are not supported by this resolver. `?raw` and `?url` imports are left to Vite.
 
-Changes to a used JSON5 config or local CSS dependency update the affected CSS through HMR. Creating or deleting files uses a full reload to recover missing inputs. Compiler diagnostics retain their originating file, line and column. Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped.
+Changes to a used JSON5 config or local CSS dependency update the affected CSS through HMR. Creating or deleting files uses a full reload to recover missing inputs. Compiler diagnostics retain their originating file, line and column. Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 
 For font token labels in Chrome's Styles pane, enable `europa({ debugTokens: true })`. The development CSS includes comments such as:
 
