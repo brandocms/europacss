@@ -845,6 +845,52 @@ fn bridge_uses_transform_source_and_returns_maps_dependencies_and_structured_err
 }
 
 #[test]
+fn bridge_resolves_css_browser_policy_without_project_files_or_node() {
+    let dir = Temp::new();
+    let run = |request: serde_json::Value| {
+        let mut child = dir
+            .command()
+            .args(["bridge", "targets"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(request.to_string().as_bytes())
+            .unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.stderr.is_empty());
+        let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        (output.status.success(), response)
+    };
+    let (ok, response) = run(
+        serde_json::json!({"version":1,"browsers":["chrome 110", "safari 15.6", "ios_saf 15.6"]}),
+    );
+    assert!(ok, "{response}");
+    assert_eq!(
+        response["targets"],
+        serde_json::json!({"chrome":110<<16,"safari":(15<<16)|(6<<8),"ios_saf":(15<<16)|(6<<8)})
+    );
+    assert!(response["css"].is_null());
+    assert!(response["watchFiles"].as_array().unwrap().is_empty());
+    let (ok, defaults) = run(serde_json::json!({"version":1}));
+    assert!(ok && defaults["targets"]["chrome"].is_number());
+    let (ok, empty) = run(serde_json::json!({"version":1,"browsers":["chrome > 999"]}));
+    assert!(ok && empty["targets"] == serde_json::json!({}));
+    for request in [
+        serde_json::json!({"version":2}),
+        serde_json::json!({"version":1,"browsers":["unknown-browser"]}),
+    ] {
+        let (ok, response) = run(request);
+        assert!(!ok && response["error"].is_object());
+    }
+}
+
+#[test]
 fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
     let dir = Temp::new();
     let source = ".x{@space width 40dpx md; width:40px;}";

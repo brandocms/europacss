@@ -260,8 +260,9 @@ fn main() -> ExitCode {
     };
     if args.first().map(String::as_str) == Some("bridge") {
         let response = (|| {
-            if args.len() != 1 {
-                return Err("bridge takes one JSON request on stdin".to_string());
+            let targets_only = args.len() == 2 && args[1] == "targets";
+            if args.len() != 1 && !targets_only {
+                return Err("bridge [targets] takes one JSON request on stdin".to_string());
             }
             let mut input = String::new();
             io::stdin()
@@ -271,8 +272,13 @@ fn main() -> ExitCode {
             if input.len() > 16 * 1024 * 1024 {
                 return Err("Bridge request exceeds 16 MiB".into());
             }
-            let request = serde_json::from_str(&input).map_err(|e| e.to_string())?;
-            Ok(europacss::bridge::compile(request))
+            if targets_only {
+                let request = serde_json::from_str(&input).map_err(|e| e.to_string())?;
+                Ok(europacss::bridge::targets(request))
+            } else {
+                let request = serde_json::from_str(&input).map_err(|e| e.to_string())?;
+                Ok(europacss::bridge::compile(request))
+            }
         })()
         .unwrap_or_else(europacss::bridge::Response::invalid);
         println!("{}", serde_json::to_string(&response).unwrap());

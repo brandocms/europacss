@@ -1,12 +1,13 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { sharedTargets, sameTargets } from './targets.js';
 
 const normalize = (file) => path.resolve(file).replaceAll('\\', '/');
 
 // One subprocess per compilation. argv/stdin transport never invokes a shell.
-function compile(binary, request, cwd) {
+function compile(binary, request, cwd, targetsOnly = false) {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, ['bridge'], { cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    const child = spawn(binary, targetsOnly ? ['bridge', 'targets'] : ['bridge'], { cwd, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     const chunks = [];
     let size = 0;
     let stderr = '';
@@ -36,7 +37,9 @@ function compile(binary, request, cwd) {
           throw new Error('Unsupported EuropaCSS bridge response');
         }
         if (status !== 0 && !response.error) throw new Error(`EuropaCSS exited with status ${status}`);
-        if (!response.error && typeof response.css !== 'string') throw new Error('Missing compiled CSS');
+        if (!response.error && (targetsOnly ? !response.targets || typeof response.targets !== 'object' || Array.isArray(response.targets) : typeof response.css !== 'string')) {
+          throw new Error(targetsOnly ? 'Missing resolved browser targets; reinstall the EuropaCSS executable' : 'Missing compiled CSS');
+        }
         resolve(response);
       } catch (error) {
         reject(new Error(`${error.message}${stderr ? `\n${stderr}` : ''}`));
@@ -52,6 +55,7 @@ export default function europa(options = {}) {
   let binary;
   let config;
   let server;
+  let targets;
   const entries = new Map();
   const pending = new Set();
   const generations = new Map();
@@ -70,7 +74,28 @@ export default function europa(options = {}) {
   return {
     name: 'vite-plugin-europacss-native',
     enforce: 'pre',
+    config: {
+      order: 'post',
+      async handler(userConfig) {
+        root = path.resolve(userConfig.root ?? process.cwd());
+        binary = options.binary ?? 'europa';
+        if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
+        const response = await compile(binary, { version: 1, browsers: options.targets ?? [] }, root, true);
+        if (response.error) throw new Error(`[${response.error.code}] ${response.error.message} (resolving EuropaCSS targets; check the query and reinstall europa if the executable is older than the adapter)`);
+        targets = sharedTargets(response.targets);
+        // Replace arrays rather than merge them with Vite/legacy-plugin defaults.
+        userConfig.build ??= {};
+        userConfig.build.cssTarget = [...targets.vite];
+        userConfig.css ??= {};
+        userConfig.css.lightningcss ??= {};
+        userConfig.css.lightningcss.targets = { ...targets.lightning };
+      },
+    },
     configResolved(resolved) {
+      if (!targets || !sameTargets(resolved.build.cssTarget, targets.vite) ||
+          JSON.stringify(Object.entries(resolved.css?.lightningcss?.targets ?? {}).sort()) !== JSON.stringify(Object.entries(targets.lightning).sort())) {
+        throw new Error(`Another plugin changed EuropaCSS CSS targets. Configure browser support only with europa({ targets: [...] }). Expected ${JSON.stringify(targets?.vite)}, received ${JSON.stringify(resolved.build.cssTarget)}.`);
+      }
       root = resolved.root;
       binary = options.binary ?? 'europa';
       if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
@@ -100,7 +125,7 @@ export default function europa(options = {}) {
           params.has('raw') || params.has('url') || params.has('vue') || params.has('svelte') ||
           (options.include && !options.include(filename))) return null;
 
-      const promise = compile(binary, { version: 1, filename, source, config, browsers: options.targets ?? [] }, root);
+      const promise = compile(binary, { version: 1, filename, source, config, browsers: targets.browsers }, root);
       const generation = Symbol();
       generations.set(id, generation);
       pending.add(promise);

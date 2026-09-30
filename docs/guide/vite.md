@@ -36,7 +36,7 @@ export default defineConfig({
     devSourcemap: true,
     postcss: { plugins: [] },
   },
-  build: { sourcemap: true },
+  build: { sourcemap: true, cssMinify: 'lightningcss' },
 });
 ```
 
@@ -57,9 +57,21 @@ The empty inline `css.postcss` configuration prevents Vite from loading an old P
 | `binary` | `'europa'` | Executable on `PATH`, or a path resolved from Vite's root. |
 | `config` | `'europa.json5'` | Config path relative to Vite's root; `false` uses built-in defaults. |
 | `include` | All physical `.css` modules | Function receiving an absolute filename; return `true` to compile it. |
-| `targets` | `['defaults']` | Browserslist queries for Europa's Rust backend. |
+| `targets` | `['defaults']` | Shared CSS browser policy for Europa and Vite. |
 
-The adapter's config default differs from the CLI, where `--config` is always explicit. Vite's `build.target` does not set Europa's targets; use the adapter's `targets` option for those transforms.
+The adapter's config default differs from the CLI, where `--config` is always explicit.
+
+## One CSS browser policy
+
+Set browser support in `europa({ targets: [...] })`. At startup, the native executable resolves the Browserslist queries. The adapter gives that policy to Europa's browser transforms, Vite's `build.cssTarget` and `css.lightningcss.targets`. Do not configure those two Vite CSS settings separately: the adapter replaces them, including the CSS default from `@vitejs/plugin-legacy`. A later plugin that changes them causes an error.
+
+Both CSS passes remain useful. Europa expands directives and applies browser transforms; Vite processes the assembled stylesheets and minifies the final CSS, including third-party styles that bypass Europa. Install `lightningcss` in your application and use `build.cssMinify: 'lightningcss'` for that final pass. The adapter preserves your minifier choice; it does not turn minification on or off. An esbuild minifier also receives the shared targets, but does not replace Lightning CSS's prefixing of styles that bypass Europa.
+
+This policy controls **CSS only**. Keep JavaScript support in `build.target` and the options for `@vitejs/plugin-legacy`; the adapter does not change those settings. The legacy plugin supplies JavaScript compatibility, not CSS prefixing.
+
+Vite accepts fewer browser families than native Lightning CSS. The adapter maps modern Android and Samsung Internet to their Chromium versions, merges the oldest required engine versions, and rounds patch versions down to the corresponding major/minor floor for both passes. Stock Android Browser and unknown Samsung releases fail explicitly rather than being silently dropped. Samsung mappings are checked into the adapter; updating them does not require a JavaScript Browserslist database. The standalone CLI continues to use its own `--targets` policy directly.
+
+Update the executable and local adapter together when updating this preview. The adapter requires `europa bridge targets`; an older executable must be rebuilt/reinstalled.
 
 ## Imports, reloads and errors
 

@@ -25,6 +25,8 @@ europa css/app.css --config europa.json5 \
 
 The native CLI uses its `--targets` argument, not the old plugin's `presetEnv` options. Modern targets may retain CSS nesting; older targets receive lowered selectors. Both use native CSS nesting specificity and source order. The default output is not a promise of byte-for-byte equivalence with PostCSS.
 
+In Vite, use the adapter's [`targets` option](./vite#one-css-browser-policy). It shares one CSS policy between Europa's transforms and Vite's final CSS pass; JavaScript targets remain separate.
+
 ## Watch mode
 
 ```sh

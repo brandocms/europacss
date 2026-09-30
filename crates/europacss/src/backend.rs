@@ -7,6 +7,16 @@ use lightningcss::{
 use parcel_sourcemap::SourceMap;
 use std::sync::{Arc, RwLock};
 
+pub(crate) fn resolve_browsers(queries: &[String]) -> Result<Option<Browsers>, Error> {
+    let defaults = vec!["defaults".to_owned()];
+    let queries = if queries.is_empty() {
+        &defaults
+    } else {
+        queries
+    };
+    Browsers::from_browserslist(queries).map_err(|e| Error::new("EU_TARGETS", e.to_string(), 0))
+}
+
 pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result<Output, Error> {
     let mut original_map = frontend
         .map
@@ -14,15 +24,8 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
         .map(|map| SourceMap::from_json("/", map))
         .transpose()
         .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?;
-    let defaults = vec!["defaults".to_owned()];
-    let browsers = if request.browsers.is_empty() {
-        &defaults
-    } else {
-        &request.browsers
-    };
     let targets = Targets {
-        browsers: Browsers::from_browserslist(browsers)
-            .map_err(|e| Error::new("EU_TARGETS", e.to_string(), 0).locate(&request.source))?,
+        browsers: resolve_browsers(&request.browsers).map_err(|e| e.locate(&request.source))?,
         ..Targets::default()
     };
     let warnings = Arc::new(RwLock::new(Vec::new()));

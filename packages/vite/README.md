@@ -22,6 +22,7 @@ export default defineConfig({
   plugins: [europa({
     binary: '/absolute/path/to/europacss/target/release/europa',
     config: './europa.json5',
+    targets: ['defaults'], // One CSS policy for Europa and Vite.
     // Optional: only compile your own stylesheet entry points.
     include: (filename) => filename.replaceAll('\\', '/').endsWith('/css/app.css'),
   })],
@@ -30,7 +31,7 @@ export default defineConfig({
     // Suppresses discovery of an old postcss.config.cjs.
     postcss: { plugins: [] },
   },
-  build: { sourcemap: true },
+  build: { sourcemap: true, cssMinify: 'lightningcss' },
 });
 ```
 
@@ -49,6 +50,19 @@ Options are documented in `index.d.ts`. The default executable is `europa` on
 PATH; the default config is `europa.json5` relative to Vite's root. Use
 `config: false` for Europa defaults. Browser target queries go in `targets`.
 
+The native executable resolves that CSS policy once at Vite startup. The adapter
+shares the resulting engine floors with Europa, `build.cssTarget` and
+`css.lightningcss.targets`, replacing separate CSS targets and legacy-plugin CSS
+defaults. JavaScript targets and legacy bundles are unchanged. Both CSS passes
+remain enabled; install `lightningcss` in the application for the final minifier
+shown above. The adapter preserves your minifier choice.
+
+Modern Android and Samsung Internet targets map to Chromium; patch floors round
+down to major/minor in both passes. Unsupported stock Android and unknown Samsung
+releases fail explicitly. See the [target policy details](../../docs/guide/vite.md#one-css-browser-policy).
+Rebuild/reinstall the executable and refresh the local package together when
+updating the preview: the adapter requires `europa bridge targets`.
+
 CSS is compiled before Vite's CSS pipeline. Vite still handles CSS modules,
 asset URLs, extraction, minification and style injection. Ordinary CSS imports
 are bundled by Rust; aliases, package imports, glob imports and virtual/SFC
@@ -60,7 +74,7 @@ CSS modules through HMR; file creation/deletion uses a full reload to recover
 missing inputs. Compiler errors retain their original filename/line/column.
 Source maps currently have rule-level granularity.
 
-The adapter launches one process per CSS compilation (30-second timeout), with
+The adapter launches one target-resolution process at startup and one process per CSS compilation (30-second timeout), with
 no generated CSS files. The `europa bridge` protocol accepts one JSON request on
 stdin and emits one versioned JSON response on stdout. Failed responses include
 attempted import paths, so a newly created missing dependency can recover a build.

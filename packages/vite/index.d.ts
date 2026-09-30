@@ -6,7 +6,7 @@ export interface EuropaOptions {
   config?: string | false;
   /** Filter absolute CSS filenames. Default: all physical .css modules. */
   include?: (filename: string) => boolean;
-  /** Browserslist queries passed to the Rust backend. Default: ['defaults']. */
+  /** Shared CSS browser policy, resolved by Rust and applied to Europa and Vite. Default: ['defaults']. Overrides Vite CSS targets; leaves JavaScript targets unchanged. */
   targets?: string[];
 }
 export default function europa(options?: EuropaOptions): Plugin;

@@ -2,6 +2,7 @@
 //! No Node bindings, daemon, temporary CSS, or generated output files.
 use crate::{imports, Error};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deserialize)]
@@ -27,6 +28,9 @@ pub struct Response {
     /// Includes logical aliases and attempted imports, even after a failed build.
     pub watch_files: Vec<PathBuf>,
     pub error: Option<Error>,
+    /// Native Lightning CSS browser versions (major << 16 | minor << 8 | patch).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub targets: Option<BTreeMap<String, u32>>,
 }
 impl Response {
     pub fn invalid(message: String) -> Self {
@@ -38,8 +42,54 @@ impl Response {
             dependencies: Vec::new(),
             watch_files: Vec::new(),
             error: Some(Error::new("EU_BRIDGE", message, 0)),
+            targets: None,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TargetsRequest {
+    pub version: u32,
+    #[serde(default)]
+    pub browsers: Vec<String>,
+}
+
+/// Resolve the policy without loading project CSS or configuration.
+pub fn targets(request: TargetsRequest) -> Response {
+    let mut response = Response::invalid(String::new());
+    let result = (|| {
+        if request.version != 1 {
+            return Err(Error::new(
+                "EU_BRIDGE",
+                "Unsupported bridge protocol version",
+                0,
+            ));
+        }
+        let browsers = crate::backend::resolve_browsers(&request.browsers)?.unwrap_or_default();
+        Ok([
+            ("android", browsers.android),
+            ("chrome", browsers.chrome),
+            ("edge", browsers.edge),
+            ("firefox", browsers.firefox),
+            ("ie", browsers.ie),
+            ("ios_saf", browsers.ios_saf),
+            ("opera", browsers.opera),
+            ("safari", browsers.safari),
+            ("samsung", browsers.samsung),
+        ]
+        .into_iter()
+        .filter_map(|(name, version)| version.map(|version| (name.to_owned(), version)))
+        .collect())
+    })();
+    match result {
+        Ok(targets) => {
+            response.targets = Some(targets);
+            response.error = None;
+        }
+        Err(error) => response.error = Some(error),
+    }
+    response
 }
 
 pub fn compile(request: Request) -> Response {

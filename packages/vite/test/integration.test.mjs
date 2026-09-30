@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, realpath, unlink } from 'node:
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, createServer } from 'vite';
+import { build, createServer, resolveConfig } from 'vite';
 import europa from '../index.js';
 
 const binary = process.env.EUROPA_BINARY ?? fileURLToPath(new URL(`../../../target/debug/europa${process.platform === 'win32' ? '.exe' : ''}`, import.meta.url));
@@ -87,7 +87,9 @@ test('dev HMR follows transitive CSS/config edits, diagnoses errors and recovers
 test('adapter respects transform input, opt-outs and executable errors', async (t) => {
   const { root } = await fixture(t);
   const plugin = europa({ binary, config: false });
-  plugin.configResolved({ root });
+  const settings = { root };
+  await plugin.config.handler(settings);
+  plugin.configResolved(settings);
   const watched = [];
   const context = { addWatchFile(file) { watched.push(file); }, warn() {}, error(error) { throw error instanceof Error ? error : Object.assign(new Error(error.message), error); } };
   const id = path.join(root, 'app.css');
@@ -97,6 +99,49 @@ test('adapter respects transform input, opt-outs and executable errors', async (
   assert.ok(!watched.includes(id)); // entry must not import itself
   for (const suffix of ['?raw', '?url', '?vue&type=style']) assert.equal(await plugin.transform.call(context, '', id + suffix), null);
   const missing = europa({ binary: './no-such-executable' });
-  missing.configResolved({ root });
-  await assert.rejects(missing.transform.call(context, '', id), /Cannot start EuropaCSS/);
+  await assert.rejects(missing.config.handler({ root }), /Cannot start EuropaCSS/);
+});
+
+test('one CSS policy survives legacy defaults and final minification, including excluded CSS', async (t) => {
+  const { root, write, config } = await fixture(t);
+  await write('app.css', '.card { backdrop-filter: blur(2px); user-select: none; }');
+  await write('vendor.css', '.vendor { backdrop-filter: blur(3px); }');
+  await write('main.js', "import './app.css'; import './vendor.css';");
+  // Reproduce @vitejs/plugin-legacy's CSS default without bringing Babel into this fixture.
+  const legacyDefault = { name: 'legacy-css-default', config(config) {
+    config.build ??= {};
+    config.build.cssTarget ??= 'chrome61';
+  } };
+  for (const minifier of ['lightningcss', 'esbuild']) {
+    const settings = {
+      ...config,
+      plugins: [legacyDefault, europa({ binary, targets: ['chrome 110', 'safari 15.6', 'ios_saf 15.6'], include: file => file.endsWith('/app.css') })],
+      build: { write: false, cssMinify: minifier, target: 'es2020' },
+    };
+    const resolved = await resolveConfig(settings, 'build');
+    assert.deepEqual(resolved.build.cssTarget, ['chrome110.0', 'ios15.6', 'safari15.6']);
+    assert.equal(resolved.build.target, 'es2020');
+    assert.deepEqual(resolved.css.lightningcss.targets, { chrome: 110 << 16, ios_saf: (15 << 16) | (6 << 8), safari: (15 << 16) | (6 << 8) });
+    const output = await build(settings);
+    const css = output.output.find(asset => asset.fileName.endsWith('.css')).source;
+    assert.match(css, /-webkit-backdrop-filter:blur\(2px\)/);
+    // Lightning CSS also transforms vendor styles bypassing Europa. Esbuild does
+    // not have an autoprefixer, so only require that for the Lightning minifier.
+    if (minifier === 'lightningcss') assert.match(css, /-webkit-backdrop-filter:blur\(3px\)/);
+    assert.ok(css.length < 400, css);
+  }
+});
+
+test('default and mobile policies resolve without JS target drift; invalid policies fail early', async (t) => {
+  const { config } = await fixture(t);
+  const resolved = await resolveConfig(config, 'build');
+  assert.ok(resolved.build.cssTarget.some(target => target.startsWith('safari')));
+  assert.ok(resolved.build.cssTarget.some(target => target.startsWith('ios')));
+  const mobile = await resolveConfig({ ...config, plugins: [europa({ binary, targets: ['samsung 28', 'android 143', 'and_chr 143'] })] }, 'build');
+  assert.deepEqual(mobile.build.cssTarget, ['chrome130.0']);
+  for (const targets of [['invalid-browser'], ['chrome > 999'], ['android 4.4']]) {
+    await assert.rejects(resolveConfig({ ...config, plugins: [europa({ binary, targets })] }, 'build'), /EU_TARGETS|did not select|stock Android/);
+  }
+  const override = { name: 'late-css-target-override', config: { order: 'post', handler(config) { config.build.cssTarget = ['chrome61']; } } };
+  await assert.rejects(resolveConfig({ ...config, plugins: [europa({ binary }), override] }, 'build'), /Another plugin changed EuropaCSS CSS targets/);
 });

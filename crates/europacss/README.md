@@ -230,7 +230,9 @@ Imports require exact relative file paths, including extensions. Package resolut
 The experimental [Vite adapter](../../packages/vite/README.md) calls the standalone
 binary and preserves normal CSS imports, asset handling, maps and HMR. It needs
 JavaScript only because Vite does; the compiler has no Node bindings or runtime
-dependency. The adapter is currently local-only and tested with Vite 6.4.3.
+dependency. The adapter is currently local-only and tested with Vite 6.4.3 and
+8.3.0. Its `targets` option shares one CSS browser policy between Europa and
+Vite's final CSS pass; JavaScript targets remain separate.
 
 Build-tool authors can invoke `europa bridge` with one JSON request on stdin:
 
@@ -244,3 +246,17 @@ defaults. The response contains `version`, `css`, a parsed `map`, `warnings`,
 `dependencies`, `watchFiles`, and `error`. Exit status is nonzero on error, with a
 JSON diagnostic on stdout. `watchFiles` includes attempted missing dependencies
 and logical symlink paths. This command writes no files.
+
+`europa bridge targets` resolves browser queries without loading project files:
+
+```json
+{"version":1,"browsers":["chrome 110","safari 15.6"]}
+```
+
+It returns the same response envelope with `css` and `map` set to `null`, empty
+dependency/watch lists, and `targets: {"chrome": 7208960, "safari": 984576}`.
+Versions use Lightning CSS's packed `major << 16 | minor << 8 | patch` format.
+An omitted or empty `browsers` list uses `defaults`; a query that selects no
+modeled browsers returns an empty target map. Invalid queries and protocol
+versions return a structured error and nonzero status. Compile responses omit
+`targets`. Adapters must handle unsupported or empty target maps explicitly.
