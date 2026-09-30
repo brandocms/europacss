@@ -75,18 +75,7 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
     let indices = finding_indices(report);
     let mut accepted = Vec::new();
     for decision in review.findings.iter().filter(|f| f.accepted) {
-        if !matches!(
-            decision.code.as_str(),
-            "EU_MIGRATION_SPECIFICITY"
-                | "EU_MIGRATION_MATCHING"
-                | "EU_MIGRATION_ORDER"
-                | "EU_MIGRATION_BUNDLE_ORDER"
-                | "EU_MIGRATION_SIZE"
-                | "EU_MIGRATION_BREAKPOINT"
-                | "EU_MIGRATION_COLUMN_SIGN"
-                | "EU_MIGRATION_LEGACY6"
-                | "EU_MIGRATION_LEGACY11"
-        ) {
+        if !can_accept(&decision.code) {
             return Err(fail(format!("{} is not an acceptable semantic change; resolve this syntax or analysis diagnostic", decision.code)));
         }
         accepted.push(finding_index(&indices, decision)?);
@@ -95,6 +84,22 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
         report.findings[index].accepted = true;
     }
     Ok(())
+}
+
+/// Syntax errors and incomplete analysis cannot be accepted as intentional changes.
+pub fn can_accept(code: &str) -> bool {
+    matches!(
+        code,
+        "EU_MIGRATION_SPECIFICITY"
+            | "EU_MIGRATION_MATCHING"
+            | "EU_MIGRATION_ORDER"
+            | "EU_MIGRATION_BUNDLE_ORDER"
+            | "EU_MIGRATION_SIZE"
+            | "EU_MIGRATION_BREAKPOINT"
+            | "EU_MIGRATION_COLUMN_SIGN"
+            | "EU_MIGRATION_LEGACY6"
+            | "EU_MIGRATION_LEGACY11"
+    )
 }
 
 fn validate_review(report: &Report, review: &Review) -> Result<(), Error> {

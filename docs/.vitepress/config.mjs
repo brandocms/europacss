@@ -31,7 +31,7 @@ export default defineConfig({
             { text: 'Vite', link: '/guide/vite' },
             { text: 'Build & watch', link: '/guide/build' },
             { text: 'Lint & migration', link: '/guide/lint-and-migration' },
-            { text: 'Config Studio', link: '/guide/studio' },
+            { text: 'Studio', link: '/guide/studio' },
             { text: 'Development', link: '/guide/development' },
             { text: 'Legacy PostCSS', link: '/guide/legacy-postcss' }
           ]

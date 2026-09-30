@@ -108,13 +108,27 @@ impl Ui {
             );
         }
     }
-    pub fn studio(&self, origin: &str) {
+    pub fn studio(&self, origin: &str, migration: bool) {
         eprintln!(
             "\n  {}  {}\n\n          {}\n          {}\n",
             self.paint("1;36", "europa"),
-            self.paint("1;35", "◉ config studio"),
-            self.paint("1", origin),
-            self.dim("Open in your browser · edits stay in the browser · Ctrl-C to stop")
+            self.paint(
+                "1;35",
+                if migration {
+                    "◉ migration studio"
+                } else {
+                    "◉ config studio"
+                }
+            ),
+            self.paint(
+                "1",
+                &format!("{origin}{}", if migration { "/migration" } else { "" })
+            ),
+            self.dim(if migration {
+                "Open in your browser · review source diffs before applying · Ctrl-C to stop"
+            } else {
+                "Open in your browser · edits stay in the browser · Ctrl-C to stop"
+            })
         );
     }
     pub fn diagnostic(

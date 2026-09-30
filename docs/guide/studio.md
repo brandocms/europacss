@@ -1,6 +1,6 @@
-# Config Studio
+# Europa Studio
 
-Studio is a local browser interface served by the native executable. It uses the real compiler to preview your JSON5 rules; it needs no Node, dev server or external editor service.
+Studio is a local browser interface served by the native executable. It previews JSON5 rules and provides an interactive migration review. It needs no Node, separate dev server or external editor service.
 
 ```sh
 europa studio --config europa.json5
@@ -53,3 +53,30 @@ These checks help review tokens; they are not a site-wide conformance result. Ex
 Changes stay in the browser tab. **Export JSON5** downloads the authored text with comments intact. Studio does not overwrite source files, and refreshing does not save edits. Export before closing/reloading, then replace your project's config with the reviewed file.
 
 Opening a different config in the browser changes the preview data, but not the server's font snapshot. Invalid config retains the last successful preview with an error notice and disables export until corrected.
+
+## Review a migration
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --studio
+```
+
+Open the printed `/migration` URL. The equivalent command is `europa studio --entry css/app.css --from 1.0.0-beta.16 --config europa.json5`. Both check the entry and its local imports with the config on disk. Unsaved changes in Config Studio do not change the migration inputs.
+
+The review queue groups findings by source location and category. Search for a file, property or rule, filter by source file, or switch between **To review**, **With edits** and **Decided**. Each item shows its explanation, surrounding source and affected properties/conditions. Proposed edits have highlighted before/after source panels.
+
+- **Preserve old appearance** selects available source edits. If only some findings in an item have proposals, Studio states that coverage; the others remain for review.
+- **Keep the new behavior** records the listed semantic changes as intentional and leaves the source untouched. For signed column offsets, the choice confirms the already-preserved legacy formula.
+- **Review later** sets an item aside without accepting it.
+- Syntax findings offer **Use the syntax rewrite** when supported. Syntax errors and incomplete analysis cannot be accepted.
+
+Choosing an option never writes CSS. **Review selected edits** validates the selection against fresh analysis and shows all proposed edits by file. **Apply edits** checks the source/config snapshot again, writes only the compiler's selected proposals and reruns analysis. Changes made in another editor invalidate an old preview. Identical edits are applied once; conflicting overlaps are rejected before writing.
+
+After applying edits, remaining decisions are cleared because their input snapshot has changed. Review the fresh results. Source files are replaced individually, preserving permissions; a multi-file operation is not a filesystem transaction. If a write fails partway through, Studio reports the number of files already updated and asks you to refresh.
+
+### Save and resume your review
+
+**Save review** downloads the report and your decisions. **Open review** restores them when the source version, files and resolved config still match. Studio also remembers choices in browser storage for reloads on the same server origin; download a review before ending the session or changing ports.
+
+Reopen a Studio report with pending edits in Studio to continue. Once no edits are selected, its accepted findings can also be replayed with the CLI's `--accept` flag. The terminal workflow remains available for scripts; there is no need to hand-edit a report when using Studio.
+
+A completed review covers the analyzer's listed checks. Compare rendered pages, breakpoint boundaries and interactions before shipping the migrated site.

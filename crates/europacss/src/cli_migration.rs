@@ -15,6 +15,8 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     let mut json = false;
     let mut summary = false;
     let mut details = false;
+    let mut studio = false;
+    let mut port = None;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -34,8 +36,11 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             "--json" => json = true,
             "--summary" => summary = true,
             "--details" => details = true,
+            "--studio" => studio = true,
+            "--port" => port = Some(args.next().ok_or("--port needs a number")?),
             "--help" | "-h" => {
                 println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
+                println!("Browser review: europa migrate <entry.css> --from <version> [--config europa.json5] --studio [--port 0]\n");
                 println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(ExitCode::SUCCESS);
             }
@@ -69,6 +74,24 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     }
     let input = input.ok_or("migrate requires an entry stylesheet")?;
     let from = from.ok_or("migrate requires --from: the installed version does not prove which semantics these files were authored against")?;
+    if studio {
+        if fix || apply_fixes.is_some() || accept.is_some() || json || summary || details || check {
+            return Err(
+                "Use --studio on its own; review, save, and apply decisions in the browser".into(),
+            );
+        }
+        let mut args = vec!["--entry".into(), input, "--from".into(), from];
+        if let Some(path) = config_path {
+            args.extend(["--config".into(), path]);
+        }
+        if let Some(port) = port {
+            args.extend(["--port".into(), port]);
+        }
+        return crate::cli_studio::run(args, ui).map(|_| ExitCode::SUCCESS);
+    }
+    if port.is_some() {
+        return Err("--port requires --studio".into());
+    }
     let config = match config_path {
         Some(path) => europacss::load_config(Path::new(&path))?,
         None => europacss::resolve_config(serde_json::json!({})).map_err(|e| e.to_string())?,
@@ -177,7 +200,12 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     })
 }
 
-fn replace(path: &Path, original: &str, replacement: &str, index: usize) -> Result<(), String> {
+pub(crate) fn replace(
+    path: &Path,
+    original: &str,
+    replacement: &str,
+    index: usize,
+) -> Result<(), String> {
     if fs::read_to_string(path).map_err(|e| e.to_string())? != original {
         return Err(format!(
             "{} changed during migration; rerun the command",

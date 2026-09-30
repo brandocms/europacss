@@ -1,5 +1,6 @@
 mod cli_migration;
 mod cli_output;
+mod cli_review;
 mod cli_studio;
 mod cli_watch;
 use cli_output::{Build, Color, Ui};

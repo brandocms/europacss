@@ -51,6 +51,16 @@ Check [replacement and extension semantics](./configuration#defaults-and-extensi
 
 ## Run the migration checks
 
+For an interactive review, open [Migration Studio](./studio#review-a-migration):
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --studio
+```
+
+Open the printed URL. Studio groups repeated findings, explains the changes and shows source diffs. Choose **Preserve old appearance**, **Keep the new behavior**, or **Review later**. **Review selected edits** opens the complete edit preview; **Apply edits** writes those changes and reruns analysis. You do not need to edit JSON to use this workflow.
+
+The commands below provide terminal and scriptable reports:
+
 ```sh
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --summary

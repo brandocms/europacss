@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migration review · Europa Studio</title>
+<link rel="stylesheet" href="/migration.css"><script src="/migration.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#detail">Skip to current change</a>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Europa Config Studio"><span class="mark" aria-hidden="true">e.</span><span><strong>Europa</strong><span>STUDIO</span></span></a>
+  <nav class="studio-nav" aria-label="Studio"><a href="/">Configuration</a><a href="/migration" aria-current="page">Migration review</a></nav>
+  <div class="header-actions"><button id="open-review" class="quiet-button">Open review</button><button id="save-review" disabled>Save review <span aria-hidden="true">↗</span></button><input id="review-file" type="file" accept=".json" hidden></div>
+</header>
+<main>
+  <section class="intro" aria-labelledby="page-title">
+    <div><div class="eyebrow"><span class="live-dot" aria-hidden="true"></span> A CONSIDERED UPGRADE</div><h1 id="page-title">Review the changes.</h1><p>Keep the intention behind your CSS. Decide what stays, and what moves forward.</p><div class="project-line" id="project-line">Opening your project…</div></div>
+    <div class="progress-card" id="progress-card" hidden><div class="progress-label"><span>YOUR REVIEW</span><strong id="progress-label">0 of 0 decisions</strong></div><progress id="progress" max="1" value="0" aria-label="Review progress"></progress><p id="progress-note">Take it one change at a time.</p></div>
+  </section>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <div id="error" class="notice error" role="alert" hidden></div>
+  <section id="start" class="start-state" hidden><span class="empty-symbol" aria-hidden="true">↗</span><h2>Bring your project into focus.</h2><p>Start a migration review with your entry stylesheet and its legacy EuropaCSS version.</p><pre>europa migrate css/app.css --from 1.0.0-beta.16 \
+  --config europa.json5 --studio</pre><p>Studio checks the entry and its imports. You choose the changes.</p></section>
+  <div id="loading" class="loading" role="status"><span class="spinner" aria-hidden="true"></span> Reading your stylesheets…</div>
+  <section id="review" hidden aria-label="Migration workspace">
+    <div class="overview"><div><strong id="item-count">—</strong><span>review items</span></div><div><strong id="proposal-count">—</strong><span>proposed edits</span></div><div><strong id="file-count">—</strong><span>source files</span></div><p id="analysis-status"></p><button id="refresh" class="quiet-button" title="Rerun checks against the files on disk">↻ Refresh analysis</button></div>
+    <div class="review-layout">
+      <aside class="queue-panel" aria-label="Review queue">
+        <div class="queue-tools"><div class="queue-heading"><h2>Review queue</h2><span id="filtered-count"></span></div><label class="search"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5"/></svg><input id="search" type="search" placeholder="Find a file, property, or rule…" aria-label="Search review items"></label><label class="sr-only" for="file-filter">Filter by source file</label><select id="file-filter"><option value="">All source files</option></select><div class="queue-tabs" aria-label="Review status"><button data-filter="all" aria-pressed="true">All</button><button data-filter="pending" aria-pressed="false">To review</button><button data-filter="edits" aria-pressed="false">With edits</button><button data-filter="decided" aria-pressed="false">Decided</button></div></div>
+        <div id="queue" class="queue"></div>
+        <div class="queue-foot"><span class="dot-legend" aria-hidden="true"></span> Choices stay editable until you apply.</div>
+      </aside>
+      <section id="detail" class="detail" aria-label="Current review item" tabindex="-1"></section>
+    </div>
+    <footer class="review-bar"><div><span class="selection-icon" aria-hidden="true">✓</span><div><strong id="selection-summary">No edits selected</strong><span id="selection-note">Your CSS stays untouched while you review.</span></div></div><button id="preview-edits" class="primary" disabled>Review selected edits <span aria-hidden="true">→</span></button></footer>
+    <p class="scope-note">These checks compare known migration differences. Compare your rendered pages before shipping.</p>
+  </section>
+</main>
+<dialog id="apply-dialog" aria-labelledby="apply-title"><div class="dialog-heading"><div><span class="eyebrow">ONE LAST LOOK</span><h2 id="apply-title">Your selected edits.</h2><p id="apply-description"></p></div><button id="close-dialog" class="icon-button" aria-label="Close edit preview">✕</button></div><div id="plan-files" class="plan-files"></div><div class="apply-note"><strong>A fresh review follows.</strong> Applying edits reruns the checks and clears your remaining decisions, because the source has changed. Save a copy of this review first if you want a record.</div><div class="dialog-actions"><button id="save-before-apply">Save review</button><div><button id="cancel-apply">Back to review</button><button id="apply-edits" class="primary">Apply edits</button></div></div></dialog>
+<div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>

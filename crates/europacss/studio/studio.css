@@ -72,3 +72,5 @@ main.expanded #editor .cm-editor{font-size:14px}
 #focused-status,#context-controls p{font-size:12px;line-height:1.7;color:#655a74}
 #focused-diff{font:12px/1.7 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;background:#f6f4fa;padding:12px;border-radius:6px}
 #focused-diff:empty{display:none}#context-controls{margin-bottom:20px}#context-controls>label{font-size:12px;color:#655a74}
+
+.studio-migration-link{font-size:11px;text-decoration:none;color:#756188;margin-right:8px;white-space:nowrap}.studio-migration-link:hover{text-decoration:underline}.studio-migration-link:focus-visible{outline:2px solid #7f70e1;outline-offset:4px}

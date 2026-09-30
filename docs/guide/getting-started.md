@@ -117,12 +117,12 @@ The output directory must exist. Link `public/app.css` from your site using the 
 europa studio --config europa.json5
 ```
 
-Open the printed local URL. Preview typography, spacing, grids and realistic content; click a specimen to edit its authored values. Export JSON5 to keep your changes. Studio does not overwrite your file.
+Open the printed local URL. Preview typography, spacing, grids and realistic content; click a specimen to edit its authored values. Export JSON5 to keep your changes. Config Studio does not overwrite your config file.
 
 ## Choose your workflow
 
 - [Vite](./vite): compile imported CSS with HMR and source maps.
 - [Build and watch](./build): production builds, targets, imports and CLI options.
 - [Lint and migration](./lint-and-migration): validation, legacy warnings and reviewed fixes.
-- [Config Studio](./studio): visual editing, fonts and accessibility checks.
+- [Studio](./studio): visual editing, fonts, accessibility checks and migration review.
 - [Development](./development): build, lint and test Europa itself.

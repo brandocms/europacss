@@ -7,7 +7,7 @@ mod order;
 mod review;
 mod selectors;
 
-pub use review::{apply_acceptances, reviewed_edits};
+pub use review::{apply_acceptances, can_accept, reviewed_edits};
 
 use crate::{
     config::Config,
@@ -102,6 +102,9 @@ pub struct Report {
     /// Whether the listed checks ran without unsupported input or expansion limits.
     pub analysis_complete: bool,
     pub findings: Vec<Finding>,
+    /// Exact analyzed contents for local review previews; never part of saved JSON.
+    #[serde(skip)]
+    pub sources: std::collections::BTreeMap<String, String>,
 }
 
 fn version(from: &str) -> Result<(), Error> {
@@ -253,6 +256,7 @@ fn report(
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],
         findings: audit.findings,
+        sources: sources.files.iter().enumerate().map(|(i, file)| (file.name.clone(), sources.content(i).to_owned())).collect(),
     })
 }
 

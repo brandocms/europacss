@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 pub struct ReviewItem<'a> {
     pub findings: Vec<&'a Finding>,
+    pub indices: Vec<usize>,
 }
 impl ReviewItem<'_> {
     pub fn fixes(&self) -> Vec<&Fix> {
@@ -18,16 +19,24 @@ impl ReviewItem<'_> {
 
 pub fn review_items(report: &Report) -> Vec<ReviewItem<'_>> {
     let mut groups = BTreeMap::<_, Vec<_>>::new();
-    for finding in report.findings.iter().filter(|f| !f.accepted) {
+    for (index, finding) in report
+        .findings
+        .iter()
+        .enumerate()
+        .filter(|(_, f)| !f.accepted)
+    {
         let d = &finding.diagnostic;
         groups
             .entry((&d.filename, d.offset, &d.code))
             .or_default()
-            .push(finding);
+            .push((index, finding));
     }
     groups
         .into_values()
-        .map(|findings| ReviewItem { findings })
+        .map(|entries| {
+            let (indices, findings) = entries.into_iter().unzip();
+            ReviewItem { findings, indices }
+        })
         .collect()
 }
 

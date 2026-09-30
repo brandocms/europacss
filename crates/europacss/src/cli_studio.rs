@@ -1,4 +1,5 @@
-//! Small loopback-only HTTP transport. No filesystem writes or arbitrary paths.
+//! Loopback-only Studio transport. Migration writes require a reviewed plan for
+//! the entry selected at startup; HTTP requests cannot select arbitrary paths.
 use crate::cli_output::Ui;
 use serde::Deserialize;
 use std::{
@@ -15,10 +16,14 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut port = 0u16;
     let mut fonts_path = None;
     let mut public_dir = None;
+    let mut entry = None;
+    let mut from = None;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--config" => path = Some(args.next().ok_or("--config requires a JSON5 path")?),
+            "--entry" => entry = Some(args.next().ok_or("--entry requires a stylesheet")?),
+            "--from" => from = Some(args.next().ok_or("--from requires a legacy version")?),
             "--fonts" => fonts_path = Some(args.next().ok_or("--fonts requires a CSS path")?),
             "--public-dir" => {
                 public_dir = Some(args.next().ok_or("--public-dir requires a directory")?)
@@ -31,12 +36,30 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
                     .map_err(|_| "Invalid port")?
             }
             "--help" | "-h" => {
-                println!("Usage: europa studio [--config europa.json5] [--port 0] [--fonts fonts.css] [--public-dir public]\n\nServes Config Studio on 127.0.0.1. Port 0 chooses an available port.\nEdits stay in the browser; Export downloads JSON5 without rewriting the source file.\nProject fonts: auto-detects css/includes/fonts.css and public beside the config.\nUse --fonts and --public-dir for other layouts. Only local font files are served.\nCtrl-C stops the server. No Node runtime required.");
+                println!("Usage: europa studio [--config europa.json5] [--port 0] [--fonts fonts.css] [--public-dir public] [--entry css/app.css --from 1.0.0-beta.16]\n\nServes Studio on 127.0.0.1. Port 0 chooses an available port.\nConfig edits stay in the browser; Export downloads JSON5 without rewriting the config.\nMigration review: --entry and --from enable source review and explicitly selected CSS edits.\nProject fonts: auto-detects css/includes/fonts.css and public beside the config.\nUse --fonts and --public-dir for other layouts. Only local font files are served.\nCtrl-C stops the server. No Node runtime required.");
                 return Ok(());
             }
             _ => return Err(format!("Unknown studio option: {arg}")),
         }
     }
+    if entry.is_some() != from.is_some() {
+        return Err("Migration Studio requires both --entry and --from".into());
+    }
+    if from.as_deref().is_some_and(|value| {
+        !matches!(
+            value,
+            europacss::migration::LEGACY_VERSION
+                | europacss::migration::LEGACY_BETA6
+                | europacss::migration::LEGACY_BETA11
+        )
+    }) {
+        return Err(
+            "Unsupported migration version; use 1.0.0-beta.6, 1.0.0-beta.11, or 1.0.0-beta.16"
+                .into(),
+        );
+    }
+    let mut migration =
+        entry.map(|entry| crate::cli_review::Session::new(entry, path.clone(), from.unwrap()));
     let source = match path.as_ref() {
         Some(path) => {
             let meta = fs::metadata(path).map_err(|e| format!("{path}: {e}"))?;
@@ -67,13 +90,20 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let address = listener.local_addr().map_err(|e| e.to_string())?;
     let host = address.to_string();
     let origin = format!("http://{host}");
-    ui.studio(&origin);
+    ui.studio(&origin, migration.is_some());
     let initial = serde_json::json!({"source":source,"name":path.as_deref().and_then(|p| std::path::Path::new(p).file_name()).and_then(|p| p.to_str()).unwrap_or("europa.json5")}).to_string();
     for stream in listener.incoming() {
         let mut stream = stream.map_err(|e| e.to_string())?;
         let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(3)));
-        if let Err(error) = handle(&mut stream, &host, &origin, &initial, &fonts) {
+        if let Err(error) = handle(
+            &mut stream,
+            &host,
+            &origin,
+            &initial,
+            &fonts,
+            &mut migration,
+        ) {
             let _ = response(
                 &mut stream,
                 400,
@@ -91,6 +121,7 @@ fn handle(
     origin: &str,
     initial: &str,
     fonts: &europacss::studio::fonts::Fonts,
+    migration: &mut Option<crate::cli_review::Session>,
 ) -> Result<(), String> {
     let mut reader = BufReader::new(&mut *stream);
     let mut line = String::new();
@@ -162,6 +193,9 @@ fn handle(
     let (status, mime, body) = match (parts[0].as_str(), parts[1].as_str()) {
         ("GET", "/") => (200, "text/html; charset=utf-8", include_str!("../studio/index.html").into()),
         ("GET", "/studio.css") => (200, "text/css; charset=utf-8", include_str!("../studio/studio.css").into()),
+        ("GET", "/migration") => (200, "text/html; charset=utf-8", include_str!("../studio/migration.html").into()),
+        ("GET", "/migration.css") => (200, "text/css; charset=utf-8", include_str!("../studio/migration.css").into()),
+        ("GET", "/migration.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/migration.js").into()),
         ("GET", "/editor.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/editor.bundle.js").into()),
         ("GET", "/editor.LICENSES.txt") => (200, "text/plain; charset=utf-8", include_str!("../studio/editor.LICENSES.txt").into()),
         ("GET", "/focused.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/focused.js").into()),
@@ -171,6 +205,33 @@ fn handle(
         ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),
         ("GET", "/api/fonts") => (200, "application/json", serde_json::to_string(fonts).unwrap()),
         ("GET", "/api/config") => (200, "application/json", initial.into()),
+        ("GET", "/api/migration") => {
+            match migration.as_mut().map(crate::cli_review::Session::load) {
+                None => (200, "application/json", "{\"enabled\":false}".into()),
+                Some(Ok(workspace)) => (200, "application/json", workspace.to_string()),
+                Some(Err(error)) => (422, "application/json", serde_json::json!({"error":error}).to_string()),
+            }
+        }
+        ("POST", route @ ("/api/migration/prepare" | "/api/migration/apply" | "/api/migration/export")) => {
+            if headers.get("origin").map(String::as_str) != Some(origin) {
+                return Err("Migration actions require the Studio origin".into());
+            }
+            if headers.get("content-type").map(String::as_str) != Some("application/json") {
+                return Err("Expected application/json".into());
+            }
+            let session = migration.as_mut().ok_or("Start Studio with --entry and --from to review a migration")?;
+            let mut bytes = vec![0; length];
+            reader.read_exact(&mut bytes).map_err(|e| e.to_string())?;
+            let result = match route {
+                "/api/migration/prepare" => session.prepare(&bytes),
+                "/api/migration/apply" => session.apply(&bytes),
+                _ => session.export(&bytes),
+            };
+            match result {
+                Ok(value) => (200, "application/json", value.to_string()),
+                Err(error) => (409, "application/json", serde_json::json!({"error":error}).to_string()),
+            }
+        }
         ("POST", "/api/preview") => {
             if headers.get("content-type").map(String::as_str) != Some("application/json") { return Err("Expected application/json".into()); }
             let mut bytes = vec![0; length];
@@ -203,6 +264,7 @@ fn response_bytes(
     let reason = match status {
         200 => "OK",
         404 => "Not Found",
+        409 => "Conflict",
         422 => "Unprocessable Content",
         _ => "Bad Request",
     };
