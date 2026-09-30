@@ -1,8 +1,10 @@
-use crate::cli_output::Ui;
-use europacss::{migration, Request};
-use std::{fs, io::Write, path::Path};
+pub(crate) mod display;
 
-pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
+use crate::cli_output::{MigrationSummary, Ui};
+use europacss::{migration, Request};
+use std::{fs, io::Write, path::Path, process::ExitCode};
+
+pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     let mut input = None;
     let mut config_path = None;
     let mut from = None;
@@ -12,6 +14,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     let mut check = false;
     let mut json = false;
     let mut summary = false;
+    let mut details = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -20,20 +23,21 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             "--accept" => {
                 accept = Some(args.next().ok_or("--accept needs a reviewed JSON report")?)
             }
-            "--apply-fixes" => {
+            "--apply" | "--apply-fixes" => {
                 apply_fixes = Some(
                     args.next()
-                        .ok_or("--apply-fixes needs a reviewed JSON report")?,
+                        .ok_or_else(|| format!("{arg} needs a reviewed JSON report"))?,
                 )
             }
             "--fix" => fix = true,
             "--check" => check = true,
             "--json" => json = true,
             "--summary" => summary = true,
+            "--details" => details = true,
             "--help" | "-h" => {
                 println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary] [--accept review.json | --apply-fixes review.json]\n\nChecks the entry and local imports. Default: read-only --check.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply-fixes applies only proposals marked apply_fix:true in a saved report, then reruns analysis.\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--summary groups unresolved findings by file and diagnostic code; it does not skip checks or accept findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
-                return Ok(());
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                return Ok(ExitCode::SUCCESS);
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
             _ => {
@@ -49,14 +53,19 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     if fix && check {
         return Err("Choose --check or --fix".into());
     }
-    if summary && json {
-        return Err("Choose --summary for grouped text or --json for the full report".into());
+    if [summary, json, details]
+        .into_iter()
+        .filter(|flag| *flag)
+        .count()
+        > 1
+    {
+        return Err("Choose one output mode: --summary, --details, or --json".into());
     }
     if fix && accept.is_some() {
         return Err("Apply syntax fixes first, then review a fresh report with --accept".into());
     }
     if apply_fixes.is_some() && (fix || check || accept.is_some()) {
-        return Err("Use --apply-fixes separately from --check, --fix, and --accept".into());
+        return Err("Use --apply separately from --check, --fix, and --accept".into());
     }
     let input = input.ok_or("migrate requires an entry stylesheet")?;
     let from = from.ok_or("migrate requires --from: the installed version does not prove which semantics these files were authored against")?;
@@ -121,41 +130,51 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?
         );
     } else {
+        let items = display::review_items(&report);
         if summary {
-            let mut groups =
-                std::collections::BTreeMap::<_, std::collections::BTreeMap<_, usize>>::new();
-            for finding in report.findings.iter().filter(|f| !f.accepted) {
-                let diagnostic = &finding.diagnostic;
-                *groups
+            let mut groups = std::collections::BTreeMap::<
+                _,
+                std::collections::BTreeMap<_, (usize, usize)>,
+            >::new();
+            for item in &items {
+                let diagnostic = &item.findings[0].diagnostic;
+                let counts = groups
                     .entry(diagnostic.filename.as_deref().unwrap_or(&input))
                     .or_default()
                     .entry(diagnostic.code.as_str())
-                    .or_default() += 1;
+                    .or_default();
+                counts.0 += 1;
+                counts.1 += item.findings.len();
             }
             for (filename, counts) in groups {
                 ui.migration_group(filename, &counts);
             }
-        } else {
+        } else if details {
             for finding in report.findings.iter().filter(|f| !f.accepted) {
                 eprint!("{}", ui.diagnostic(&finding.diagnostic, &input, None, true));
-                ui.migration_help(
-                    &finding.help,
-                    finding.fix.as_ref().map(|f| f.description.as_str()),
-                );
+                ui.migration_help(&finding.help, finding.fix.as_ref());
+            }
+        } else {
+            for item in &items {
+                ui.migration_item(item, &input);
             }
         }
-        ui.migration_summary(
-            report.files.len(),
-            report.findings.len(),
-            report.findings.len() - unresolved,
-            changed,
-            report.analysis_complete,
-        );
+        ui.migration_summary(MigrationSummary {
+            files: report.files.len(),
+            findings: report.findings.len(),
+            accepted: report.findings.len() - unresolved,
+            fixed: changed,
+            complete: report.analysis_complete,
+            review_items: items.len(),
+            appearance_proposals: display::appearance_proposals(&items),
+        });
     }
-    if !report.analysis_complete || unresolved != 0 {
-        return Err("Migration review has unresolved findings; no CSS build was written".into());
-    }
-    Ok(())
+    // Review findings are an expected nonzero result, not a compiler failure.
+    Ok(if report.analysis_complete && unresolved == 0 {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
 }
 
 fn replace(path: &Path, original: &str, replacement: &str, index: usize) -> Result<(), String> {

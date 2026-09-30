@@ -24,10 +24,6 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         args.next();
         return cli_studio::run(args.collect(), ui).map(|_| Vec::new());
     }
-    if args.peek().map(String::as_str) == Some("migrate") {
-        args.next();
-        return cli_migration::run(args.collect(), ui).map(|_| Vec::new());
-    }
     if args.peek().map(String::as_str) == Some("migrate-config") {
         args.next();
         let input = args
@@ -292,6 +288,15 @@ fn main() -> ExitCode {
         };
     }
     let ui = Ui::stderr(color, quiet);
+    if args.first().map(String::as_str) == Some("migrate") {
+        return match cli_migration::run(args.into_iter().skip(1).collect(), &ui) {
+            Ok(status) => status,
+            Err(message) => {
+                ui.error(&message);
+                ExitCode::FAILURE
+            }
+        };
+    }
     match run(args, &ui, color) {
         Ok(_) => ExitCode::SUCCESS,
         Err(message) => {

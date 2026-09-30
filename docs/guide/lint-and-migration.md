@@ -54,12 +54,17 @@ Check [replacement and extension semantics](./configuration#defaults-and-extensi
 ```sh
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --summary
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --details
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > migration.json
 ```
 
 Replace the version with your actual supported source version. These commands are read-only. The entry and its local imports are checked using the supplied config. Exit 1 means unresolved findings or incomplete analysis, so a report can be useful even when the command fails. `--json` writes the full report to stdout; no CSS build is produced.
 
-For a large site, `--summary` groups unresolved findings by file and diagnostic code. It changes only terminal output: every check still runs, the exit status is unchanged, and no findings are accepted. Use `--json` separately for the detailed review. Neither the general report nor sizing warnings stop at 512 findings anymore. Selector-expansion and declaration-comparison budgets remain; reaching one still marks analysis incomplete and blocks acceptance.
+The default terminal report groups unresolved findings by source location and diagnostic code, showing one source excerpt per review item. Declaration-order items list the earlier source, affected properties and breakpoint conditions together. One `padding` declaration can produce comparisons for four sides across several breakpoints; those comparisons belong to one review item, not dozens of separate edits.
+
+For a large site, `--summary` lists both review-item and finding counts by file and code. Use `--details` for each finding's full diagnostic, or `--json` for the complete machine-readable review. Grouping changes only presentation: every check still runs, the exit status is unchanged, and acceptance still applies to individual findings. Choose one output mode per command.
+
+Neither the general report nor sizing warnings stop at 512 findings anymore. Selector-expansion and declaration-comparison budgets remain; reaching one still marks analysis incomplete and blocks acceptance.
 
 Checks include:
 
@@ -83,13 +88,17 @@ It does not change specificity, sizing, breakpoint semantics or declaration orde
 
 ## Review appearance changes
 
-For a supported adjacent declaration-order conflict, a beta.16 report may contain a `preserve-appearance` fix with exact edits. Set `apply_fix: true` only on the proposals you want, then run:
+For a supported adjacent declaration-order conflict, a beta.16 report may contain a `preserve-appearance` fix with exact edits. The terminal labels these proposals `--apply`, and the summary counts distinct proposals. Items without a proposal need manual review; `--fix` does not reorder them.
+
+Export a JSON report, inspect each proposed edit and set `apply_fix: true` only on findings whose proposal you want:
 
 ```sh
-europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes migration.json
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > migration.json
+# Review the proposed edits and set apply_fix: true on the chosen findings.
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply migration.json
 ```
 
-This applies the compiler's verified proposals and reruns analysis. Changing the replacement text inside the saved report does not invent a new edit. Beta.6 and beta.11 report differences without beta.16 appearance-edit proposals.
+Several property or breakpoint findings can share the same edit. Selecting one is enough; selecting several applies an identical edit only once. This applies the compiler's verified proposals and reruns analysis. Changing the replacement text inside the saved report does not invent a new edit. `--apply-fixes` remains an alias for `--apply`. Beta.6 and beta.11 report differences without beta.16 appearance-edit proposals.
 
 Once edits are finished, generate a **fresh** JSON report. For semantic changes you have reviewed and intend to keep, set `accepted: true` on those findings:
 
@@ -99,9 +108,9 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > r
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept review.json
 ```
 
-Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply-fixes` and `--accept` as separate stages.
+Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply` and `--accept` as separate stages.
 
-Analyzer version 9 removes finding-count truncation and supports explicit acceptance of beta.11-specific warnings. Regenerate and review older reports; changing their version field does not make them current. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
+Analyzer version 9 removes finding-count truncation and supports explicit acceptance of beta.11-specific warnings. Regenerate and review reports from older analyzer versions; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity, so existing version-9 reviews remain valid for unchanged inputs. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
 ## Verify the site
 

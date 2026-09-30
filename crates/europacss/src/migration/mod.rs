@@ -24,7 +24,7 @@ pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
 pub const REPORT_VERSION: u32 = 9;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
     pub filename: String,
     /// UTF-8 byte offsets into the original file, end exclusive.
@@ -42,6 +42,38 @@ pub struct Fix {
     pub edits: Vec<Edit>,
 }
 
+/// Structured evidence for presentation only. Finding identity and review
+/// decisions still use the original diagnostic, preserving version-9 reviews.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct OrderSource {
+    pub filename: Option<String>,
+    pub offset: usize,
+    pub line: usize,
+    pub column: usize,
+}
+impl From<Error> for OrderSource {
+    fn from(error: Error) -> Self {
+        Self {
+            filename: error.filename,
+            offset: error.offset,
+            line: error.line,
+            column: error.column,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct OrderConflict {
+    pub earlier_source: OrderSource,
+    pub earlier_label: String,
+    pub earlier: String,
+    pub later: String,
+    pub earlier_conditions: Vec<String>,
+    pub later_conditions: Vec<String>,
+    pub reason: String,
+    pub selector_path: Vec<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct Finding {
     #[serde(flatten)]
@@ -53,6 +85,8 @@ pub struct Finding {
     pub apply_fix: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fix: Option<Fix>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order: Option<OrderConflict>,
 }
 
 #[derive(Debug, Serialize)]
@@ -287,7 +321,22 @@ impl Audit<'_> {
             accepted: false,
             apply_fix: false,
             fix,
+            order: None,
         });
+    }
+    fn add_order(
+        &mut self,
+        message: String,
+        offset: usize,
+        help: &str,
+        fix: Option<Fix>,
+        order: OrderConflict,
+    ) {
+        let before = self.findings.len();
+        self.add("EU_MIGRATION_ORDER", message, offset, help, fix);
+        if self.findings.len() > before {
+            self.findings.last_mut().unwrap().order = Some(order);
+        }
     }
     fn incomplete(&mut self, node: &Node, reason: &str) {
         self.complete = false;

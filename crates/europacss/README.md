@@ -183,12 +183,14 @@ For an adjacent fallback conflict, the report can propose a `preserve-appearance
 ```sh
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > review.json
 # Review the proposals and select findings with apply_fix: true.
-europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply-fixes review.json
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply review.json
 ```
 
 This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 9 invalidates earlier saved reviews, and review snapshots include the source version.
 
-Large reports retain every unique finding, including sizing/profile warnings; there is no 512-finding cutoff. Declaration checks index expanded longhands and importance so unrelated properties do not consume the comparison budget. Selector expansion and comparison work remain bounded, and exhausted analysis still cannot be accepted. `--summary` groups unresolved counts by file and diagnostic code without changing checks or exit status; `--json` retains the complete detail. Reviewed JSON input is limited to 16 MiB, and proposed edits have a separate size budget.
+The default terminal report groups findings by source location and diagnostic code, with one excerpt per review item and the affected properties/breakpoint conditions underneath. `--summary` lists review-item and finding counts per file and code; `--details` prints each finding separately. `--json` retains every finding, and review decisions still apply individually. `--fix` applies supported syntax rewrites; `--apply review.json` applies selected edit proposals (`--apply-fixes` remains an alias).
+
+Large reports retain every unique finding, including sizing/profile warnings; there is no 512-finding cutoff. Declaration checks index expanded longhands and importance so unrelated properties do not consume the comparison budget. Selector expansion and comparison work remain bounded, and exhausted analysis still cannot be accepted. Reviewed JSON input is limited to 16 MiB, and proposed edits have a separate size budget.
 
 A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
 

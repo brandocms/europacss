@@ -66,7 +66,10 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
     let review = parse_review(source)?;
     validate_review(report, &review)?;
     if review.findings.iter().any(|f| f.apply_fix) {
-        return Err(fail("Use --apply-fixes for apply_fix:true decisions, then review a fresh report before --accept".into()));
+        return Err(fail(
+            "Use --apply for apply_fix:true decisions, then review a fresh report before --accept"
+                .into(),
+        ));
     }
     // Validate all decisions before changing any acceptance state.
     let indices = finding_indices(report);

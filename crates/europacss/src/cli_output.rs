@@ -1,4 +1,5 @@
-use europacss::Error;
+use crate::cli_migration::display::{order_sections, ReviewItem};
+use europacss::{migration::Fix, Error};
 use std::{
     env, fs,
     io::{self, IsTerminal},
@@ -45,6 +46,16 @@ pub struct Build<'a> {
     pub minify: bool,
     pub warnings: usize,
     pub elapsed: Duration,
+}
+
+pub struct MigrationSummary {
+    pub files: usize,
+    pub findings: usize,
+    pub accepted: usize,
+    pub fixed: usize,
+    pub complete: bool,
+    pub review_items: usize,
+    pub appearance_proposals: usize,
 }
 
 pub struct Ui {
@@ -231,34 +242,158 @@ impl Ui {
             );
         }
     }
-    pub fn migration_help(&self, help: &str, fix: Option<&str>) {
+    pub fn migration_help(&self, help: &str, fix: Option<&Fix>) {
         eprintln!("  {} {}", self.paint("1;36", "help"), clean(help));
         if let Some(fix) = fix {
-            eprintln!("  {} {}", self.paint("1;32", "--fix"), clean(fix));
+            self.migration_fix(fix);
+        }
+    }
+    fn migration_fix(&self, fix: &Fix) {
+        let action = if fix.kind == "syntax" {
+            "--fix"
+        } else {
+            "--apply <review.json>"
+        };
+        eprintln!(
+            "  {} {}",
+            self.paint("1;32", action),
+            clean(&fix.description)
+        );
+    }
+    pub fn migration_item(&self, item: &ReviewItem<'_>, input: &str) {
+        let first = item.findings[0];
+        let mut diagnostic = first.diagnostic.clone();
+        if diagnostic.code == "EU_MIGRATION_ORDER" && first.order.is_some() {
+            diagnostic.message = format!(
+                "Declaration order may change · {} {} at this source location",
+                item.findings.len(),
+                if item.findings.len() == 1 {
+                    "comparison"
+                } else {
+                    "comparisons"
+                }
+            );
+        } else if item.findings.len() > 1 {
+            diagnostic.message = format!(
+                "{} related findings at this source location",
+                item.findings.len()
+            );
+        }
+        eprint!("{}", self.diagnostic(&diagnostic, input, None, true));
+        let mut earlier = None;
+        for row in order_sections(item) {
+            let key = (
+                row.earlier_source,
+                row.earlier_label,
+                row.reason,
+                row.selector_path,
+            );
+            if earlier != Some(key) {
+                let source = row.earlier_source;
+                let path = display_path(source.filename.as_deref().unwrap_or(input));
+                eprintln!(
+                    "  {} {} at {}:{}:{}",
+                    self.paint("1;36", "earlier"),
+                    clean(row.earlier_label),
+                    path,
+                    source.line,
+                    source.column
+                );
+                eprintln!(
+                    "    {}",
+                    self.dim(&format!("{} the earlier value.", clean(row.reason)))
+                );
+                if !row.selector_path.is_empty() {
+                    eprintln!(
+                        "    {} {}",
+                        self.dim("selector"),
+                        clean(&row.selector_path.join(" → "))
+                    );
+                }
+                earlier = Some(key);
+            }
+            for (old, new) in row.conditions {
+                let scope = |conditions: &[String]| {
+                    if conditions.is_empty() {
+                        "unconditional".into()
+                    } else {
+                        clean(&conditions.join(" / "))
+                    }
+                };
+                if old == new {
+                    eprintln!("      {} {}", self.dim("within"), scope(old));
+                } else {
+                    eprintln!("      {} {}", self.dim("earlier when"), scope(old));
+                    eprintln!("      {} {}", self.dim("later when"), scope(new));
+                }
+            }
+            for (old, new) in row.values {
+                eprintln!(
+                    "        {} {} {}",
+                    clean(old),
+                    self.paint("1;33", "→"),
+                    self.paint("1", &clean(new))
+                );
+            }
+        }
+        // Other categories retain every distinct message under one excerpt.
+        if item.findings.len() > 1 {
+            for finding in item.findings.iter().filter(|f| f.order.is_none()) {
+                eprintln!("    • {}", clean(&finding.diagnostic.message));
+            }
+        }
+        let mut helps = std::collections::HashSet::new();
+        for finding in &item.findings {
+            if helps.insert(finding.help.as_str()) {
+                self.migration_help(&finding.help, None);
+            }
+        }
+        let fixes = item.fixes();
+        if first.diagnostic.code == "EU_MIGRATION_ORDER" && fixes.is_empty() {
+            eprintln!(
+                "  {}",
+                self.dim("Manual review · no automatic edit proposal for this item")
+            );
+        }
+        for fix in fixes {
+            self.migration_fix(fix);
         }
     }
     pub fn migration_group(
         &self,
         filename: &str,
-        counts: &std::collections::BTreeMap<&str, usize>,
+        counts: &std::collections::BTreeMap<&str, (usize, usize)>,
     ) {
         eprintln!("\n  {}", self.paint("1;36", &display_path(filename)));
-        for (code, count) in counts {
+        for (code, (items, findings)) in counts {
             eprintln!(
-                "    {}  {}",
-                self.paint("1;33", &format!("{count:>5}")),
-                clean(code)
+                "    {}  {} {}",
+                self.paint(
+                    "1;33",
+                    &format!("{items:>5} {}", if *items == 1 { "item" } else { "items" })
+                ),
+                clean(code),
+                self.dim(&format!(
+                    "({findings} {})",
+                    if *findings == 1 {
+                        "finding"
+                    } else {
+                        "findings"
+                    }
+                ))
             );
         }
     }
-    pub fn migration_summary(
-        &self,
-        files: usize,
-        findings: usize,
-        accepted: usize,
-        fixed: usize,
-        complete: bool,
-    ) {
+    pub fn migration_summary(&self, summary: MigrationSummary) {
+        let MigrationSummary {
+            files,
+            findings,
+            accepted,
+            fixed,
+            complete,
+            review_items,
+            appearance_proposals,
+        } = summary;
         let unresolved = findings - accepted;
         if self.quiet && unresolved == 0 && complete {
             return;
@@ -268,11 +403,18 @@ impl Ui {
         } else {
             "! migration review required"
         };
-        eprintln!("\n  {}  {}\n          {files} files · {unresolved} unresolved · {accepted} accepted · {fixed} files fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), self.dim("Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."));
+        eprintln!("\n  {}  {}\n          {} · {}\n          {unresolved} unresolved · {accepted} accepted · {} fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), counted(files, "file", "files"), counted(review_items, "review item", "review items"), counted(fixed, "file", "files"), self.dim("Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."));
+        if appearance_proposals > 0 {
+            eprintln!("  {} {}\n", self.paint("1;32", &counted(appearance_proposals, "distinct appearance edit proposal", "distinct appearance edit proposals")), self.dim("· export --json, review apply_fix:true choices, then use --apply <review.json>"));
+        }
         if !complete {
             eprintln!("  {}\n", self.paint("1;31", "Analysis incomplete — resolve the analysis diagnostics before accepting this report."));
         }
     }
+}
+
+fn counted(count: usize, singular: &str, plural: &str) -> String {
+    format!("{count} {}", if count == 1 { singular } else { plural })
 }
 
 fn display_path(name: &str) -> String {

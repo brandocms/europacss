@@ -1,5 +1,5 @@
 //! Local cascade changes caused by legacy append/packing behavior.
-use super::Audit;
+use super::{Audit, OrderConflict};
 use crate::{
     config::Config,
     parser::{self, Node},
@@ -361,8 +361,13 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                                         true
                                     })
                                     .cloned();
-                                audit.add("EU_MIGRATION_ORDER", format!("Within {condition}, {behavior} `{}` from {label} at {}:{}; source-order expansion places `{}` later", old.text, origin.filename.as_deref().unwrap_or("source"), origin.line, new.text), current.offset,
-                                "Accept the later authored value if that is intended. To preserve the earlier override, move this fallback before the directive/conditional and review all affected widths. When a proposal is available, set apply_fix:true on this finding and use --apply-fixes with the reviewed report. --fix never makes this appearance choice.", fix);
+                                audit.add_order(format!("Within {condition}, {behavior} `{}` from {label} at {}:{}; source-order expansion places `{}` later", old.text, origin.filename.as_deref().unwrap_or("source"), origin.line, new.text), current.offset,
+                                "Accept the later authored value if that is intended. To preserve the earlier override, move this fallback before the directive/conditional and review all affected widths. When a proposal is available, set apply_fix:true on this finding and use --apply with the reviewed report. --fix never makes this appearance choice.", fix, OrderConflict {
+                                    earlier_source: origin.into(), earlier_label: label.into(),
+                                    earlier: old.text.clone(), later: new.text.clone(),
+                                    earlier_conditions: previous.conditions.clone(), later_conditions: current.conditions.clone(),
+                                    reason: behavior.into(), selector_path: Vec::new(),
+                                });
                             }
                         }
                     }
@@ -473,8 +478,13 @@ pub(super) fn repeated_selectors(nodes: &[Node], audit: &mut Audit<'_>) {
                                 continue;
                             }
                             let origin = audit.sources.locate(Error::new("", "", previous.offset));
-                            audit.add("EU_MIGRATION_ORDER", format!("Repeated selector path `{}`: legacy media packing can favor `{}` under {} at {}:{}; source-order expansion places `{}` later in another rule", ctx.selectors.join(" → "), old.text, previous.conditions.join(" / "), origin.filename.as_deref().unwrap_or("source"), origin.line, new.text), current.offset,
-                                "Review this repeated selector at the affected widths. To retain the old responsive override, put its media/Europa responsive block after the base rule. --fix does not reorder declarations or rules automatically.", None);
+                            audit.add_order(format!("Repeated selector path `{}`: legacy media packing can favor `{}` under {} at {}:{}; source-order expansion places `{}` later in another rule", ctx.selectors.join(" → "), old.text, previous.conditions.join(" / "), origin.filename.as_deref().unwrap_or("source"), origin.line, new.text), current.offset,
+                                "Review this repeated selector at the affected widths. To retain the old responsive override, put its media/Europa responsive block after the base rule. --fix does not reorder declarations or rules automatically.", None, OrderConflict {
+                                    earlier_source: origin.into(), earlier_label: "earlier CSS".into(),
+                                    earlier: old.text.clone(), later: new.text.clone(),
+                                    earlier_conditions: previous.conditions.clone(), later_conditions: current.conditions.clone(),
+                                    reason: "legacy media packing can favor".into(), selector_path: ctx.selectors.clone(),
+                                });
                         }
                     }
                 }

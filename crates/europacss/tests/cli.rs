@@ -287,7 +287,7 @@ fn migration_summary_groups_large_imported_reports_without_accepting_or_hiding_f
     assert!(summary.stdout.is_empty());
     let text = String::from_utf8(summary.stderr).unwrap();
     assert!(text.contains("nested.css"));
-    assert!(text.contains("600  EU_MIGRATION_SPECIFICITY"));
+    assert!(text.contains("600 items  EU_MIGRATION_SPECIFICITY (600 findings)"));
     assert!(text.contains("600 unresolved"));
     assert!(text.len() < 1500);
 
@@ -309,7 +309,7 @@ fn migration_summary_groups_large_imported_reports_without_accepting_or_hiding_f
     let partial = run(&["--accept", "review.json", "--summary"]);
     assert!(!partial.status.success());
     let text = String::from_utf8(partial.stderr).unwrap();
-    assert!(text.contains("1  EU_MIGRATION_SPECIFICITY"));
+    assert!(text.contains("1 item  EU_MIGRATION_SPECIFICITY (1 finding)"));
     assert!(text.contains("1 unresolved · 599 accepted"));
     assert!(!run(&["--summary", "--json"]).status.success());
     assert_eq!(
@@ -1028,4 +1028,130 @@ fn development_font_token_labels_are_opt_in_and_minification_removes_them() {
         );
         assert!(css.contains("font-size:"));
     }
+}
+
+#[test]
+fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fixes() {
+    let dir = Temp::new();
+    fs::write(
+        dir.0.join("app.css"),
+        "@import 'one.css'; @import 'two.css';",
+    )
+    .unwrap();
+    let source = ".one {\n  @space padding 1 xs/sm;\n  padding:12px;\n}";
+    fs::write(dir.0.join("one.css"), source).unwrap();
+    fs::write(dir.0.join("two.css"), source.replace(".one", ".two")).unwrap();
+    let run = |extra: &[&str]| {
+        dir.command()
+            .args([
+                "migrate",
+                "app.css",
+                "--from",
+                "1.0.0-beta.16",
+                "--color",
+                "never",
+            ])
+            .args(extra)
+            .output()
+            .unwrap()
+    };
+    let grouped = run(&[]);
+    assert!(!grouped.status.success());
+    let text = String::from_utf8(grouped.stderr).unwrap();
+    assert_eq!(
+        text.matches("! warning [EU_MIGRATION_ORDER]").count(),
+        2,
+        "{text}"
+    );
+    assert_eq!(
+        text.matches("8 comparisons at this source location")
+            .count(),
+        2,
+        "{text}"
+    );
+    assert_eq!(
+        text.matches("--apply <review.json> Move").count(),
+        2,
+        "{text}"
+    );
+    assert!(text.contains("2 distinct appearance edit proposals"));
+    assert!(text.contains("padding-left: 25px → padding-left: 12px"));
+    assert!(text.contains("padding-left: 35px → padding-left: 12px"));
+    assert!(text.contains("@media (width < 740px)"));
+    assert!(text.contains("@media (width >= 740px) and (width < 1024px)"));
+    assert!(text.contains("later when unconditional"));
+    assert!(
+        !text.contains("✗ error"),
+        "Review findings must not look like a compiler failure"
+    );
+    assert!(!text.contains("--fix Move"));
+    let detailed = String::from_utf8(run(&["--details"]).stderr).unwrap();
+    assert_eq!(
+        detailed.matches("! warning [EU_MIGRATION_ORDER]").count(),
+        16
+    );
+    assert!(text.len() < detailed.len());
+    let json = run(&["--json"]);
+    assert!(json.stderr.is_empty());
+    let mut report: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
+    let findings = report["findings"].as_array_mut().unwrap();
+    let order: Vec<_> = findings
+        .iter()
+        .filter(|f| f["code"] == "EU_MIGRATION_ORDER")
+        .collect();
+    assert_eq!(order.len(), 16);
+    assert!(order
+        .iter()
+        .all(|f| f["order"]["earlier_conditions"].is_array()));
+    // Partial acceptance must remove only the chosen evidence, not its whole group.
+    let first = findings
+        .iter_mut()
+        .find(|f| f["code"] == "EU_MIGRATION_ORDER")
+        .unwrap();
+    first["accepted"] = true.into();
+    // Version-9 reviews without presentation metadata remain valid.
+    for finding in findings {
+        finding.as_object_mut().unwrap().remove("order");
+    }
+    fs::write(dir.0.join("review.json"), report.to_string()).unwrap();
+    let partial = run(&["--accept", "review.json"]);
+    assert!(!partial.status.success());
+    let partial = String::from_utf8(partial.stderr).unwrap();
+    assert!(partial.contains("7 comparisons at this source location"));
+    assert!(partial.contains("8 comparisons at this source location"));
+    assert!(partial.contains("1 accepted"));
+    for flags in [["--details", "--summary"], ["--details", "--json"]] {
+        assert!(!run(&flags).status.success());
+    }
+    assert_eq!(fs::read_to_string(dir.0.join("one.css")).unwrap(), source);
+
+    // The eight comparisons in one item share one edit. Selecting all of them
+    // must still apply that edit once and leave the other source untouched.
+    let mut selected = 0;
+    for finding in report["findings"].as_array_mut().unwrap() {
+        finding["accepted"] = false.into();
+        if finding["filename"]
+            .as_str()
+            .is_some_and(|name| name.ends_with("/one.css"))
+            && finding["fix"].is_object()
+        {
+            finding["apply_fix"] = true.into();
+            selected += 1;
+        }
+    }
+    assert_eq!(selected, 8);
+    fs::write(dir.0.join("fixes.json"), report.to_string()).unwrap();
+    let fixed = run(&["--apply", "fixes.json"]);
+    assert!(!fixed.status.success());
+    let fixed = String::from_utf8(fixed.stderr).unwrap();
+    assert!(fixed.contains("1 file fixed"), "{fixed}");
+    assert_eq!(fixed.matches("! warning [EU_MIGRATION_ORDER]").count(), 1);
+    assert_eq!(
+        fs::read_to_string(dir.0.join("one.css")).unwrap(),
+        ".one {\n  padding:12px;\n  @space padding 1 xs/sm;\n}"
+    );
+    assert_eq!(
+        fs::read_to_string(dir.0.join("two.css")).unwrap(),
+        source.replace(".one", ".two")
+    );
 }
