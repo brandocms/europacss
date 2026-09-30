@@ -15,6 +15,8 @@ pub struct Request {
     pub config: Option<PathBuf>,
     #[serde(default)]
     pub browsers: Vec<String>,
+    #[serde(default)]
+    pub debug_tokens: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -125,6 +127,7 @@ pub fn compile(request: Request) -> Response {
             filename: request.filename.to_string_lossy().into_owned(),
             config,
             source_map: true,
+            debug_tokens: request.debug_tokens,
             browsers: request.browsers,
             ..Default::default()
         };

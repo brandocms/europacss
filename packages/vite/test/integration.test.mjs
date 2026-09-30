@@ -145,3 +145,24 @@ test('default and mobile policies resolve without JS target drift; invalid polic
   const override = { name: 'late-css-target-override', config: { order: 'post', handler(config) { config.build.cssTarget = ['chrome61']; } } };
   await assert.rejects(resolveConfig({ ...config, plugins: [europa({ binary }), override] }, 'build'), /Another plugin changed EuropaCSS CSS targets/);
 });
+
+test('dev token labels survive Vite injection and production always omits them', async (t) => {
+  const { config, write } = await fixture(t);
+  await write('nested/child.css', '.card {\n  @fontsize base;\n  opacity: .75;\n}');
+  config.plugins = [europa({ binary, debugTokens: true })];
+  const server = await createServer({ ...config, server: { port: 0 } });
+  t.after(() => server.close());
+  const result = await server.transformRequest('/app.css');
+  // The JS-injected stylesheet retains the declaration-shaped comment.
+  const css = JSON.parse(result.code.match(/const __vite__css = (".*")/)[1]);
+  assert.match(css, /font-size:.*\/\* --ec-font-token: "typography.sizes.base"; \*\//);
+  const map = JSON.parse(Buffer.from(result.code.match(/sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/)[1], 'base64').toString());
+  assert.ok(map.sources.some(source => source.endsWith('/nested/child.css')));
+  assert.ok(map.names.includes('typography.sizes.base'));
+  for (const cssMinify of [false, 'lightningcss']) {
+    const output = await build({ ...config, build: { write: false, cssMinify } });
+    const css = output.output.find(asset => asset.fileName.endsWith('.css')).source;
+    assert.match(css, /font-size/);
+    assert.doesNotMatch(css, /--ec-font-token/);
+  }
+});

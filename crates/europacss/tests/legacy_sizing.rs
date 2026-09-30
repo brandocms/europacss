@@ -25,6 +25,7 @@ fn run(source: &str, config: Value) -> Result<String, europacss::Error> {
         filename: "legacy-case.css".into(),
         config: resolve_config(config)?,
         minify: true,
+        debug_tokens: false,
         source_map: true,
         browsers: vec!["chrome 100".into()],
     })

@@ -7,6 +7,8 @@ pub struct Node {
     pub text: String,
     pub children: Option<Vec<Node>>,
     pub offset: usize,
+    /// Debug provenance for generated declarations; never part of CSS semantics.
+    pub origin_name: Option<String>,
 }
 
 impl Node {
@@ -15,6 +17,7 @@ impl Node {
             text: text.into(),
             children: None,
             offset,
+            origin_name: None,
         }
     }
     pub fn block(text: impl Into<String>, children: Vec<Node>, offset: usize) -> Self {
@@ -22,6 +25,7 @@ impl Node {
             text: text.into(),
             children: Some(children),
             offset,
+            origin_name: None,
         }
     }
     pub fn at_rule(&self) -> Option<(&str, &str)> {

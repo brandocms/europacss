@@ -8,5 +8,7 @@ export interface EuropaOptions {
   include?: (filename: string) => boolean;
   /** Shared CSS browser policy, resolved by Rust and applied to Europa and Vite. Default: ['defaults']. Overrides Vite CSS targets; leaves JavaScript targets unchanged. */
   targets?: string[];
+  /** Show font token labels as disabled properties in Chrome Styles during dev. Always omitted from production builds. Default: false. */
+  debugTokens?: boolean;
 }
 export default function europa(options?: EuropaOptions): Plugin;

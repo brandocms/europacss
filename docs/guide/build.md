@@ -71,6 +71,7 @@ Stdin does not resolve local imports. Diagnostics and build summaries go to stde
 | `-o`, `--output <file>` | Write CSS to an existing directory; default is stdout. |
 | `--targets <query>` | Browser targets; default `defaults`. |
 | `--minify` | Compact generated CSS. |
+| `--debug-tokens` | Add development font token labels; ignored with `--minify`. |
 | `--source-map` | Write an adjacent external map; requires `-o`. |
 | `--watch` | Rebuild file input and config changes; requires `-o`. |
 | `--color auto\|always\|never` | Control terminal colors. Auto respects `NO_COLOR`. |
@@ -78,4 +79,19 @@ Stdin does not resolve local imports. Diagnostics and build summaries go to stde
 | `-h`, `--help` | Show usage. |
 | `-V`, `--version` | Show the native compiler version. |
 
-A compilation failure exits with status 1. Diagnostics include a source file, line, column and error code. Source maps currently locate originating rules/directives, rather than every generated character. For migration-specific checks, use [the migration command](./lint-and-migration).
+A compilation failure exits with status 1. Diagnostics include a source file, line, column and error code. Source maps locate individual declarations and Europa directives when the origin is unambiguous. Shorthands combined from several authored declarations retain the containing rule location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. For migration-specific checks, use [the migration command](./lint-and-migration).
+
+
+## Font token labels in DevTools
+
+Use `--debug-tokens` during development to add labels beside generated font sizes:
+
+```sh
+europa css/app.css --config europa.json5 --debug-tokens --source-map -o public/app.css
+```
+
+```css
+font-size: 20px; /* --ec-font-token: "typography.sizes.body"; */
+```
+
+Chrome displays the declaration-shaped comment as a disabled property in Styles. It has no effect on computed CSS. Labels cover token sizes from `@fontsize` and `@font`; literals and ambiguous merged origins are left unlabeled. Source maps also retain token names. `--minify` omits labels. For Vite, use [`debugTokens: true`](./vite) instead; that option automatically excludes production builds.

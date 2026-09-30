@@ -63,6 +63,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
     let mut browsers = Vec::new();
     let mut minify = false;
     let mut source_map = false;
+    let mut debug_tokens = false;
     let mut watch = false;
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -81,6 +82,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
             "--targets" => browsers.push(args.next().ok_or("--targets needs a query")?),
             "--minify" => minify = true,
             "--source-map" => source_map = true,
+            "--debug-tokens" => debug_tokens = true,
             "--watch" => watch = true,
             "-" => {
                 if input.replace(arg).is_some() {
@@ -133,6 +135,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         filename: filename.clone(),
         config,
         source_map,
+        debug_tokens,
         minify,
         browsers,
     };

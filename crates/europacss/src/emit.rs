@@ -120,9 +120,11 @@ pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
         map: bool,
         last_line: i64,
         last_column: i64,
+        names: Vec<String>,
+        last_name: i64,
     }
     impl Emitter {
-        fn line(&mut self, text: &str, offset: usize) {
+        fn line(&mut self, text: &str, offset: usize, name: Option<&str>) {
             let text = text.replace("\r\n", "\n").replace(['\r', '\u{c}'], "\n");
             if self.map {
                 let (source, line, column) = self.locations[&offset];
@@ -133,6 +135,18 @@ pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
                 vlq(column as i64 - self.last_column, &mut self.mappings);
                 self.last_line = line as i64;
                 self.last_column = column as i64;
+                if let Some(name) = name {
+                    let index = self
+                        .names
+                        .iter()
+                        .position(|n| n == name)
+                        .unwrap_or_else(|| {
+                            self.names.push(name.into());
+                            self.names.len() - 1
+                        });
+                    vlq(index as i64 - self.last_name, &mut self.mappings);
+                    self.last_name = index as i64;
+                }
                 // Every node begins a new generated line. Map its start to its origin.
                 for _ in 0..=text.bytes().filter(|&c| c == b'\n').count() {
                     self.mappings.push(';');
@@ -144,13 +158,17 @@ pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
         fn nodes(&mut self, nodes: &[Node]) {
             for node in nodes {
                 if let Some(children) = &node.children {
-                    self.line(&format!("{} {{", node.text), node.offset);
+                    self.line(&format!("{} {{", node.text), node.offset, None);
                     self.nodes(children);
-                    self.line("}", node.offset);
+                    self.line("}", node.offset, None);
                 } else if node.text.starts_with("/*") {
-                    self.line(&node.text, node.offset);
+                    self.line(&node.text, node.offset, None);
                 } else {
-                    self.line(&format!("{};", node.text), node.offset);
+                    self.line(
+                        &format!("{};", node.text),
+                        node.offset,
+                        node.origin_name.as_deref(),
+                    );
                 }
             }
         }
@@ -163,13 +181,15 @@ pub fn emit(nodes: &[Node], sources: &Sources, source_map: bool) -> Output {
         last_source: 0,
         last_line: 0,
         last_column: 0,
+        names: Vec::new(),
+        last_name: 0,
     };
     emitter.nodes(nodes);
     let map = source_map.then(|| {
         serde_json::json!({
             "version": 3, "sources": sources.files.iter().map(|file| &file.name).collect::<Vec<_>>(),
             "sourcesContent": (0..sources.files.len()).map(|i| sources.content(i)).collect::<Vec<_>>(),
-            "names": [], "mappings": emitter.mappings
+            "names": emitter.names, "mappings": emitter.mappings
         })
         .to_string()
     });

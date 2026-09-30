@@ -14,6 +14,7 @@ pub fn request(source: &str, config: Value) -> Request {
         filename: "rule.css".into(),
         config: resolve_config(config).unwrap(),
         minify: true,
+        debug_tokens: false,
         source_map: true,
         browsers: vec!["chrome 100".into()],
     }

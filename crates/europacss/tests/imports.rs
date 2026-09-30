@@ -369,3 +369,45 @@ fn asset_visitor_handles_image_set_strings_escaped_functions_and_plain_url_words
         assert!(result.css.contains(value), "{value}: {}", result.css);
     }
 }
+
+#[test]
+fn declaration_maps_and_token_labels_keep_imported_directive_locations() {
+    let p = Project::new();
+    p.write(
+        "app.css",
+        "@import 'nested/part.css';\n.entry { opacity: .25; }",
+    );
+    let input = ".card {\n  @fontsize base;\n  padding: 13px;\n}";
+    p.write("nested/part.css", input);
+    let mut request = p.request();
+    request.debug_tokens = true;
+    let output = compile_file(&request, None).unwrap();
+    assert!(output.css.contains("--ec-font-token"));
+    let mut map = SourceMap::from_json("/", output.map.as_deref().unwrap()).unwrap();
+    for (needle, expected_line, expected_column) in
+        [("font-size:", 1, 2), ("padding:", 2, 2), ("opacity:", 1, 9)]
+    {
+        let offset = output.css.find(needle).unwrap();
+        let prefix = &output.css[..offset];
+        let line = prefix.matches('\n').count() as u32;
+        let column = prefix.rsplit('\n').next().unwrap().encode_utf16().count() as u32;
+        let origin = map
+            .find_closest_mapping(line, column)
+            .unwrap()
+            .original
+            .unwrap();
+        assert_eq!(
+            (origin.original_line, origin.original_column),
+            (expected_line, expected_column),
+            "{needle}"
+        );
+        assert!(map
+            .get_source(origin.source)
+            .unwrap()
+            .ends_with(if needle == "opacity:" {
+                "app.css"
+            } else {
+                "nested/part.css"
+            }));
+    }
+}

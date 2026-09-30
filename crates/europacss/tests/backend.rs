@@ -5,7 +5,7 @@ use serde_json::json;
 fn request(source: &str) -> Request {
     Request {
         source: source.into(), filename: "source.css".into(), source_map: true,
-        minify: true, browsers: vec!["chrome 100".into()],
+        minify: true, debug_tokens: false, browsers: vec!["chrome 100".into()],
         config: resolve_config(json!({
             "enabled": true,
             "theme": {

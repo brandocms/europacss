@@ -61,8 +61,9 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
                 sources,
             )
         })?;
-    let mut map = request.source_map.then(|| SourceMap::new("/"));
-    let printed = sheet
+    let comments = request.debug_tokens && !request.minify;
+    let mut map = (request.source_map || comments).then(|| SourceMap::new("/"));
+    let mut printed = sheet
         .to_css(PrinterOptions {
             minify: request.minify,
             targets,
@@ -78,6 +79,19 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
                 sources,
             )
         })?;
+    if let (Some(map), Some(original)) = (&mut map, &mut original_map) {
+        crate::provenance::refine(
+            &frontend.css,
+            &mut printed.code,
+            map,
+            original,
+            targets,
+            comments,
+        );
+    }
+    if !request.source_map {
+        map = None;
+    }
     let map = if let Some(mut map) = map {
         if let Some(original) = &mut original_map {
             map.extends(original)

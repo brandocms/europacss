@@ -862,6 +862,18 @@ impl Compiler<'_, '_> {
                 ),
             }
         })?);
+        if token.is_some() {
+            fn annotate(nodes: &mut [Node], name: &str) {
+                for node in nodes {
+                    if let Some(children) = &mut node.children {
+                        annotate(children, name);
+                    } else if node.text.starts_with("font-size:") {
+                        node.origin_name = Some(format!("typography.sizes.{name}"));
+                    }
+                }
+            }
+            annotate(&mut result, &name);
+        }
         Ok(result)
     }
 

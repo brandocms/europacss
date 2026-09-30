@@ -56,6 +56,7 @@ export default function europa(options = {}) {
   let config;
   let server;
   let targets;
+  let debugTokens = false;
   const entries = new Map();
   const pending = new Set();
   const generations = new Map();
@@ -96,6 +97,7 @@ export default function europa(options = {}) {
           JSON.stringify(Object.entries(resolved.css?.lightningcss?.targets ?? {}).sort()) !== JSON.stringify(Object.entries(targets.lightning).sort())) {
         throw new Error(`Another plugin changed EuropaCSS CSS targets. Configure browser support only with europa({ targets: [...] }). Expected ${JSON.stringify(targets?.vite)}, received ${JSON.stringify(resolved.build.cssTarget)}.`);
       }
+      debugTokens = options.debugTokens === true && resolved.command === 'serve';
       root = resolved.root;
       binary = options.binary ?? 'europa';
       if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
@@ -125,7 +127,7 @@ export default function europa(options = {}) {
           params.has('raw') || params.has('url') || params.has('vue') || params.has('svelte') ||
           (options.include && !options.include(filename))) return null;
 
-      const promise = compile(binary, { version: 1, filename, source, config, browsers: targets.browsers }, root);
+      const promise = compile(binary, { version: 1, filename, source, config, browsers: targets.browsers, ...(debugTokens ? { debugTokens: true } : {}) }, root);
       const generation = Symbol();
       generations.set(id, generation);
       pending.add(promise);

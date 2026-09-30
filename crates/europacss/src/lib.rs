@@ -8,6 +8,7 @@ mod imports;
 pub mod migration;
 mod optimize;
 pub mod parser;
+mod provenance;
 mod size;
 mod sources;
 pub mod studio;
@@ -30,6 +31,9 @@ pub struct Request {
     pub source_map: bool,
     #[serde(default)]
     pub minify: bool,
+    /// Opt-in font token comments for local debugging. Never emitted with minify.
+    #[serde(default)]
+    pub debug_tokens: bool,
     /// Browserslist queries evaluated in Rust. Empty means the `defaults` query.
     #[serde(default)]
     pub browsers: Vec<String>,
