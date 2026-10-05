@@ -38,6 +38,13 @@ module.exports = {
 
 Keep the project's existing PostCSS build command. The legacy package has no native `europa` CLI. The native JSON5 loader does not evaluate this JavaScript file.
 
+### Pipeline traps
+
+- **Pass the config path directly unless you also pass `presetEnv`.** The plugin only unwraps `{ config: './europa.config.cjs' }` when `presetEnv` sits beside it. Without `presetEnv`, the object itself is read as the config, and the default theme silently applies: different breakpoints, 12 columns, and `@space`/`@column` rules that match nothing. Use `require('@brandocms/europacss')('./europa.config.cjs')` in that case.
+- **Remove plugins europacss already runs.** It includes `postcss-preset-env` (and so autoprefixer), nesting, media-query packing and selector deduplication. It throws on `postcss-preset-env`, `postcss-nested` and the known packers. A separate autoprefixer only runs twice, so remove it as well.
+- **Run `postcss-import` before europacss**, so that imported files are expanded too.
+- **The config is read when the build starts.** A running Vite or watch process keeps compiling with the old theme until it is restarted.
+
 ## Differences to expect when migrating
 
 The native compiler expands rules in source order and follows native CSS nesting. It closes fractional gaps between named breakpoint ranges and uses Lightning CSS for target transforms. The reference pages show the native behavior; legacy output, callback handling and media packing can differ.

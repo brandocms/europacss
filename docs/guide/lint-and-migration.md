@@ -122,6 +122,39 @@ Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be
 
 Analyzer version 9 removes finding-count truncation and supports explicit acceptance of beta.11-specific warnings. Regenerate and review reports from older analyzer versions; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity, so existing version-9 reviews remain valid for unchanged inputs. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
+## Sources older than beta.6
+
+There is no profile for 0.x sources (for example 0.6.1, the version Brando 0.51 sites shipped with). Convert the config, then run the checks with `--from 1.0.0-beta.6`, the closest profile. The report is a useful list of review items, but it does not cover everything that changed since 0.x. Each difference below was found on a 0.6.1 site by comparing its old and new builds page by page.
+
+**`@europa base` is expanded where it is written.** 0.x put the bundles before the whole stylesheet, so authored rules always beat the reset. The native compiler expands them in source order. If the bundles come after the `@import`s, the reset now wins, and lists lose their authored margins, for example. `@import` must stay first, so move the bundles into a file of their own and import it before everything else:
+
+```css
+/* css/app.css */
+@import './includes/bundles.css'; /* @europa base; @europa arrows; */
+@import './includes/fonts.css';
+```
+
+`europa migrate` reports this placement as a review item.
+
+**`typography.base` moved from `body` to `html`.** In 0.x the base bundle set `body { font-size }` from it. Now it sets `html { font-size }`, the size of 1rem. A 0.x config with `base: '20px'` therefore makes every `rem` value 25% larger. Set `base` to the root size the site actually rendered at, usually the browser's 16px.
+
+**`vertical-rhythm()` scales the whole value.** 0.x multiplied only the last term of a fluid size. For example, `calc(18px + 6 * (…))` times 1.5 came out as roughly 24px at a width where the native result is 36px. The report flags each use (`EU_MIGRATION_SIZE`). To keep the old spacing, replace it with an explicit spacing token.
+
+**Removed and changed at-rules:**
+
+| 0.x | Now |
+| --- | --- |
+| `@row 2/wrap;` | Error `EU_DEPRECATED`. Use `@display flex/row/wrap;` and `@space column-gap 1;`. The column math matches 0.x's margin gutters. |
+| `@container;` | Parsed as a CSS container query and rejected. Use `@space container;`, which has the same output. |
+
+**Errors where 0.x emitted something harmless:**
+
+- `@keyframes` nested inside a rule: hoist it to the top level.
+- IE hacks such as `*zoom: 1`: delete them.
+- Unknown size keys (`@space padding-top lg` when `lg` is not a spacing key): 0.x wrote `NaNvw`, which browsers drop, so deleting the declaration changes nothing.
+
+**Breakpoint edges and rounding.** Named ranges now meet at `width < 768px` instead of `width <= 767px`, and `calc()` precision differs. Text moves by fractions of a pixel, which is harmless, but a strict pixel diff then flags every page. Blur both screenshots slightly, or compare by maximum channel delta, before deciding something changed. To find the cause of a real difference, comparing element boxes and computed styles between the old and new builds is much faster than reading screenshots.
+
 ## Verify the site
 
 A clean migration report covers its listed checks; it does not prove an identical site. Build with the intended [browser targets](./build#browser-targets), compare representative pages and interaction states, and inspect breakpoint boundaries. Studio is useful for token comparisons, but it cannot reproduce an entire site's cascade or layout.
