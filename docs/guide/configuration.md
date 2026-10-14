@@ -8,6 +8,65 @@ JSON5 permits comments, trailing commas, unquoted identifier keys and single quo
 
 Except for complete `{ … }` examples, the snippets below are fragments to place under `theme` or the named section. Start with the [complete getting-started config](./getting-started#create-a-project-configuration).
 
+## Inherit a shared config
+
+Use a top-level `extends` path to inherit another JSON5 or JSON file:
+
+```json5
+// europa.json5
+{
+  extends: './presets/brando.json5',
+  theme: {
+    colors: { accent: '#c43b57' },
+    typography: {
+      families: { main: ['Inter', 'sans-serif'] },
+      sizes: { heading: { lg: '48px' } },
+    },
+  },
+}
+```
+
+The child keeps the parent's other colors, families, sizes, and the other
+breakpoints of `heading`. Its `main` family array replaces the parent's array.
+Objects merge recursively; arrays, scalars and `null` replace the inherited value.
+`null` is a value, not a deletion marker; the resulting config must still be valid
+where the compiler uses it.
+
+Each file can extend one parent, which can extend another. Paths are relative to
+the file declaring them, not the working directory. Symlinks use the real file's
+directory for its own parent path. Absolute paths also work. Supply an exact
+`.json5` or `.json` filename: there is no package-name, Vite-alias, URL, or
+JavaScript resolution. For a package that ships `europa.json5`, the path can be:
+
+```json5
+{ extends: './node_modules/@brandocms/brandojs/europa.json5' }
+```
+
+Resolution happens in this order:
+
+1. Read and recursively merge the raw parent configs, then the child.
+2. Apply Europa's built-in defaults and [theme-section replacement](#defaults-and-extensions).
+3. Apply `theme.extend` with its existing one-level merge semantics.
+4. Resolve token references against the final theme.
+
+A parent reference such as `'{colors.accent}'` therefore sees the child's accent.
+Inheritance does not turn the built-in defaults into a recursive merge. Also,
+an inherited `theme.extend.colors.accent` still applies after ordinary
+`theme.colors.accent`; override that value under `theme.extend` in the child.
+Configs without `extends` retain their existing replacement/extension behavior.
+
+Cycles, invalid parent files and missing files produce errors that identify the
+inheritance chain. Chains are limited to 64 files and 8 MiB total source data.
+CLI watch mode follows every parent and recovers when missing files appear.
+[Vite](./vite#imports-reloads-and-errors) also tracks inherited files, including
+installed presets in `node_modules`. Migration reviews use the resolved config,
+so inherited changes that alter it invalidate saved decisions.
+
+The Rust library's `load_config(path)` resolves inheritance. Use
+`load_config_tracked(path, &mut watched)` to also receive canonical dependencies,
+content snapshots and attempted paths on errors. The data-only
+`resolve_config(value)` rejects `extends` because it has no config file location.
+
 ## Config Structure
 
 ```json5
@@ -206,7 +265,7 @@ sizes: {
 }
 ```
 
-This keeps fixed small-screen text and fluid sizing for the remaining configured breakpoints. `__base__` properties apply outside media queries, then breakpoint properties can override them. A later authored CSS declaration can override generated properties according to normal source order.
+This keeps fixed small-screen text and fluid sizing for the remaining configured breakpoints. `__base__` properties apply outside media queries, then breakpoint properties can override them. A later common declaration can override generated common properties; responsive rules follow them at matching widths. See [cascade and layers](../reference/cascade) for application overrides.
 
 ## Colors
 

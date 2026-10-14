@@ -19,7 +19,7 @@ window.EuropaFocused = {create({editor, getContext}) {
     if(!context.valid) {message('Wait for the current configuration to compile, then select the token again.');return;}
     try {
       const authored=editor.fields(token.config_paths);
-      if(!authored.length) {message(token.config_paths.length?'This entry has no editable scalar values. Use JSON5 for arrays and new properties.':'This token comes from the built-in defaults. Add an override in the JSON5 editor to customize it.');$('#focused-review').disabled=true;return;}
+      if(!authored.length) {message(token.config_paths.length?'This entry has no editable scalar values. Use JSON5 for arrays and new properties.':'This token comes from an inherited config or the built-in defaults. Add an override in the JSON5 editor to customize it.');$('#focused-review').disabled=true;return;}
       if(authored.length>128) {message('This entry has more than 128 fields. Select a smaller entry in the JSON5 editor.');$('#focused-review').disabled=true;return;}
       for(const field of authored) {
         const label=document.createElement('label'), title=document.createElement('span'), input=document.createElement('input');

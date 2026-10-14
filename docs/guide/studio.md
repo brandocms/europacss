@@ -26,7 +26,15 @@ Hover a linked preview to highlight the source without scrolling or moving the c
 
 Focused editing supports existing scalar values: breakpoint entries, `*` fallbacks, `__base__` properties, references and `theme.extend` overrides. **Review change** shows the proposed value diff and compiles the candidate. **Apply to JSON5** makes one undoable edit while retaining comments and untouched formatting. If the source changes after review, review a new proposal before applying it.
 
-Add new properties, edit arrays and override built-in defaults in the JSON5 editor. Focused editing does not serialize resolved defaults back into your config.
+Add new properties, edit arrays and override inherited values or built-in defaults in the JSON5 editor. Focused editing does not serialize resolved defaults back into your config.
+
+With [config inheritance](./configuration#inherit-a-shared-config), Studio loads
+the parent chain selected by `--config` at startup. The editor and JSON5 export
+retain your child file, including `extends` and comments. Local edits merge into
+the inherited data before references resolve. Source links and focused editing
+refer to values authored in the child; add a local override to customize an
+inherited token. Restart Studio after changing a parent file or the `extends`
+path. Preview requests cannot select additional files on the server.
 
 ## Load project fonts
 

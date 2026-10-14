@@ -111,15 +111,13 @@ pub fn compile(request: Request) -> Response {
         }
         response.watch_files.push(request.filename.clone());
         let config = if let Some(path) = &request.config {
-            response.watch_files.push(path.clone());
-            if let Ok(canonical) = path.canonicalize() {
-                response.watch_files.push(canonical);
-            }
-            crate::load_config(path).map_err(|message| {
-                let mut error = Error::new("EU_CONFIG", message, 0);
-                error.filename = Some(path.to_string_lossy().into_owned());
-                error
-            })?
+            crate::load_config_tracked(path, &mut response.watch_files)
+                .map_err(|message| {
+                    let mut error = Error::new("EU_CONFIG", message, 0);
+                    error.filename = Some(path.to_string_lossy().into_owned());
+                    error
+                })?
+                .value
         } else {
             crate::resolve_config(serde_json::json!({}))?
         };

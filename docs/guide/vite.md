@@ -79,6 +79,12 @@ The Rust bundler resolves relative CSS imports before Vite sees the result. Use 
 
 Changes to a used JSON5 config or local CSS dependency update the affected CSS through HMR. Creating or deleting files uses a full reload to recover missing inputs. Compiler diagnostics retain their originating file, line and column. Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 
+The complete [`extends` chain](./configuration#inherit-a-shared-config) is tracked,
+including newly selected and missing parent configs. Vite ignores `node_modules`,
+so the adapter polls only the used dependency files there and performs a full
+reload when they change. Successful builds remove obsolete dependencies from
+this tracking. Setting `server.watch: null` also disables the adapter's polling.
+
 For font token labels in Chrome's Styles pane, enable `europa({ debugTokens: true })`. The development CSS includes comments such as:
 
 ```css

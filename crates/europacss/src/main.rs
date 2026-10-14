@@ -114,12 +114,12 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
     } else {
         String::new()
     };
-    let config_snapshot = config_path
+    let loaded_config = config_path
         .as_ref()
-        .map(|path| Snapshot::read(std::path::Path::new(path)).map_err(|e| format!("{path}: {e}")))
+        .map(|path| europacss::load_config_tracked(std::path::Path::new(path), &mut Vec::new()))
         .transpose()?;
-    let config = match &config_path {
-        Some(path) => europacss::load_config(&PathBuf::from(path))?,
+    let config = match &loaded_config {
+        Some(loaded) => loaded.value.clone(),
         None => europacss::resolve_config(serde_json::json!({})).map_err(|e| e.to_string())?,
     };
     let filename = if input == "-" {
@@ -149,7 +149,9 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
             false,
         )
     })?;
-    result.watch.extend(config_snapshot);
+    if let Some(loaded) = &loaded_config {
+        result.watch.extend(loaded.watch.clone());
+    }
     let warning_count = result.warnings.len();
     for warning in &result.warnings {
         eprint!(
@@ -168,8 +170,8 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         .unwrap_or_else(|| "stdout".into());
     if let Some(output) = output {
         let mut protected: Vec<PathBuf> = result.dependencies.iter().map(PathBuf::from).collect();
-        if let Some(path) = config_path {
-            protected.push(fs::canonicalize(path).map_err(|e| e.to_string())?);
+        if let Some(loaded) = loaded_config {
+            protected.extend(loaded.dependencies);
         }
         let mut map_path = output.as_os_str().to_owned();
         map_path.push(".map");

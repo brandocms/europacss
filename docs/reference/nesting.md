@@ -1,6 +1,6 @@
 # Nesting and reuse
 
-Europa expands its directives in place. Standard selectors and nesting then follow native CSS semantics, with browser-target transforms supplied by Lightning CSS.
+Europa expands its directives and emits common rules before responsive rules within each scope. Standard selectors and nesting follow native CSS semantics, with browser-target transforms supplied by Lightning CSS. See [cascade and layers](./cascade) for the ordering policy.
 
 ## Nested selectors
 
@@ -32,7 +32,7 @@ For a selector-list parent, native nesting uses the most specific parent alterna
 
 This has the specificity of `:is(.card, #featured) .title`, including when the element matches `.card`. That differs from expanding each parent as an independent selector. Migration checks flag relevant legacy differences.
 
-Later declarations remain later:
+Common declarations retain their source order:
 
 ```css
 body {
@@ -41,7 +41,7 @@ body {
 }
 ```
 
-Here the authored `line-height` can override the token's generated line height. Rules are not globally rearranged to reproduce the old PostCSS packing order.
+Here the authored `line-height` overrides any common line-height declaration generated at the directive. If the token also generates a responsive line height, that media rule follows the common declarations and can override them at matching widths. Use [layers](./cascade#a-layer-convention-for-brando) for application overrides that should take precedence over a library's responsive rules.
 
 ## Placeholders
 

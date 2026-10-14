@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { watchFile, unwatchFile } from 'node:fs';
 import path from 'node:path';
 import { sharedTargets, sameTargets } from './targets.js';
 
@@ -60,6 +61,36 @@ export default function europa(options = {}) {
   const entries = new Map();
   const pending = new Set();
   const generations = new Map();
+  const ignoredDependencies = new Map();
+  let recoverIgnored;
+
+  const stopIgnoredWatches = () => {
+    for (const [file, listener] of ignoredDependencies) unwatchFile(file, listener);
+    ignoredDependencies.clear();
+  };
+  const syncIgnoredWatches = () => {
+    if (!server || !recoverIgnored || server.config.server.watch === null) return;
+    // Vite always excludes node_modules from its watcher, even for explicitly
+    // added files. Poll only dependencies actually read by Europa, not the tree.
+    const needed = new Set([...entries.values()].flatMap(files => [...files].filter(file => file.includes('/node_modules/'))));
+    for (const [file, listener] of ignoredDependencies) {
+      if (!needed.has(file)) {
+        unwatchFile(file, listener);
+        ignoredDependencies.delete(file);
+      }
+    }
+    for (const file of needed) {
+      if (ignoredDependencies.has(file)) continue;
+      const listener = (current, previous) => {
+        if (current.mtimeMs === previous.mtimeMs && current.ctimeMs === previous.ctimeMs && current.size === previous.size && current.ino === previous.ino) return;
+        Promise.allSettled([...pending]).then(() => {
+          if (ignoredDependencies.has(file)) recoverIgnored(file);
+        });
+      };
+      ignoredDependencies.set(file, listener);
+      watchFile(file, { persistent: false, interval: 250 }, listener);
+    }
+  };
 
   const affectedModules = (file, graph) => {
     const modules = new Set();
@@ -115,10 +146,15 @@ export default function europa(options = {}) {
       };
       server.watcher.on('add', recover);
       server.watcher.on('unlink', recover);
+      recoverIgnored = recover;
       server.httpServer?.once('close', () => {
         server.watcher.off('add', recover);
         server.watcher.off('unlink', recover);
+        stopIgnoredWatches();
       });
+    },
+    closeBundle() {
+      stopIgnoredWatches();
     },
     async transform(source, id) {
       const [filename, query = ''] = id.split('?', 2);
@@ -140,7 +176,10 @@ export default function europa(options = {}) {
       // also recover a broken entry. Successful builds discard obsolete paths.
       if (response.error) for (const file of entries.get(id) ?? []) watched.add(file);
       // A superseded compilation must not replace the latest dependency graph.
-      if (generations.get(id) === generation) entries.set(id, watched);
+      if (generations.get(id) === generation) {
+        entries.set(id, watched);
+        syncIgnoredWatches();
+      }
       // Vite already watches the entry. Adding it as its own dependency creates
       // an import cycle in Vite's CSS graph and forces full reloads.
       for (const file of watched) {

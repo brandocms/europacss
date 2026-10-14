@@ -120,7 +120,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept r
 
 Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply` and `--accept` as separate stages.
 
-Analyzer version 9 removes finding-count truncation and supports explicit acceptance of beta.11-specific warnings. Regenerate and review reports from older analyzer versions; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity, so existing version-9 reviews remain valid for unchanged inputs. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
+Analyzer version 10 reflects [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 9; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
 ## Sources older than beta.6
 

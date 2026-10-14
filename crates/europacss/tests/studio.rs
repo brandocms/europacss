@@ -96,7 +96,12 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
       @font-face {font-family:'Escape';src:url('/fonts/%2e%2e/%2e%2e/europa.json5')}
     "#).unwrap();
     let config = root.join("europa.json5");
-    let source = "{ // keep this comment\n theme: { spacing: { demo: {'*': '18px'} } } }";
+    fs::write(
+        root.join("base.json5"),
+        "{theme:{spacing:{inherited:{'*':'27px'}}}}",
+    )
+    .unwrap();
+    let source = "{ // keep this comment\n extends:'base.json5', theme: { spacing: { demo: {'*': '18px'} } } }";
     fs::write(&config, source).unwrap();
     let log = root.join("studio.log");
     let child = Command::new(env!("CARGO_BIN_EXE_europa"))
@@ -170,7 +175,8 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     let accessibility = send("GET", "/accessibility.js", "", "");
     assert!(accessibility.starts_with("HTTP/1.1 200"));
     assert!(accessibility.contains("window.EuropaAccessibility"));
-    let body = json!({"source": "{theme:{spacing:{demo:{'*':'40px'}}}}"}).to_string();
+    let body =
+        json!({"source": "{extends:'base.json5',theme:{spacing:{demo:{'*':'40px'}}}}"}).to_string();
     let good = send(
         "POST",
         "/api/preview",
@@ -179,6 +185,14 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
     );
     assert!(good.starts_with("HTTP/1.1 200"));
     assert!(good.contains("40px"));
+    assert!(good.contains("27px"));
+    let changed_parent = send(
+        "POST",
+        "/api/preview",
+        "Content-Type: application/json\r\n",
+        &json!({"source":"{extends:'unselected.json5'}"}).to_string(),
+    );
+    assert!(changed_parent.starts_with("HTTP/1.1 422") && changed_parent.contains("restarting"));
     assert!(send(
         "POST",
         "/api/preview",

@@ -80,15 +80,15 @@ fn beta11_reviews_are_bound_to_the_source_version() {
 fn large_reports_keep_every_conflict_and_support_explicit_review() {
     // The old pairwise scan spent its budget comparing unrelated custom
     // properties. Every property here has exactly one real ordering conflict.
-    let mut source = String::from(".large { @media (min-width: 800px) {");
+    let mut source = String::from(".large { @media (width >= 800px) {");
     for i in 0..1500 {
         source.push_str(&format!("--property-{i}: old;"));
     }
-    source.push('}');
+    source.push_str("} @media (width >= 900px) {");
     for i in 0..1500 {
         source.push_str(&format!("--property-{i}: new;"));
     }
-    source.push('}');
+    source.push_str("}}");
     let mut report = analyze(&source);
     assert!(report.analysis_complete);
     assert_eq!(report.findings.len(), 1500);
@@ -153,15 +153,15 @@ fn large_resolved_sizing_reports_are_not_truncated() {
 
 #[test]
 fn large_repeated_selector_histories_compare_only_overlapping_properties() {
-    let mut source = String::from("@media (min-width: 800px) {");
+    let mut source = String::from("@media (width >= 800px) {");
     for i in 0..1500 {
         source.push_str(&format!(".shared{{--property-{i}:old}}"));
     }
-    source.push_str("}.shared{");
+    source.push_str("}@media (width >= 900px){.shared{");
     for i in 0..1500 {
         source.push_str(&format!("--property-{i}:new;"));
     }
-    source.push('}');
+    source.push_str("}}");
     let report = analyze(&source);
     assert!(report.analysis_complete);
     assert_eq!(report.findings.len(), 1500);
@@ -357,7 +357,7 @@ fn beta6_checks_run_at_expanded_uses_and_review_cannot_cross_versions() {
     assert!(report
         .findings
         .iter()
-        .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
+        .all(|f| f.diagnostic.code != "EU_MIGRATION_ORDER"));
     assert!(report.findings.iter().all(|f| f.fix.is_none()));
 }
 
@@ -546,7 +546,7 @@ fn unknown_versions_limits_and_transform_failures_cannot_look_clean() {
 }
 
 #[test]
-fn base_properties_and_responsive_fallbacks_report_concrete_order_changes() {
+fn common_base_properties_warn_but_responsive_fallbacks_keep_legacy_order() {
     let mut cfg = config();
     cfg["theme"]["typography"]["sizes"] =
         json!({"base":{"__base__":{"line-height":"150%"},"*":"20px"}});
@@ -578,23 +578,15 @@ fn base_properties_and_responsive_fallbacks_report_concrete_order_changes() {
         "Preserving legacy order is an explicit review choice"
     );
     let report = analyze(".button{@space height 50px desktop;height:40px}");
-    assert_eq!(report.findings.len(), 1, "{report:?}");
-    assert!(report.findings[0]
-        .diagnostic
-        .message
-        .contains("height: 50px"));
-    assert!(report.findings[0]
-        .diagnostic
-        .message
-        .contains("height: 40px"));
+    assert!(report.findings.is_empty(), "{report:?}");
 }
 
 #[test]
 fn order_analysis_understands_shorthands_importance_and_unrelated_properties() {
     for source in [
-        ".x{@space margin-left 20px desktop;margin:0}",
-        ".x{@space! margin-left 20px desktop;margin:0!important}",
-        ".x{@space margin-left 20px desktop;all:unset}",
+        ".x{@media (width >= 1024px){margin-left:20px}@media (width >= 740px){margin:0}}",
+        ".x{@media (width >= 1024px){margin-left:20px!important}@media (width >= 740px){margin:0!important}}",
+        ".x{@media (width >= 1024px){margin-left:20px}@media (width >= 740px){all:unset}}",
     ] {
         assert!(
             analyze(source)
@@ -605,6 +597,9 @@ fn order_analysis_understands_shorthands_importance_and_unrelated_properties() {
         );
     }
     for source in [
+        ".x{@space margin-left 20px desktop;margin:0}",
+        ".x{@space! margin-left 20px desktop;margin:0!important}",
+        ".x{@space margin-left 20px desktop;all:unset}",
         ".x{@space margin-left 20px desktop;color:red}",
         ".x{@space margin-left 20px desktop;margin:0!important}",
         ".x{@space! margin-left 20px desktop;margin:0}",
@@ -858,7 +853,7 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
 }
 
 #[test]
-fn repeated_nested_selector_media_overrides_are_reported_across_rule_nodes() {
+fn repeated_nested_selector_media_overrides_keep_legacy_order_across_rule_nodes() {
     // Real mobile news-card regression found by comparing rendered Site A.
     for source in [
         ".news-card{@responsive mobile{.media{flex:0 0 105px}} .media{flex:0 0 auto}}",
@@ -868,7 +863,7 @@ fn repeated_nested_selector_media_overrides_are_reported_across_rule_nodes() {
     ] {
         let report = analyze(source);
         assert!(report.analysis_complete, "{report:?}");
-        assert!(report.findings.iter().any(|finding| finding.diagnostic.code == "EU_MIGRATION_ORDER" && finding.diagnostic.message.contains("Repeated selector path") && finding.diagnostic.message.contains("flex-basis: 105px")), "{source}: {report:?}");
+        assert!(report.findings.iter().all(|finding| finding.diagnostic.code == "EU_MIGRATION_BREAKPOINT"), "{source}: {report:?}");
     }
     for source in [
         ".news-card{.media{flex:0 0 auto} @responsive mobile{.media{flex:0 0 105px}}}",
@@ -925,8 +920,13 @@ fn legacy_equal_value_grouping_is_considered_before_media_sorting() {
 }
 
 #[test]
-fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions() {
-    let source = ".hero {\n  @space width 40dpx mobile;\n  width:40px;\n}";
+fn adjacent_common_property_fixes_require_review_and_reject_stale_or_forged_decisions() {
+    let mut cfg = config();
+    cfg["theme"]["typography"]["sizes"] =
+        json!({"base":{"__base__":{"line-height":"150%"},"*":"20px"}});
+    let analyze =
+        |source: &str| migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+    let source = ".hero {\n  @fontsize base;\n  line-height:normal;\n}";
     let report = analyze(source);
     let fix = report.findings.iter().find_map(|f| f.fix.as_ref()).unwrap();
     assert_eq!(fix.kind, "preserve-appearance");
@@ -950,7 +950,7 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
     let fixed = migration::apply_edits(source, "rule.css", &edits).unwrap();
     assert_eq!(
         fixed,
-        ".hero {\n  width:40px;\n  @space width 40dpx mobile;\n}"
+        ".hero {\n  line-height:normal;\n  @fontsize base;\n}"
     );
     assert!(!analyze(&fixed)
         .findings
@@ -958,8 +958,8 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
         .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"));
     assert_css(
         &fixed,
-        ".hero{width:40px;@media(width < 740px){width:calc(2.77778vw * var(--ec-zoom))}}",
-        config(),
+        ".hero{line-height:150%;@media(width < 740px),(width >= 740px) and (width < 1024px),(width >= 1024px){font-size:20px}}",
+        cfg.clone(),
     );
     assert!(
         migration::reviewed_edits(&analyze(&(source.to_owned() + " ")), &review.to_string())
@@ -977,13 +977,22 @@ fn adjacent_fallback_fixes_require_review_and_reject_stale_or_forged_decisions()
 
 #[test]
 fn order_fixes_do_not_cross_intervening_rules_comments_or_generated_bodies() {
+    let mut cfg = config();
+    cfg["theme"]["typography"]["sizes"] =
+        json!({"base":{"__base__":{"line-height":"150%"},"*":"20px"}});
     for source in [
-        ".x{@space width 40dpx mobile; color:red; width:40px;}",
-        ".x{@space width 40dpx mobile; /* explains fallback */ width:40px;}",
-        "%x{@space width 40dpx mobile;width:40px;}.x{@extend %x}",
-        ".x{@responsive mobile{width:30px;} width:40px;}",
+        ".x{@fontsize base; color:red; line-height:normal;}",
+        ".x{@fontsize base; /* explains fallback */ line-height:normal;}",
+        "%x{@fontsize base;line-height:normal;}.x{@extend %x}",
     ] {
-        let report = analyze(source);
+        let report = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"),
+            "{report:?}"
+        );
         assert!(
             report.findings.iter().all(|f| f.fix.is_none()),
             "{report:?}"

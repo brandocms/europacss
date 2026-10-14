@@ -37,11 +37,10 @@ fn adjacent_identical_conditions_combine_without_reordering_declarations() {
 }
 
 #[test]
-fn intervening_rules_and_scope_boundaries_prevent_combining() {
+fn common_rules_move_before_media_but_layer_boundaries_prevent_combining() {
     let source = ".card { @media print {color:red} color:green; @media print {color:blue} }";
     let result = compile(&request(source, config())).unwrap();
-    assert_eq!(result.css.matches("@media print").count(), 2);
-    assert!(result.css.find("green").unwrap() > result.css.find("red").unwrap());
+    assert_eq!(result.css.matches("@media print").count(), 1);
     assert!(result.css.find("green").unwrap() < result.css.find("#00f").unwrap());
     let source = "@layer a {@media print {.x{color:red}}} @layer b {@media print {.x{color:red}}}";
     let result = compile(&request(source, config())).unwrap();

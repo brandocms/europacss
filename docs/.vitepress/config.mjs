@@ -42,6 +42,7 @@ export default defineConfig({
           text: 'Layout',
           items: [
             { text: 'Nesting & reuse', link: '/reference/nesting' },
+            { text: 'Cascade & layers', link: '/reference/cascade' },
             { text: 'Bundles & helpers', link: '/reference/bundles' },
             { text: '@responsive', link: '/reference/responsive' },
             { text: '@space', link: '/reference/space' },

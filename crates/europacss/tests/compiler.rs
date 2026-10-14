@@ -64,14 +64,14 @@ fn rejects_malformed_or_excessively_nested_input_without_panicking() {
 }
 
 #[test]
-fn source_order_and_conditional_scopes_are_preserved() {
+fn common_rules_precede_media_within_conditional_scopes() {
     let out = compile(&request("@layer components { @supports (display: grid) { .x { @color fg brand.dark; color: blue; @responsive $lg { @display grid; } color: green; } } }")).unwrap();
     assert!(out
         .css
         .starts_with("@layer components {\n@supports (display: grid) {\n.x {"));
     assert!(out.css.find("color: #123456").unwrap() < out.css.find("color: blue").unwrap());
     assert!(
-        out.css.find("@media (width >= 1024px)").unwrap() < out.css.find("color: green").unwrap()
+        out.css.find("color: green").unwrap() < out.css.find("@media (width >= 1024px)").unwrap()
     );
 }
 
@@ -98,7 +98,7 @@ fn breakpoint_queries_are_validated_and_sorted_by_width() {
 }
 
 #[test]
-fn expands_named_spacing_in_place() {
+fn responsive_spacing_follows_common_declarations() {
     let out = compile(&request(
         ".x { @space! padding-x md $sm; padding-left: 99px; }",
     ))
@@ -106,7 +106,7 @@ fn expands_named_spacing_in_place() {
     assert!(out.css.contains("padding-left: 10px !important"));
     assert!(out.css.contains("padding-right: 20px !important"));
     assert!(!out.css.contains("30px"));
-    assert!(out.css.rfind("padding-left: 99px").unwrap() > out.css.rfind("!important").unwrap());
+    assert!(out.css.find("padding-left: 99px").unwrap() < out.css.find("!important").unwrap());
 }
 
 #[test]

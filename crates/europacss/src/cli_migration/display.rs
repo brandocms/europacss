@@ -111,7 +111,11 @@ mod tests {
     fn grouping_preserves_origins_and_condition_pairs_without_inventing_conflicts() {
         let report = migration::analyze(
             &Request {
-                source: ".x { @space padding 1 xs/sm; @space padding 2 xs/sm; padding:12px; }
+                source: ".x {
+                    @media (width >= 740px) { padding:20px; margin:10px; }
+                    @media (width >= 800px) { padding:30px; margin:15px; }
+                    @media (width >= 900px) { padding:12px; margin:5px; }
+                    }
                     @media (width < 740px) { .x { margin:20px; } }
                     @media (width < 1024px) { .x { margin:24px; } }"
                     .into(),

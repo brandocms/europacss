@@ -52,7 +52,7 @@ fn old_prelude_blocker_compiles_through_our_parser_and_rust_lightning() {
 }
 
 #[test]
-fn authored_overrides_win_in_source_order() {
+fn common_overrides_keep_source_order_and_responsive_rules_follow_them() {
     assert_eq!(
         css(".card {@color fg red; color:blue}"),
         css(".card {color:blue}")
@@ -62,7 +62,8 @@ fn authored_overrides_win_in_source_order() {
         css(".card {color:red}")
     );
     let output = css("body {@fontsize base; line-height:normal}");
-    assert!(output.rfind("line-height:normal").unwrap() > output.find("line-height:150%").unwrap());
+    assert!(output.find("line-height:normal").unwrap() < output.find("font-size:").unwrap());
+    assert!(!output.contains("line-height:150%"));
 }
 
 #[test]
@@ -74,7 +75,7 @@ fn native_nesting_specificity_and_interleaved_declarations() {
     let output = css(".card {color:red; @responsive $lg {color:blue} color:green}");
     assert_eq!(
         output,
-        ".card{color:red}@media (min-width:1024px){.card{color:#00f}}.card{color:green}"
+        ".card{color:green}@media (min-width:1024px){.card{color:#00f}}"
     );
 }
 
@@ -114,7 +115,7 @@ fn scope_and_separated_duplicate_selectors_are_preserved() {
 }
 
 #[test]
-fn basic_directives_compile_together_without_reordering() {
+fn basic_directives_compile_with_common_rules_before_media() {
     assert_eq!(css(".card {@display flex/column/wrap; @order 2; @font header/display; @fontsize header/large $lg; @space padding-x 12px;}"), css(".card {display:flex; flex-direction:column; flex-wrap:wrap; order:2; font-family:Georgia,serif} @media (width >= 1024px) {.card {font-size:40px}} .card {padding-left:12px; padding-right:12px}"));
     assert_eq!(css(".card {@responsive $sm {@space margin-y md;}}"), css("@media (width < 1024px) {@media (width < 740px) {.card {margin-top:10px; margin-bottom:10px}} @media (width >= 740px) and (width < 1024px) {.card {margin-top:20px; margin-bottom:20px}}}"));
 }

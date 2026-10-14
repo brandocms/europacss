@@ -47,6 +47,6 @@ Keep the project's existing PostCSS build command. The legacy package has no nat
 
 ## Differences to expect when migrating
 
-The native compiler expands rules in source order and follows native CSS nesting. It closes fractional gaps between named breakpoint ranges and uses Lightning CSS for target transforms. The reference pages show the native behavior; legacy output, callback handling and media packing can differ.
+The native compiler retains common-before-responsive ordering while preserving enclosing layers and conditions. It follows native CSS nesting, closes fractional gaps between named breakpoint ranges and uses Lightning CSS for target transforms. Non-media declarations expand in place, and overlapping media queries keep their authored order. See [cascade and layers](../reference/cascade); legacy output and callback handling can still differ.
 
 Convert the config with `europa migrate-config`, run a versioned migration check, and compare representative rendered pages. A successful build alone does not establish unchanged appearance.

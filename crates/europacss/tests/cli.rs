@@ -128,6 +128,81 @@ fn watch_rebuilds_config_and_imports_recovers_errors_and_avoids_output_loops() {
 }
 
 #[test]
+fn watch_rebuilds_inherited_configs_and_recovers_changed_parent_graphs() {
+    let dir = Temp::new();
+    let file = |name| dir.0.join(name);
+    let read = |name| fs::read_to_string(file(name)).unwrap_or_default();
+    fs::write(file("app.css"), ".x{@color fg text}").unwrap();
+    fs::write(
+        file("europa.json5"),
+        "{extends:'base.json5',theme:{colors:{text:'{colors.ink}'}}}",
+    )
+    .unwrap();
+    fs::write(file("base.json5"), "{extends:'palette.json5'}").unwrap();
+    fs::write(file("palette.json5"), "{theme:{colors:{ink:'red'}}}").unwrap();
+    let _watching = Watching(
+        dir.command()
+            .args([
+                "app.css",
+                "--watch",
+                "--config",
+                "europa.json5",
+                "-o",
+                "out.css",
+            ])
+            .stderr(fs::File::create(file("watch.log")).unwrap())
+            .stdout(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    wait_for(
+        || read("out.css").contains("red"),
+        "initial inherited config",
+    );
+    fs::write(file("palette.json5"), "{theme:{colors:{ink:'tan'}}}").unwrap();
+    wait_for(|| read("out.css").contains("tan"), "inherited palette edit");
+    let previous = read("out.css");
+    fs::write(file("base.json5"), "{extends:'missing.json5'}").unwrap();
+    wait_for(
+        || read("watch.log").contains("missing.json5"),
+        "changed parent graph error",
+    );
+    assert_eq!(read("out.css"), previous);
+    fs::write(file("missing.json5"), "{theme:{colors:{ink:'gold'}}}").unwrap();
+    wait_for(|| read("out.css").contains("gold"), "new parent creation");
+    let modified = fs::metadata(file("out.css")).unwrap().modified().unwrap();
+    fs::write(file("palette.json5"), "{theme:{colors:{ink:'purple'}}}").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(650));
+    assert_eq!(
+        fs::metadata(file("out.css")).unwrap().modified().unwrap(),
+        modified,
+        "Removed parents must stop triggering builds"
+    );
+    let length = read("watch.log").len();
+    fs::remove_file(file("missing.json5")).unwrap();
+    wait_for(|| read("watch.log").len() > length, "deleted parent");
+    assert!(read("out.css").contains("gold"));
+    fs::write(file("missing.json5"), "{theme:{colors:{ink:'purple'}}}").unwrap();
+    wait_for(|| read("out.css").contains("purple"), "restored parent");
+}
+
+#[test]
+fn inherited_config_files_cannot_be_overwritten_by_css_output() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("app.css"), ".x{color:red}").unwrap();
+    fs::write(dir.0.join("europa.json5"), "{extends:'base.json'}").unwrap();
+    fs::write(dir.0.join("base.json"), "{}").unwrap();
+    let result = dir
+        .command()
+        .args(["app.css", "--config", "europa.json5", "-o", "base.json"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("must not overwrite"));
+    assert_eq!(fs::read_to_string(dir.0.join("base.json")).unwrap(), "{}");
+}
+
+#[test]
 fn watch_requires_file_input_and_output() {
     let dir = Temp::new();
     for args in [
@@ -182,7 +257,17 @@ fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
     let source = ".a,#b{.child{color:red}}";
     fs::write(dir.0.join("app.css"), "@import 'nested.css';").unwrap();
     fs::write(dir.0.join("nested.css"), source).unwrap();
-    let base = ["migrate", "app.css", "--from", "1.0.0-beta.16", "--json"];
+    fs::write(dir.0.join("europa.json5"), "{extends:'base.json5'}").unwrap();
+    fs::write(dir.0.join("base.json5"), "{theme:{colors:{brand:'red'}}}").unwrap();
+    let base = [
+        "migrate",
+        "app.css",
+        "--from",
+        "1.0.0-beta.16",
+        "--config",
+        "europa.json5",
+        "--json",
+    ];
     let result = dir.command().args(base).output().unwrap();
     let mut review: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
     assert_eq!(review["findings"][0]["accepted"], false);
@@ -209,6 +294,11 @@ fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
     let report: serde_json::Value = serde_json::from_slice(&accepted.stdout).unwrap();
     assert_eq!(report["unresolved_findings"], 0);
     assert_eq!(report["findings"][0]["accepted"], true);
+    fs::write(dir.0.join("base.json5"), "{theme:{colors:{brand:'tan'}}}").unwrap();
+    let changed_parent = check();
+    assert!(!changed_parent.status.success());
+    assert!(String::from_utf8_lossy(&changed_parent.stderr).contains("stale"));
+    fs::write(dir.0.join("base.json5"), "{theme:{colors:{brand:'red'}}}").unwrap();
     assert_eq!(
         fs::read_to_string(dir.0.join("nested.css")).unwrap(),
         source
@@ -223,7 +313,7 @@ fn migration_accepts_only_reviewed_findings_and_rejects_stale_imports() {
 fn migration_check_reports_imported_specificity_and_order_without_writing() {
     let dir = Temp::new();
     let entry = "@import 'nested.css';";
-    let nested = ".a,#b{.child{color:red}} .button{@space height 50px md;height:40px}";
+    let nested = ".a,#b{.child{color:red}} .button{@media (width >= 1024px){height:50px}@media (width >= 740px){height:40px}}";
     fs::write(dir.0.join("app.css"), entry).unwrap();
     fs::write(dir.0.join("nested.css"), nested).unwrap();
     let result = dir
@@ -958,9 +1048,22 @@ fn bridge_resolves_css_browser_policy_without_project_files_or_node() {
 #[test]
 fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
     let dir = Temp::new();
-    let source = ".x{@space width 40dpx md; width:40px;}";
+    fs::write(
+        dir.0.join("europa.json5"),
+        "{theme:{typography:{sizes:{body:{__base__:{'line-height':'150%'},md:'20px'}}}}}",
+    )
+    .unwrap();
+    let source = ".x{@fontsize body md; line-height:normal;}";
     fs::write(dir.0.join("app.css"), source).unwrap();
-    let base = ["migrate", "app.css", "--from", "1.0.0-beta.16", "--json"];
+    let base = [
+        "migrate",
+        "app.css",
+        "--from",
+        "1.0.0-beta.16",
+        "--config",
+        "europa.json5",
+        "--json",
+    ];
     let result = dir.command().args(base).output().unwrap();
     let mut review: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
     assert!(review["findings"]
@@ -998,7 +1101,7 @@ fn reviewed_appearance_edits_are_opt_in_and_reanalyzed_without_node() {
     assert_eq!(report["findings"][0]["code"], "EU_MIGRATION_BREAKPOINT");
     assert_eq!(
         fs::read_to_string(dir.0.join("app.css")).unwrap(),
-        ".x{width:40px; @space width 40dpx md;}"
+        ".x{line-height:normal; @fontsize body md;}"
     );
     assert!(
         !run().status.success(),
@@ -1034,11 +1137,16 @@ fn development_font_token_labels_are_opt_in_and_minification_removes_them() {
 fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fixes() {
     let dir = Temp::new();
     fs::write(
+        dir.0.join("europa.json5"),
+        "{theme:{typography:{sizes:{body:{__base__:{padding:'25px'},'*':'20px'}}}}}",
+    )
+    .unwrap();
+    fs::write(
         dir.0.join("app.css"),
         "@import 'one.css'; @import 'two.css';",
     )
     .unwrap();
-    let source = ".one {\n  @space padding 1 xs/sm;\n  padding:12px;\n}";
+    let source = ".one {\n  @fontsize body;\n  padding:12px;\n}";
     fs::write(dir.0.join("one.css"), source).unwrap();
     fs::write(dir.0.join("two.css"), source.replace(".one", ".two")).unwrap();
     let run = |extra: &[&str]| {
@@ -1048,6 +1156,8 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
                 "app.css",
                 "--from",
                 "1.0.0-beta.16",
+                "--config",
+                "europa.json5",
                 "--color",
                 "never",
             ])
@@ -1064,7 +1174,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
         "{text}"
     );
     assert_eq!(
-        text.matches("8 comparisons at this source location")
+        text.matches("4 comparisons at this source location")
             .count(),
         2,
         "{text}"
@@ -1076,10 +1186,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
     );
     assert!(text.contains("2 distinct appearance edit proposals"));
     assert!(text.contains("padding-left: 25px → padding-left: 12px"));
-    assert!(text.contains("padding-left: 35px → padding-left: 12px"));
-    assert!(text.contains("@media (width < 740px)"));
-    assert!(text.contains("@media (width >= 740px) and (width < 1024px)"));
-    assert!(text.contains("later when unconditional"));
+    assert!(text.contains("within unconditional"));
     assert!(
         !text.contains("✗ error"),
         "Review findings must not look like a compiler failure"
@@ -1088,7 +1195,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
     let detailed = String::from_utf8(run(&["--details"]).stderr).unwrap();
     assert_eq!(
         detailed.matches("! warning [EU_MIGRATION_ORDER]").count(),
-        16
+        8
     );
     assert!(text.len() < detailed.len());
     let json = run(&["--json"]);
@@ -1099,7 +1206,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
         .iter()
         .filter(|f| f["code"] == "EU_MIGRATION_ORDER")
         .collect();
-    assert_eq!(order.len(), 16);
+    assert_eq!(order.len(), 8);
     assert!(order
         .iter()
         .all(|f| f["order"]["earlier_conditions"].is_array()));
@@ -1109,7 +1216,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
         .find(|f| f["code"] == "EU_MIGRATION_ORDER")
         .unwrap();
     first["accepted"] = true.into();
-    // Version-9 reviews without presentation metadata remain valid.
+    // Current-version reviews without presentation metadata remain valid.
     for finding in findings {
         finding.as_object_mut().unwrap().remove("order");
     }
@@ -1117,15 +1224,15 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
     let partial = run(&["--accept", "review.json"]);
     assert!(!partial.status.success());
     let partial = String::from_utf8(partial.stderr).unwrap();
-    assert!(partial.contains("7 comparisons at this source location"));
-    assert!(partial.contains("8 comparisons at this source location"));
+    assert!(partial.contains("3 comparisons at this source location"));
+    assert!(partial.contains("4 comparisons at this source location"));
     assert!(partial.contains("1 accepted"));
     for flags in [["--details", "--summary"], ["--details", "--json"]] {
         assert!(!run(&flags).status.success());
     }
     assert_eq!(fs::read_to_string(dir.0.join("one.css")).unwrap(), source);
 
-    // The eight comparisons in one item share one edit. Selecting all of them
+    // The four comparisons in one item share one edit. Selecting all of them
     // must still apply that edit once and leave the other source untouched.
     let mut selected = 0;
     for finding in report["findings"].as_array_mut().unwrap() {
@@ -1139,7 +1246,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
             selected += 1;
         }
     }
-    assert_eq!(selected, 8);
+    assert_eq!(selected, 4);
     fs::write(dir.0.join("fixes.json"), report.to_string()).unwrap();
     let fixed = run(&["--apply", "fixes.json"]);
     assert!(!fixed.status.success());
@@ -1148,7 +1255,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
     assert_eq!(fixed.matches("! warning [EU_MIGRATION_ORDER]").count(), 1);
     assert_eq!(
         fs::read_to_string(dir.0.join("one.css")).unwrap(),
-        ".one {\n  padding:12px;\n  @space padding 1 xs/sm;\n}"
+        ".one {\n  padding:12px;\n  @fontsize body;\n}"
     );
     assert_eq!(
         fs::read_to_string(dir.0.join("two.css")).unwrap(),

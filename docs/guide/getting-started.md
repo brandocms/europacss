@@ -105,7 +105,7 @@ europa css/app.css --config europa.json5 -o public/app.css --source-map
 europa css/app.css --config europa.json5 -o public/app.css --source-map --watch
 ```
 
-Selectors follow [native CSS nesting and source order](../reference/nesting).
+Selectors follow [native CSS nesting](../reference/nesting). [Common rules precede responsive rules](../reference/cascade) within each scope.
 
 The output directory must exist. Link `public/app.css` from your site using the appropriate public URL. Watch mode recompiles the entry, its local CSS imports and the config. Stop it with Ctrl-C.
 

@@ -31,7 +31,10 @@ async function fixture(t) {
 }
 
 test('production build handles ordinary CSS imports, rebased assets and source maps', async (t) => {
-  const { root, config } = await fixture(t);
+  const { root, config, write } = await fixture(t);
+  await mkdir(path.join(root, 'node_modules/preset'), { recursive: true });
+  await write('node_modules/preset/europa.json5', "{theme:{colors:{brand:'red'}}}");
+  await write('europa.json5', "{extends:'./node_modules/preset/europa.json5'}");
   const output = await build({ ...config, build: { write: false, sourcemap: true, assetsInlineLimit: 0, minify: false } });
   const assets = output.output;
   const css = assets.find((asset) => asset.fileName.endsWith('.css')).source;
@@ -40,6 +43,51 @@ test('production build handles ordinary CSS imports, rebased assets and source m
   assert.match(css, /\/assets\/icon-.*\.svg/);
   assert.ok(assets.some((asset) => asset.fileName.endsWith('.svg')));
   assert.match(await readFile(path.join(root, 'app.css'), 'utf8'), /@import/);
+});
+
+test('inherited config chains reload, recover missing parents and stop watching replaced packages', async (t) => {
+  const { root, config, write } = await fixture(t);
+  await mkdir(path.join(root, 'node_modules/preset'), { recursive: true });
+  await write('node_modules/preset/europa.json5', "{extends:'palette.json5',theme:{colors:{brand:'{colors.ink}'}}}");
+  await write('node_modules/preset/palette.json5', "{theme:{colors:{ink:'red'}}}");
+  await write('europa.json5', "{extends:'./node_modules/preset/europa.json5'}");
+  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1' } });
+  t.after(() => server.close());
+  await server.listen();
+  const css = () => server.transformRequest('/app.css');
+  assert.match((await css()).code, /color: red/);
+  const module = server.moduleGraph.getModuleById(path.join(root, 'app.css'));
+  const reloads = [];
+  const send = server.ws.send.bind(server.ws);
+  server.ws.send = (...args) => { reloads.push(args[0]); return send(...args); };
+  const change = async (name, contents, expected) => {
+    reloads.length = 0;
+    await write(name, contents);
+    await eventually(() => module.transformResult === null && reloads.some(m => m.type === 'full-reload'));
+    assert.match((await css()).code, expected);
+  };
+  await change('node_modules/preset/palette.json5', "{theme:{colors:{ink:'green'}}}", /color: green/);
+  await write('node_modules/preset/europa.json5', "{extends:'missing.json5',theme:{colors:{brand:'{colors.ink}'}}}");
+  await eventually(() => module.transformResult === null);
+  await assert.rejects(css(), error => /EU_CONFIG.*extends[\s\S]*missing.json5/.test(error.message));
+  await change('node_modules/preset/missing.json5', "{theme:{colors:{ink:'gold'}}}", /color: gold/);
+  const cached = module.transformResult;
+  await write('node_modules/preset/palette.json5', "{theme:{colors:{ink:'purple'}}}");
+  await new Promise(resolve => setTimeout(resolve, 650));
+  assert.equal(module.transformResult, cached, 'Removed parents must not invalidate CSS');
+  reloads.length = 0;
+  await unlink(path.join(root, 'node_modules/preset/missing.json5'));
+  await eventually(() => module.transformResult === null && reloads.some(m => m.type === 'full-reload'));
+  await assert.rejects(css(), error => error.message.includes('EU_CONFIG'));
+  await change('node_modules/preset/missing.json5', "{theme:{colors:{ink:'tan'}}}", /color: tan/);
+  // Outside node_modules, inherited configs use Vite's ordinary HMR path.
+  await write('local.json5', "{theme:{colors:{brand:'blue'}}}");
+  await write('europa.json5', "{extends:'local.json5'}");
+  await eventually(() => module.transformResult === null);
+  assert.match((await css()).code, /color: (?:blue|#00f)/);
+  await write('local.json5', "{theme:{colors:{brand:'purple'}}}");
+  await eventually(() => module.transformResult === null);
+  assert.match((await css()).code, /color: purple/);
 });
 
 test('dev HMR follows transitive CSS/config edits, diagnoses errors and recovers missing imports', async (t) => {

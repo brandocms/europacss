@@ -7,20 +7,211 @@ use serde::{
     Deserialize, Deserializer,
 };
 use serde_json::{Map, Number, Value};
-use std::{collections::HashMap, fs, path::Path};
+use std::{
+    collections::HashMap,
+    fs,
+    io::Read,
+    path::{Path, PathBuf},
+};
+
+/// Resolved configuration and every file observed while loading its inheritance chain.
+#[derive(Debug)]
+pub struct LoadedConfig {
+    pub value: Value,
+    /// Canonical paths, starting with the entry config.
+    pub dependencies: Vec<PathBuf>,
+    /// Content snapshots, including symlink aliases, for watch-mode rebuilds.
+    pub watch: Vec<crate::watch::Snapshot>,
+}
 
 pub fn load_config(path: &Path) -> Result<Value, String> {
-    let source = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    load_config_tracked(path, &mut Vec::new()).map(|loaded| loaded.value)
+}
+
+/// `watched` also receives attempted paths on failure, so a missing parent can recover.
+pub fn load_config_tracked(
+    path: &Path,
+    watched: &mut Vec<PathBuf>,
+) -> Result<LoadedConfig, String> {
+    let raw = load_raw(path, None, watched)?;
+    Ok(LoadedConfig {
+        value: resolve_config(raw.value)
+            .map_err(|e| format!("{}: {}", path.display(), e.message))?,
+        dependencies: raw.dependencies,
+        watch: raw.watch,
+    })
+}
+
+fn parse_config(source: &str, path: &Path) -> Result<Value, String> {
     let value = match path.extension().and_then(|s| s.to_str()) {
-        Some("json5") => json5::from_str::<ConfigValue>(&source).map_err(|e| e.to_string()),
-        Some("json") => serde_json::from_str::<ConfigValue>(&source).map_err(|e| e.to_string()),
+        Some("json5") => json5::from_str::<ConfigValue>(source).map_err(|e| e.to_string()),
+        Some("json") => serde_json::from_str::<ConfigValue>(source).map_err(|e| e.to_string()),
         _ => Err(
             "Expected .json5 or .json config; JavaScript configuration must be migrated first"
                 .into(),
         ),
     }
     .map_err(|e| format!("{}: {e}", path.display()))?;
-    resolve_config(value.0).map_err(|e| format!("{}: {}", path.display(), e.message))
+    Ok(value.0)
+}
+
+fn take_extends(value: &mut Value) -> Result<Option<String>, String> {
+    let object = value
+        .as_object_mut()
+        .ok_or("Configuration must be an object")?;
+    match object.remove("extends") {
+        None => Ok(None),
+        Some(Value::String(path)) if !path.trim().is_empty() => Ok(Some(path)),
+        _ => Err("extends must be a nonempty path to one .json5 or .json file".into()),
+    }
+}
+
+/// Objects merge recursively; every other child value (including arrays/null) replaces.
+fn inherit(parent: &mut Value, child: Value) {
+    match (parent, child) {
+        (Value::Object(parent), Value::Object(child)) => {
+            for (key, value) in child {
+                match parent.get_mut(&key) {
+                    Some(previous) => inherit(previous, value),
+                    None => {
+                        parent.insert(key, value);
+                    }
+                }
+            }
+        }
+        (parent, child) => *parent = child,
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct Inheritance {
+    parent: Value,
+    extends: Option<String>,
+}
+
+impl Inheritance {
+    pub(crate) fn has_parent(&self) -> bool {
+        self.extends.is_some()
+    }
+
+    /// Studio can edit the child while keeping file access bound to the startup config.
+    pub(crate) fn resolve(&self, mut child: Value) -> Result<Value, String> {
+        if take_extends(&mut child)? != self.extends {
+            return Err("Changing extends in Studio requires restarting with --config; inherited files are selected at startup".into());
+        }
+        let mut merged = self.parent.clone();
+        inherit(&mut merged, child);
+        resolve_config(merged).map_err(|e| e.to_string())
+    }
+}
+
+pub(crate) struct RawConfig {
+    value: Value,
+    pub inheritance: Inheritance,
+    dependencies: Vec<PathBuf>,
+    watch: Vec<crate::watch::Snapshot>,
+}
+
+pub(crate) fn load_raw(
+    path: &Path,
+    source: Option<&str>,
+    watched: &mut Vec<PathBuf>,
+) -> Result<RawConfig, String> {
+    struct Loader<'a> {
+        watched: &'a mut Vec<PathBuf>,
+        dependencies: Vec<PathBuf>,
+        watch: Vec<crate::watch::Snapshot>,
+        stack: Vec<PathBuf>,
+        bytes: usize,
+        inheritance: Inheritance,
+    }
+    impl Loader<'_> {
+        fn file(&mut self, path: &Path, source: Option<&str>) -> Result<Value, String> {
+            let path = if path.is_absolute() {
+                path.to_path_buf()
+            } else {
+                std::env::current_dir()
+                    .map_err(|e| e.to_string())?
+                    .join(path)
+            };
+            self.watched.push(path.clone());
+            let canonical =
+                fs::canonicalize(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            self.watched.push(canonical.clone());
+            if self.stack.contains(&canonical) {
+                let chain = self
+                    .stack
+                    .iter()
+                    .chain(std::iter::once(&canonical))
+                    .map(|p| p.display().to_string())
+                    .collect::<Vec<_>>()
+                    .join(" -> ");
+                return Err(format!("Cyclic config inheritance: {chain}"));
+            }
+            if self.stack.len() >= 64 {
+                return Err("Config inheritance limit exceeded (64 files)".into());
+            }
+            const MAX_BYTES: usize = 8 * 1024 * 1024;
+            let source = match source {
+                Some(source) => source.to_owned(),
+                None => {
+                    let mut source = String::new();
+                    fs::File::open(&canonical)
+                        .and_then(|file| {
+                            file.take((MAX_BYTES - self.bytes + 1) as u64)
+                                .read_to_string(&mut source)
+                        })
+                        .map_err(|e| format!("{}: {e}", canonical.display()))?;
+                    source
+                }
+            };
+            self.bytes += source.len();
+            if self.bytes > MAX_BYTES {
+                return Err("Config inheritance size limit exceeded (8 MiB total)".into());
+            }
+            let snapshot =
+                crate::watch::Snapshot::from_source(canonical.clone(), source.as_bytes());
+            if path != canonical {
+                self.watch.push(snapshot.clone().at_path(path));
+            }
+            self.watch.push(snapshot);
+            self.dependencies.push(canonical.clone());
+            let mut child = parse_config(&source, &canonical)?;
+            let extends =
+                take_extends(&mut child).map_err(|e| format!("{}: {e}", canonical.display()))?;
+            self.stack.push(canonical.clone());
+            let mut parent = match &extends {
+                Some(parent) => self
+                    .file(&canonical.parent().unwrap().join(parent), None)
+                    .map_err(|e| format!("{} extends {parent:?}:\n{e}", canonical.display()))?,
+                None => Value::Object(Map::new()),
+            };
+            self.stack.pop();
+            if self.stack.is_empty() {
+                self.inheritance = Inheritance {
+                    parent: parent.clone(),
+                    extends,
+                };
+            }
+            inherit(&mut parent, child);
+            Ok(parent)
+        }
+    }
+    let mut loader = Loader {
+        watched,
+        dependencies: Vec::new(),
+        watch: Vec::new(),
+        stack: Vec::new(),
+        bytes: 0,
+        inheritance: Inheritance::default(),
+    };
+    let value = loader.file(path, source)?;
+    Ok(RawConfig {
+        value,
+        inheritance: loader.inheritance,
+        dependencies: loader.dependencies,
+        watch: loader.watch,
+    })
 }
 
 /// Convert already exported data to JSON5. This does not evaluate JavaScript callbacks.
@@ -110,6 +301,11 @@ pub fn resolve_config(input: Value) -> Result<Value, Error> {
     let input = input
         .as_object()
         .ok_or_else(|| err("Configuration must be an object"))?;
+    if input.contains_key("extends") {
+        return Err(err(
+            "extends requires a config file path; use load_config instead of resolve_config",
+        ));
+    }
     let mut result: Value = serde_json::from_str(include_str!("../default-config.json")).unwrap();
     let root = result.as_object_mut().unwrap();
     for (key, value) in input {

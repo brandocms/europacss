@@ -65,7 +65,7 @@ europa migrate-config europa.config.cjs -o europa.json5
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
 ```
 
-Use the actual supported legacy version: beta.6, beta.11 or beta.16. Native nesting, declaration order and breakpoint boundaries have deliberate differences. Review findings and compare rendered pages before switching a site. There is no separate `europa lint` command yet; compilation validates current input and `migrate` checks legacy differences.
+Use the actual supported legacy version: beta.6, beta.11 or beta.16. Native nesting, non-media declaration order and breakpoint boundaries have deliberate differences. Common rules precede responsive rules within each scope; see [cascade and layers](docs/reference/cascade.md). Review findings and compare rendered pages before switching a site. There is no separate `europa lint` command yet; compilation validates current input and `migrate` checks legacy differences.
 
 ## Contributing
 

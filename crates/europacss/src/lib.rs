@@ -1,5 +1,6 @@
 mod backend;
 pub mod bridge;
+mod cascade;
 mod config;
 mod config_file;
 mod config_migration;
@@ -15,7 +16,9 @@ pub mod studio;
 mod transform;
 mod value_functions;
 pub mod watch;
-pub use config_file::{json_to_json5, load_config, resolve_config};
+pub use config_file::{
+    json_to_json5, load_config, load_config_tracked, resolve_config, LoadedConfig,
+};
 pub use config_migration::migrate_config;
 
 use serde::{Deserialize, Serialize};
@@ -87,7 +90,7 @@ pub fn compile(request: &Request) -> Result<Output, Error> {
     backend::compile(request, frontend, &sources)
 }
 
-/// Expand Europa syntax into standard CSS, preserving native nesting and source order.
+/// Expand Europa syntax into standard CSS with native nesting and scoped media-last order.
 pub fn compile_frontend(request: &Request) -> Result<Output, Error> {
     frontend(request, request.source_map, false)
 }

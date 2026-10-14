@@ -56,6 +56,36 @@ fn declarations_map_to_directives_and_authored_properties_through_nesting_and_mi
 }
 
 #[test]
+fn reordered_media_keep_declaration_and_token_origins() {
+    let input =
+        ".title {\n  @fontsize xl $lg;\n  font-size: 24px;\n}\n.compact { font-size: 18px; }";
+    let mut cfg = config();
+    cfg["theme"]["typography"]["sizes"] = json!({"xl":{"desktop":"48px"}});
+    for minify in [false, true] {
+        for target in ["chrome 100", "chrome 131"] {
+            let mut req = request(input, cfg.clone());
+            req.minify = minify;
+            req.browsers = vec![target.into()];
+            let output = compile(&req).unwrap();
+            let space = if minify { "" } else { " " };
+            for (value, authored) in [
+                ("24px", "font-size: 24px"),
+                ("18px", "font-size: 18px"),
+                ("48px", "@fontsize"),
+            ] {
+                assert_origin(
+                    &output,
+                    &format!("font-size:{space}{value}"),
+                    input,
+                    authored,
+                );
+            }
+            assert!(output.css.find("18px").unwrap() < output.css.find("48px").unwrap());
+        }
+    }
+}
+
+#[test]
 fn token_comments_are_disabled_custom_properties_and_leave_maps_correct() {
     let input = ".card {\n  @fontsize body;\n  opacity: .75;\n}\n.other { color: red }";
     let mut cfg = config();

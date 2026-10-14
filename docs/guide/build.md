@@ -23,7 +23,7 @@ europa css/app.css --config europa.json5 \
   --targets 'chrome 100, firefox 100, safari 15' -o public/app.css
 ```
 
-The native CLI uses its `--targets` argument, not the old plugin's `presetEnv` options. Modern targets may retain CSS nesting; older targets receive lowered selectors. Both use native CSS nesting specificity and source order. The default output is not a promise of byte-for-byte equivalence with PostCSS.
+The native CLI uses its `--targets` argument, not the old plugin's `presetEnv` options. Modern targets may retain CSS nesting; older targets receive lowered selectors. Both preserve native nesting specificity and use [common-before-responsive ordering](../reference/cascade) within each scope. The default output is not a promise of byte-for-byte equivalence with PostCSS.
 
 In Vite, use the adapter's [`targets` option](./vite#one-css-browser-policy). It shares one CSS policy between Europa's transforms and Vite's final CSS pass; JavaScript targets remain separate.
 

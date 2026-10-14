@@ -23,6 +23,9 @@ impl Drop for Server {
 }
 impl Server {
     fn new(label: &str, one: &str, two: &str) -> Self {
+        Self::with_config(label, one, two, "{}")
+    }
+    fn with_config(label: &str, one: &str, two: &str, config: &str) -> Self {
         let root =
             std::env::temp_dir().join(format!("europa-review-{label}-{}", std::process::id()));
         fs::create_dir(&root).unwrap();
@@ -33,7 +36,7 @@ impl Server {
         .unwrap();
         fs::write(root.join("one.css"), one).unwrap();
         fs::write(root.join("two.css"), two).unwrap();
-        fs::write(root.join("europa.json5"), "{}").unwrap();
+        fs::write(root.join("europa.json5"), config).unwrap();
         let child = Command::new(env!("CARGO_BIN_EXE_europa"))
             .current_dir(&root)
             .args([
@@ -126,15 +129,18 @@ fn order(data: &Value) -> &Value {
 
 #[test]
 fn reviewed_browser_edits_are_grouped_deduplicated_and_require_a_fresh_plan() {
-    let source = "/* blåbær 🪐 */\r\n.hero {\r\n  @space padding 1 xs/sm;\r\n  padding:12px;\r\n}";
+    let source = "/* blåbær 🪐 */\r\n.hero {\r\n  @fontsize body;\r\n  padding:12px;\r\n}";
+    let config = "{theme:{typography:{sizes:{body:{__base__:{padding:'25px'},'*':'20px'}}}}}";
     let other = ".other { color: red; }";
-    let server = Server::new("apply", source, other);
+    let server = Server::with_config("apply", source, other, config);
+    fs::write(server.root.join("base.json5"), config).unwrap();
+    fs::write(server.root.join("europa.json5"), "{extends:'base.json5'}").unwrap();
     let data = server.get();
     assert_eq!(data["entry_label"], "app.css");
     assert!(data["report"].get("sources").is_none());
     let item = order(&data);
     assert_eq!(item["path"], "one.css");
-    assert_eq!(item["indices"].as_array().unwrap().len(), 8);
+    assert_eq!(item["indices"].as_array().unwrap().len(), 4);
     assert_eq!(item["fixes"].as_array().unwrap().len(), 1);
     assert_eq!(item["fixes"][0]["edits"][0]["line"], 3);
     assert_eq!(item["context"][0]["text"], "/* blåbær 🪐 */");
@@ -167,7 +173,7 @@ fn reviewed_browser_edits_are_grouped_deduplicated_and_require_a_fresh_plan() {
             .iter()
             .filter(|f| f["apply_fix"] == true)
             .count(),
-        8
+        4
     );
     let (status, plan) = server.post("prepare", &selection);
     assert_eq!(status, 200, "{plan}");
@@ -176,9 +182,9 @@ fn reviewed_browser_edits_are_grouped_deduplicated_and_require_a_fresh_plan() {
         fs::read_to_string(server.root.join("one.css")).unwrap(),
         source
     );
-    // A config change invalidates a plan before any source write.
+    // An inherited config change invalidates a plan before any source write.
     fs::write(
-        server.root.join("europa.json5"),
+        server.root.join("base.json5"),
         "{theme:{spacing:{test:{'*':'10px'}}}}",
     )
     .unwrap();
@@ -187,7 +193,7 @@ fn reviewed_browser_edits_are_grouped_deduplicated_and_require_a_fresh_plan() {
         fs::read_to_string(server.root.join("one.css")).unwrap(),
         source
     );
-    fs::write(server.root.join("europa.json5"), "{}").unwrap();
+    fs::write(server.root.join("base.json5"), config).unwrap();
     let (status, plan) = server.post("prepare", &selection);
     assert_eq!(status, 200);
     // An unrelated imported source is also part of the reviewed snapshot.
@@ -209,7 +215,7 @@ fn reviewed_browser_edits_are_grouped_deduplicated_and_require_a_fresh_plan() {
         .all(|i| i["code"] != "EU_MIGRATION_ORDER"));
     assert_eq!(
         fs::read_to_string(server.root.join("one.css")).unwrap(),
-        "/* blåbær 🪐 */\r\n.hero {\r\n  padding:12px;\r\n  @space padding 1 xs/sm;\r\n}"
+        "/* blåbær 🪐 */\r\n.hero {\r\n  padding:12px;\r\n  @fontsize body;\r\n}"
     );
     assert_eq!(
         fs::read_to_string(server.root.join("two.css")).unwrap(),

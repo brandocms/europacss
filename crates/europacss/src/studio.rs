@@ -1,5 +1,10 @@
 //! Config Studio previews use the same resolver and compiler as normal builds.
-use crate::{compile, config::Config, config_file::ConfigValue, resolve_config, Request};
+use crate::{
+    compile,
+    config::Config,
+    config_file::{ConfigValue, Inheritance},
+    Request,
+};
 pub mod fonts;
 mod source_paths;
 use serde::Serialize;
@@ -46,13 +51,46 @@ fn safe_token(key: &str) -> bool {
 }
 
 pub fn preview(source: &str) -> Result<Preview, String> {
+    ConfigContext::default().preview(source)
+}
+
+/// Inherited data selected by the config path at Studio startup. Preview requests
+/// can edit the child, but cannot choose files for the server to read.
+#[derive(Default)]
+pub struct ConfigContext {
+    inheritance: Inheritance,
+}
+
+impl ConfigContext {
+    pub fn new(source: &str, path: Option<&std::path::Path>) -> Result<Self, String> {
+        // Keep the editor usable for invalid, non-inheriting configs as before.
+        let authored = json5::from_str::<ConfigValue>(source).ok();
+        if authored
+            .as_ref()
+            .is_some_and(|v| v.0.get("extends").is_some())
+        {
+            let path = path.ok_or("Config inheritance in Studio requires --config")?;
+            return Ok(Self {
+                inheritance: crate::config_file::load_raw(path, Some(source), &mut Vec::new())?
+                    .inheritance,
+            });
+        }
+        Ok(Self::default())
+    }
+
+    pub fn preview(&self, source: &str) -> Result<Preview, String> {
+        preview_in_context(source, &self.inheritance)
+    }
+}
+
+fn preview_in_context(source: &str, inheritance: &Inheritance) -> Result<Preview, String> {
     if source.len() > 1024 * 1024 {
         return Err("Studio configs are limited to 1 MiB".into());
     }
     let authored = json5::from_str::<ConfigValue>(source)
         .map_err(|e| e.to_string())?
         .0;
-    let config = resolve_config(authored.clone()).map_err(|e| e.to_string())?;
+    let config = inheritance.resolve(authored.clone())?;
     let checked = Config::new(&config).map_err(|e| e.to_string())?;
     let mut result = Preview {
         breakpoints: checked.breakpoints.clone(),
@@ -63,6 +101,9 @@ pub fn preview(source: &str) -> Result<Preview, String> {
         colors: Vec::new(),
         root_css: String::new(),
     };
+    if inheritance.has_parent() {
+        result.notes.push("Inherited configs were loaded at Studio startup. Edit local overrides here; restart Studio after changing parent files or extends. Source links refer to the local config.".into());
+    }
     match compile(&Request {
         source: "html {font-size:theme('typography.base', 16px)}".into(),
         filename: "studio/root".into(),

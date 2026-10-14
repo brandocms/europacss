@@ -60,7 +60,7 @@ fn transform_mode(
     }
     let mut result = compiler.nodes(nodes, &Context::default(), 0)?;
     validate_values(&mut result, config.value)?;
-    Ok(result)
+    Ok(crate::cascade::media_last(result))
 }
 
 fn validate_values(nodes: &mut [Node], config: &Value) -> Result<(), Error> {

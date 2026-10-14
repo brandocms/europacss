@@ -22,7 +22,7 @@ previews. It can load project fonts from a sibling `css/includes/fonts.css` and
 `public` directory, or explicit `--fonts` / `--public-dir` paths. Export downloads
 your edits with comments intact; it does not overwrite the source config.
 
-Native CSS nesting, source order and contiguous named breakpoint ranges intentionally differ from legacy EuropaCSS.
+Native CSS nesting, non-media declaration order and contiguous named breakpoint ranges intentionally differ from legacy EuropaCSS. Common rules precede responsive rules within each scope; media retain their relative order and enclosing layers/conditions.
 Before migrating an existing site, run:
 
 ```sh

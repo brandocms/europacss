@@ -2,7 +2,9 @@
 
 Work in feature families, implementing shared parsing and value handling before duplicating it across rules. Each port includes successful legacy cases, malformed input, interaction with nesting/responsive scopes, source order, and useful diagnostics. Test the frontend where structure or source locations matter, then compare compiled output against hand-written standard CSS through the same Lightning backend. The Rust tests never invoke Node or the old compiler.
 
-The original JS suite remains the behavior reference, with intentional native nesting and source-order changes recorded separately. Do not reproduce global media packing or declaration relocation merely to match old serialized output.
+The original JS suite remains the behavior reference, with intentional native nesting and non-media source-order changes recorded separately. Common rules precede responsive rules across selectors within each scope; overlapping media retain relative order. Do not add global breakpoint sorting or duplicate-selector merging merely to match old serialized output.
+
+[cascade.rs](cascade.rs) checks media-last semantics, native selector contexts, layer precedence and conditional/registration boundaries against hand-written standard CSS passed directly to Lightning, bypassing Europa on the reference side. It covers both lowered and retained nesting. Source-map tests verify origins after reordering.
 
 ## Complete source-case audit
 
@@ -16,13 +18,13 @@ All **337 cases in 28 legacy suites** are accounted for: **335 have executable n
 | `theme()` and `ease()` | [legacy_rules.rs](legacy_rules.rs) | 3 |
 | Query builders, breakpoint selection, and parsed query intervals | `config::legacy_query_tests` in [config.rs](../src/config.rs), [utility fixtures](fixtures/legacy-utilities.json) | 31 |
 | Typed/interpolated/chained references and error cases | [legacy_utilities.rs](legacy_utilities.rs) | 14 |
-| Media packing | [legacy_utilities.rs](legacy_utilities.rs), with corrected source-order expectations | 6 |
+| Media packing | [legacy_utilities.rs](legacy_utilities.rs), with scoped media-last and relative query-order expectations | 6 |
 | Default CSS, media lowering and IE10 flex prefixing | [legacy_utilities.rs](legacy_utilities.rs), using native browser targets | 3 |
 | Retired: `presetEnv.disable` and JavaScript object mutation | Exact old IDs and reasons in [utility fixtures](fixtures/legacy-utilities.json) | 2 |
 
 The 143-case remaining-rule/output/function fixture has 89 legacy CSS expectations with reviewed breakpoint corrections, 34 reviewed native output snapshots, 16 explicit error expectations, two bundle behavior assertions, and two unresolved-config reference assertions. Every case retains its old title and a note. Config callbacks have been frozen as data; tests do not execute JavaScript. The two reference cases specifically retain their raw references so resolution is tested.
 
-Snapshot changes were reviewed against the old assertions and input: in-place expansion, native `:is()` nesting, exclusive named-breakpoint upper bounds, equivalent media unions, grouped arithmetic, and removal of redundant parent media wrappers. Explicit pixel arrow ranges retain their inclusive endpoint. No matcher globally sorts CSS or regenerates expectations from the compiler under test. The complete large examples now run too; focused interaction tests remain useful alongside them.
+Snapshot changes were reviewed against the old assertions and input: in-place expansion, common-before-responsive ordering, native `:is()` nesting, exclusive named-breakpoint upper bounds, equivalent media unions, grouped arithmetic, and removal of redundant parent media wrappers. Media-last snapshot updates use independently reordered existing standard-CSS baselines, retaining nested selector wrappers. Explicit pixel arrow ranges retain their inclusive endpoint. No matcher globally sorts CSS or regenerates expectations from the compiler under test. The complete large examples now run too; focused interaction tests remain useful alongside them.
 
 The retired cases concern removed implementation contracts: Rust consumes owned JSON rather than mutating a caller's JS object, and the standalone backend has no PostCSS preset-env on/off switch. Keeping dummy equivalents would add no protection. Media-sorting cases remain active, with assertions that protect authored order instead of restoring the old sorting behavior.
 
@@ -58,11 +60,11 @@ Expected CSS follows the agreed in-place expansion and native nesting semantics.
 
 ## Spacing audit
 
-[spacing.rs](spacing.rs) extends the shared sizing tests with the legacy spacing suite's combinations of named/wildcard/hierarchical values, negative values, gutter multipliers, shortcuts, importance, query lists/collections, child selectors, `negate()`, `breakout`, container/calculation references, design pixels, viewport caps, fluid sizes, and vertical rhythm. Reference-width precedence and dynamic containers are also covered in [unpack.rs](unpack.rs), [sizing.rs](sizing.rs), and [containers.rs](containers.rs). Equal and partially equal breakpoint values are covered in [optimization.rs](optimization.rs). Expected native CSS preserves source order; adjacent media compaction compares expressions before Lightning simplifies their arithmetic, so algebraically equal expressions may remain separate blocks.
+[spacing.rs](spacing.rs) extends the shared sizing tests with the legacy spacing suite's combinations of named/wildcard/hierarchical values, negative values, gutter multipliers, shortcuts, importance, query lists/collections, child selectors, `negate()`, `breakout`, container/calculation references, design pixels, viewport caps, fluid sizes, and vertical rhythm. Reference-width precedence and dynamic containers are also covered in [unpack.rs](unpack.rs), [sizing.rs](sizing.rs), and [containers.rs](containers.rs). Equal and partially equal breakpoint values are covered in [optimization.rs](optimization.rs). Expected native CSS puts common rules before responsive rules in each scope; adjacent media compaction compares expressions before Lightning simplifies their arithmetic, so algebraically equal expressions may remain separate blocks.
 
 ## Typography audit
 
-[typography.rs](typography.rs) covers the font-size suite's scalar/object/wildcard combinations, line-height suffixes, modifiers, hierarchical and literal slash keys, viewport/design-pixel conversion and caps, reference-width precedence, fluid sizing, shared `__base__` properties, responsive scopes, and later overrides. Legacy callback fixtures are expressed as typed JSON5 references: `{typography.families.brand.regular}` can supply an array or string, and `{colors.ink}` can be mixed with static properties. No JavaScript executes. Missing references fail config resolution; unsupported property arrays and malformed styles fail at the directive. The complete legacy mixed-layout input now also runs in legacy_rules.rs, with reviewed native nesting and source-order output.
+[typography.rs](typography.rs) covers the font-size suite's scalar/object/wildcard combinations, line-height suffixes, modifiers, hierarchical and literal slash keys, viewport/design-pixel conversion and caps, reference-width precedence, fluid sizing, shared `__base__` properties, responsive scopes, and later overrides. Legacy callback fixtures are expressed as typed JSON5 references: `{typography.families.brand.regular}` can supply an array or string, and `{colors.ink}` can be mixed with static properties. No JavaScript executes. Missing references fail config resolution; unsupported property arrays and malformed styles fail at the directive. The complete legacy mixed-layout input now also runs in legacy_rules.rs, with reviewed native nesting and scoped media-last output.
 
 ## Feature-family coverage
 
@@ -93,9 +95,10 @@ Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss 
 ## Render-driven edge cases
 
 The live-site comparison added repeated-selector media-order, overlapping-width,
-and equal-value grouping cases to [migration.rs](migration.rs). These warnings
-are conservative review prompts, not a complete cascade simulator. The report
-version is now 5, so previous acceptance files must be regenerated and reviewed.
+and equal-value grouping cases to [migration.rs](migration.rs). Media-last now
+preserves simple responsive/fallback pairs without warnings. Overlapping-query
+warnings remain conservative review prompts, not a complete cascade simulator.
+Report version 10 requires older acceptance files to be regenerated and reviewed.
 See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
 for the original and manually migrated site observations.
 
@@ -107,7 +110,7 @@ restarting it through `css()`; overflow/cycles fail at the authored directive.
 
 ## Reviewed appearance proposals
 
-Migration tests now cover opt-in adjacent fallback reordering, stale/forged review
+Migration tests cover opt-in adjacent non-media override reordering, stale/forged review
 rejection, ignored untrusted replacement payloads, generated-body exclusions and
 CLI reanalysis with an empty PATH. Object line-height suffixes that the legacy
 unmodified-object path ignored now produce a resolved migration warning.

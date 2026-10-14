@@ -74,6 +74,8 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
         .as_deref()
         .map(std::path::Path::new)
         .and_then(std::path::Path::parent);
+    let config_context =
+        europacss::studio::ConfigContext::new(&source, path.as_deref().map(std::path::Path::new))?;
     let font_file = fonts_path.map(std::path::PathBuf::from).or_else(|| {
         base.map(|base| base.join("css/includes/fonts.css"))
             .filter(|p| p.is_file())
@@ -101,6 +103,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
             &host,
             &origin,
             &initial,
+            &config_context,
             &fonts,
             &mut migration,
         ) {
@@ -120,6 +123,7 @@ fn handle(
     host: &str,
     origin: &str,
     initial: &str,
+    config_context: &europacss::studio::ConfigContext,
     fonts: &europacss::studio::fonts::Fonts,
     migration: &mut Option<crate::cli_review::Session>,
 ) -> Result<(), String> {
@@ -240,7 +244,7 @@ fn handle(
             #[serde(deny_unknown_fields)]
             struct Input { source: String }
             let request: Input = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-            match europacss::studio::preview(&request.source) {
+            match config_context.preview(&request.source) {
                 Ok(preview) => (200, "application/json", serde_json::to_string(&preview).unwrap()),
                 Err(error) => (422, "application/json", serde_json::json!({"error":error}).to_string()),
             }

@@ -51,6 +51,36 @@ impl Drop for Project {
 }
 
 #[test]
+fn imported_library_media_follow_common_rules_and_stay_in_the_library_layer() {
+    let p = Project::new();
+    p.write("app.css", "@layer brando, app; @import 'brando.css' layer(brando); @import 'overrides.css' layer(app);");
+    p.write(
+        "brando.css",
+        "@import 'responsive.css'; @import 'common.css';",
+    );
+    p.write("responsive.css", ".title{@responsive >=md{font-size:48px}}");
+    p.write("common.css", ".title{font-size:24px}");
+    p.write("overrides.css", ".title{font-size:18px}");
+    let result = p.compile().unwrap();
+    assert!(result.warnings.is_empty(), "{:?}", result.warnings);
+    let common = result.css.find("24px").unwrap();
+    let responsive = result.css.find("48px").unwrap();
+    let app_layer = result.css.find("@layer app {").unwrap();
+    let app_value = result.css.find("18px").unwrap();
+    assert!(
+        common < responsive && responsive < app_layer && app_layer < app_value,
+        "{}",
+        result.css
+    );
+    let map: serde_json::Value = serde_json::from_str(result.map.as_ref().unwrap()).unwrap();
+    assert!(map["sources"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|name| name.as_str().unwrap().ends_with("responsive.css")));
+}
+
+#[test]
 fn compile_snapshots_detect_content_changes_even_with_restored_timestamps() {
     let p = Project::new();
     p.write("app.css", "@import 'part.css';");

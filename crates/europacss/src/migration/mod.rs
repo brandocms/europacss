@@ -22,7 +22,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 9;
+pub const REPORT_VERSION: u32 = 10;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -43,7 +43,7 @@ pub struct Fix {
 }
 
 /// Structured evidence for presentation only. Finding identity and review
-/// decisions still use the original diagnostic, preserving version-9 reviews.
+/// decisions use the diagnostic rather than this optional presentation metadata.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct OrderSource {
     pub filename: Option<String>,

@@ -69,9 +69,13 @@ are bundled by Rust; aliases, package imports, glob imports and virtual/SFC
 styles are not supported by the native import resolver. `?raw` and `?url` requests
 are deliberately left to Vite.
 
-Local imports and JSON5 configuration are watched. Normal edits update affected
-CSS modules through HMR; file creation/deletion uses a full reload to recover
-missing inputs. Compiler errors retain their original filename/line/column.
+Local imports and JSON5 configuration, including the complete `extends` chain,
+are watched. Normal edits update affected CSS modules through HMR; file
+creation/deletion uses a full reload to recover missing inputs. Vite ignores
+`node_modules`, so the adapter polls only the used dependency files there and
+reloads when they change. Removed dependencies stop triggering updates, and
+`server.watch: null` disables this polling. See [config inheritance](../../docs/guide/configuration.md#inherit-a-shared-config)
+for sharing a preset with local overrides. Compiler errors retain their original filename/line/column.
 Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 
 For font token labels in Chrome's Styles pane, enable `europa({ debugTokens: true })`. The development CSS includes comments such as:
