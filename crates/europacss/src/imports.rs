@@ -28,6 +28,17 @@ pub(crate) fn load_tracked(
     source: Option<&str>,
     watched: &mut Vec<PathBuf>,
 ) -> Result<Loaded, Error> {
+    load_resolved(entry, output, source, watched, &[], None)
+}
+
+pub(crate) fn load_resolved(
+    entry: &Path,
+    output: Option<&Path>,
+    source: Option<&str>,
+    watched: &mut Vec<PathBuf>,
+    resolutions: &[crate::bridge::ImportResolution],
+    pending: Option<&mut Vec<crate::bridge::ImportRequest>>,
+) -> Result<Loaded, Error> {
     watched.push(entry.to_path_buf());
     let entry_path = entry.to_path_buf();
     let entry = fs::canonicalize(entry)
@@ -49,6 +60,8 @@ pub(crate) fn load_tracked(
         stack: Vec::new(),
         nodes: 0,
         aliases: BTreeSet::from([(entry_path, entry.clone())]),
+        resolutions,
+        pending,
     };
     let nodes = loader
         .file(&entry, 0)
@@ -98,6 +111,8 @@ struct Loader<'a> {
     stack: Vec<PathBuf>,
     nodes: usize,
     aliases: BTreeSet<(PathBuf, PathBuf)>,
+    resolutions: &'a [crate::bridge::ImportResolution],
+    pending: Option<&'a mut Vec<crate::bridge::ImportRequest>>,
 }
 impl Loader<'_> {
     fn file(&mut self, path: &Path, origin: usize) -> Result<Vec<Node>, Error> {
@@ -217,8 +232,25 @@ impl Loader<'_> {
                         ));
                     }
                     let filename = percent_decode(filename, node.offset)?;
-                    let logical_path = path.parent().unwrap().join(filename);
+                    let logical_path = self
+                        .resolutions
+                        .iter()
+                        .find(|r| r.importer == path && r.specifier == import.url)
+                        .map(|r| r.filename.clone())
+                        .unwrap_or_else(|| path.parent().unwrap().join(filename));
                     self.watched.push(logical_path.clone());
+                    if !logical_path.exists() {
+                        if let Some(pending) = &mut self.pending {
+                            let request = crate::bridge::ImportRequest {
+                                importer: path.to_path_buf(),
+                                specifier: import.url.clone(),
+                            };
+                            if !pending.contains(&request) {
+                                pending.push(request);
+                            }
+                            continue;
+                        }
+                    }
                     let resolved = fs::canonicalize(&logical_path).map_err(|e| {
                         Error::new(
                             "EU_IMPORT",

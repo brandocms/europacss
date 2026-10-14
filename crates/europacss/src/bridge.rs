@@ -17,6 +17,25 @@ pub struct Request {
     pub browsers: Vec<String>,
     #[serde(default)]
     pub debug_tokens: bool,
+    /// Ask the host to resolve imports that are not exact local files.
+    #[serde(default)]
+    pub resolve_imports: bool,
+    #[serde(default)]
+    pub resolutions: Vec<ImportResolution>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImportResolution {
+    pub importer: PathBuf,
+    pub specifier: String,
+    pub filename: PathBuf,
+}
+
+#[derive(Debug, Serialize, Eq, PartialEq)]
+pub struct ImportRequest {
+    pub importer: PathBuf,
+    pub specifier: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -33,6 +52,8 @@ pub struct Response {
     /// Native Lightning CSS browser versions (major << 16 | minor << 8 | patch).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub targets: Option<BTreeMap<String, u32>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub resolve_imports: Vec<ImportRequest>,
 }
 impl Response {
     pub fn invalid(message: String) -> Self {
@@ -45,6 +66,7 @@ impl Response {
             watch_files: Vec::new(),
             error: Some(Error::new("EU_BRIDGE", message, 0)),
             targets: None,
+            resolve_imports: Vec::new(),
         }
     }
 }
@@ -109,6 +131,16 @@ pub fn compile(request: Request) -> Response {
         {
             return Err(invalid("Bridge filename and config paths must be absolute"));
         }
+        if request.resolutions.len() > 4096
+            || request
+                .resolutions
+                .iter()
+                .any(|r| !r.importer.is_absolute() || !r.filename.is_absolute())
+        {
+            return Err(invalid(
+                "Import resolutions must contain absolute paths and at most 4096 entries",
+            ));
+        }
         response.watch_files.push(request.filename.clone());
         let config = if let Some(path) = &request.config {
             crate::load_config_tracked(path, &mut response.watch_files)
@@ -129,18 +161,25 @@ pub fn compile(request: Request) -> Response {
             browsers: request.browsers,
             ..Default::default()
         };
-        let loaded = imports::load_tracked(
+        let loaded = imports::load_resolved(
             Path::new(&request.filename),
             None,
             request.source.as_deref(),
             &mut response.watch_files,
+            &request.resolutions,
+            request
+                .resolve_imports
+                .then_some(&mut response.resolve_imports),
         )?;
-        crate::compile_loaded(&compiler_request, loaded)
+        if !response.resolve_imports.is_empty() {
+            return Ok(None);
+        }
+        crate::compile_loaded(&compiler_request, loaded).map(Some)
     })();
     response.watch_files.sort();
     response.watch_files.dedup();
     match result {
-        Ok(output) => {
+        Ok(Some(output)) => {
             response.css = Some(output.css);
             response.map = output
                 .map
@@ -149,6 +188,7 @@ pub fn compile(request: Request) -> Response {
             response.dependencies = output.dependencies;
             response.error = None;
         }
+        Ok(None) => response.error = None,
         Err(error) => response.error = Some(error),
     }
     response

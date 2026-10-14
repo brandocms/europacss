@@ -5,7 +5,7 @@ pub(crate) mod legacy11;
 pub(crate) mod legacy6;
 mod order;
 mod review;
-mod selectors;
+pub(crate) mod selectors;
 
 pub use review::{apply_acceptances, can_accept, reviewed_edits};
 
@@ -22,7 +22,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 10;
+pub const REPORT_VERSION: u32 = 11;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -176,7 +176,11 @@ fn report(
         }
     }
     let origins = order::origins(&nodes, &config)?;
-    match transform::for_migration(nodes, &config) {
+    match transform::for_migration(nodes, &config).and_then(|raw| {
+        let ordered = crate::cascade::media_last(raw.clone());
+        order::scope_changes(&raw, &ordered, &origins, &config, &mut audit)?;
+        crate::nesting::apply(ordered, config.value)
+    }) {
         Ok(expanded) => {
             selectors::walk(&expanded, None, &mut audit)?;
             order::walk(&expanded, &origins, &mut audit)?;
@@ -189,6 +193,25 @@ fn report(
         }
     }
     for warning in config.migration_warnings.unwrap().into_inner().items {
+        if !warning.code.starts_with("EU_MIGRATION_") {
+            audit.complete = false;
+            let help = match warning.code.as_str() {
+                "EU_DEPRECATED" => "Expand @row into explicit display:flex, flex-wrap, child margin-left gutters, and nth-child resets. Preserve the authored wrap/count; gap is not equivalent. See the migration guide's exact 0.13 example.",
+                "EU_NESTED_KEYFRAMES" => "Move the keyframes outside the selector, retaining its enclosing layer/media/supports context and registration order.",
+                _ => "Resolve this compiler diagnostic and rerun migration. Other independent rules were still checked; the report cannot be accepted while compilation is incomplete.",
+            };
+            audit.add(&warning.code, warning.message, warning.offset, help, None);
+            if !audit.has("EU_MIGRATION_INCOMPLETE", 0) {
+                audit.add(
+                    "EU_MIGRATION_INCOMPLETE",
+                    "Some rules could not be expanded; independent rules were still analyzed",
+                    0,
+                    "Resolve all compiler diagnostics listed in this report and rerun migration.",
+                    None,
+                );
+            }
+            continue;
+        }
         if warning.code == "EU_MIGRATION_BREAKPOINT" {
             audit.add(&warning.code, warning.message, warning.offset,
                 "This closes the legacy one-pixel gap. Review widths immediately below the next breakpoint and accept the correction. Authored CSS media queries and explicit pixel arrow ranges are unchanged; --fix does not rewrite them.", None);
@@ -231,7 +254,7 @@ fn report(
         report_version: REPORT_VERSION,
         snapshot: review::snapshot(&sources, request, from),
         from: from.into(),
-        to: "rust-native-nesting".into(),
+        to: if request.config.get("nesting").and_then(|v| v.as_str()) == Some("expanded") { "rust-expanded-nesting" } else { "rust-native-nesting" }.into(),
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
         checks: vec![
             "suffix-syntax".into(),
@@ -242,6 +265,8 @@ fn report(
             "local-declaration-order".into(),
             "repeated-selector-media-order".into(),
             "overlapping-width-media-order".into(),
+            "cross-layer-block-responsive-order".into(),
+            "potential-cross-selector-authored-order".into(),
             "resolved-sizing-corrections".into(),
             "contiguous-breakpoint-boundaries".into(),
             "signed-column-intent".into(),
@@ -251,7 +276,7 @@ fn report(
         limitations: vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
-            "Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not modeled".into(),
+            "Cross-selector order findings identify potential conflicts at equal specificity; they do not prove that both selectors match an element. Arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not fully modeled".into(),
             "Other sizing differences (including calculation grouping) and backend/browser-target changes require separate review".into(),
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],

@@ -61,3 +61,8 @@ jobs:
       - name: Test Vite build and HMR integration
         working-directory: packages/vite
         run: npm test
+      - name: Test browser comparison
+        run: node --test crates/europacss/compare/*.test.mjs
+        env:
+          EUROPA_COMPARE_BROWSER: /usr/bin/google-chrome
+          EUROPA_BINARY: ${{ github.workspace }}/target/debug/europa

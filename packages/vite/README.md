@@ -12,6 +12,12 @@ package as a local dependency. From your application's directory (replace the pa
 npm install --save-dev /absolute/path/to/europacss/packages/vite
 ```
 
+The preview intentionally remains `private: true` until native package
+publication is ready. For local yalc distribution run `yalc publish --private`
+from `packages/vite`, then `yalc add @brandocms/vite-plugin-europacss` in the
+consumer. Alternatively, `npm pack` creates an installable local tarball without
+publishing anything. Refresh the adapter and compiler together after changes.
+
 The [HTML docs source](../../docs/guide/vite.md) has the complete application workflow.
 
 ```js
@@ -54,8 +60,8 @@ The native executable resolves that CSS policy once at Vite startup. The adapter
 shares the resulting engine floors with Europa, `build.cssTarget` and
 `css.lightningcss.targets`, replacing separate CSS targets and legacy-plugin CSS
 defaults. JavaScript targets and legacy bundles are unchanged. Both CSS passes
-remain enabled; install `lightningcss` in the application for the final minifier
-shown above. The adapter preserves your minifier choice.
+remain enabled. Vite 6 requires installing `lightningcss` in the application for
+the final minifier shown above; [Vite 8 includes it as a regular dependency](https://vite.dev/blog/announcing-vite8#install-size). The adapter preserves your minifier choice.
 
 Modern Android and Samsung Internet targets map to Chromium; patch floors round
 down to major/minor in both passes. Unsupported stock Android and unknown Samsung
@@ -65,8 +71,10 @@ updating the preview: the adapter requires `europa bridge targets`.
 
 CSS is compiled before Vite's CSS pipeline. Vite still handles CSS modules,
 asset URLs, extraction, minification and style injection. Ordinary CSS imports
-are bundled by Rust; aliases, package imports, glob imports and virtual/SFC
-styles are not supported by the native import resolver. `?raw` and `?url` requests
+are bundled by Rust. For imports that are not exact local files, the adapter
+asks Vite to resolve package exports and aliases, then passes absolute paths to
+Rust. Layer/supports/media qualifiers, source maps, and per-file asset rebasing
+are retained. Globs and virtual/SFC imports are unsupported. `?raw` and `?url` requests
 are deliberately left to Vite.
 
 Local imports and JSON5 configuration, including the complete `extends` chain,

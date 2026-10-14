@@ -41,6 +41,16 @@ pub fn scalar(value: &Value) -> Option<String> {
 
 impl<'a> Config<'a> {
     pub fn new(value: &'a Value) -> Result<Self, Error> {
+        if value
+            .get("nesting")
+            .is_some_and(|v| !matches!(v.as_str(), Some("native" | "expanded")))
+        {
+            return Err(Error::new(
+                "EU_CONFIG",
+                "nesting must be 'native' (default) or 'expanded'",
+                0,
+            ));
+        }
         let mut breakpoints = Vec::new();
         if let Some(bps) = value
             .pointer("/theme/breakpoints")

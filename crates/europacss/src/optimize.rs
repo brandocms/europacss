@@ -153,6 +153,10 @@ fn width_ranges(node: &Node) -> Option<WidthRanges> {
 }
 
 pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
+    parse_width_ranges(query, false)
+}
+
+fn parse_width_ranges(query: &str, allow_min_max: bool) -> Option<WidthRanges> {
     let mut ranges = Vec::new();
     let clauses = parser::split_top_level(query, ',').ok()?;
     if clauses.len() > 64 {
@@ -172,6 +176,21 @@ pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
                 continue;
             }
             let inner = term.strip_prefix('(')?.strip_suffix(')')?;
+            let normalized;
+            let inner = if let Some((name, value)) = inner.split_once(':') {
+                if !allow_min_max {
+                    return None;
+                }
+                let operator = match name.trim() {
+                    "min-width" => ">=",
+                    "max-width" => "<=",
+                    _ => return None,
+                };
+                normalized = format!("width {operator} {}", value.trim());
+                normalized.as_str()
+            } else {
+                inner
+            };
             let values = parser::arguments(inner).ok()?;
             if values.len() != 3 || values[0] != "width" {
                 return None;
@@ -208,9 +227,43 @@ struct Group {
 }
 fn flush(pending: &mut Option<Group>, result: &mut Vec<Node>) {
     if let Some(mut group) = pending.take() {
-        group.node.text = format!("@media {}", group.queries.join(", "));
-        result.push(group.node);
+        let query = group.queries.join(", ");
+        if covers_all_widths(&query) {
+            // Unwrap in place, after cascade ordering. Running media-last again
+            // would incorrectly turn these formerly responsive rules into fallbacks.
+            result.append(group.node.children.as_mut().unwrap());
+        } else {
+            group.node.text = format!("@media {query}");
+            result.push(group.node);
+        }
     }
+}
+
+fn covers_all_widths(query: &str) -> bool {
+    // Unwrapping in place can also prove min/max feature syntax without
+    // widening the separate disjoint-block reordering policy.
+    let Some(mut ranges) = parse_width_ranges(query, true) else {
+        return false;
+    };
+    ranges.sort_by(|a, b| {
+        a.low
+            .total_cmp(&b.low)
+            .then(b.low_closed.cmp(&a.low_closed))
+    });
+    let mut end = 0.0;
+    let mut closed = false;
+    for range in ranges {
+        if range.low > end || range.low == end && !closed && !range.low_closed {
+            return false;
+        }
+        if range.high > end {
+            end = range.high;
+            closed = range.high_closed;
+        } else if range.high == end {
+            closed |= range.high_closed;
+        }
+    }
+    end == f64::INFINITY
 }
 fn ordinary(nodes: &[Node]) -> bool {
     // Keep at-rules with registration, ordering, or unknown behavior out of this pass.

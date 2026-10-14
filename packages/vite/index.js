@@ -38,7 +38,7 @@ function compile(binary, request, cwd, targetsOnly = false) {
           throw new Error('Unsupported EuropaCSS bridge response');
         }
         if (status !== 0 && !response.error) throw new Error(`EuropaCSS exited with status ${status}`);
-        if (!response.error && (targetsOnly ? !response.targets || typeof response.targets !== 'object' || Array.isArray(response.targets) : typeof response.css !== 'string')) {
+        if (!response.error && (targetsOnly ? !response.targets || typeof response.targets !== 'object' || Array.isArray(response.targets) : typeof response.css !== 'string' && !response.resolveImports?.length)) {
           throw new Error(targetsOnly ? 'Missing resolved browser targets; reinstall the EuropaCSS executable' : 'Missing compiled CSS');
         }
         resolve(response);
@@ -163,7 +163,28 @@ export default function europa(options = {}) {
           params.has('raw') || params.has('url') || params.has('vue') || params.has('svelte') ||
           (options.include && !options.include(filename))) return null;
 
-      const promise = compile(binary, { version: 1, filename, source, config, browsers: targets.browsers, ...(debugTokens ? { debugTokens: true } : {}) }, root);
+      const request = { version: 1, filename, source, config, browsers: targets.browsers, resolveImports: true, resolutions: [], ...(debugTokens ? { debugTokens: true } : {}) };
+      const promise = (async () => {
+        const watched = new Set();
+        const resolved = new Set();
+        for (let round = 0; round < 65; round++) {
+          const response = await compile(binary, request, root);
+          for (const file of response.watchFiles) watched.add(file);
+          response.watchFiles = [...watched];
+          if (response.error || !response.resolveImports?.length) return response;
+          for (const { importer, specifier } of response.resolveImports) {
+            const key = JSON.stringify([importer, specifier]);
+            const resolution = !resolved.has(key) && await this.resolve(specifier, importer, { skipSelf: true });
+            const file = resolution && !resolution.external && resolution.id.split(/[?#]/, 1)[0];
+            if (!file || !path.isAbsolute(file) || file.startsWith('\0')) {
+              return { ...response, error: { code: 'EU_IMPORT_RESOLVE', message: `Cannot resolve CSS import ${JSON.stringify(specifier)} from ${importer}`, filename: importer } };
+            }
+            resolved.add(key);
+            request.resolutions.push({ importer, specifier, filename: file });
+          }
+        }
+        throw new Error('EuropaCSS import resolution exceeded 65 rounds');
+      })();
       const generation = Symbol();
       generations.set(id, generation);
       pending.add(promise);

@@ -1,3 +1,4 @@
+mod cli_compare;
 mod cli_migration;
 mod cli_output;
 mod cli_review;
@@ -291,6 +292,15 @@ fn main() -> ExitCode {
         };
     }
     let ui = Ui::stderr(color, quiet);
+    if args.first().map(String::as_str) == Some("compare") {
+        return match cli_compare::run(args.into_iter().skip(1).collect()) {
+            Ok(status) => status,
+            Err(message) => {
+                ui.error(&message);
+                ExitCode::from(2)
+            }
+        };
+    }
     if args.first().map(String::as_str) == Some("migrate") {
         return match cli_migration::run(args.into_iter().skip(1).collect(), &ui) {
             Ok(status) => status,

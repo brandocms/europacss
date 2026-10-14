@@ -8,6 +8,83 @@ fn analyze(source: &str) -> migration::Report {
 }
 
 #[test]
+fn migration_collects_independent_hard_errors_and_keyframe_guidance() {
+    let source = ".a{@row 2;color:red} .b{@row 3/wrap} .c{@keyframes spin{to{opacity:1}}} .d{@extend %missing} .e{@fontsize missing}";
+    let report = analyze(source);
+    assert!(!report.analysis_complete);
+    assert_eq!(
+        report
+            .findings
+            .iter()
+            .filter(|f| f.diagnostic.code == "EU_DEPRECATED")
+            .count(),
+        2
+    );
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_NESTED_KEYFRAMES"
+            && f.help.contains("outside the selector")));
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_EXTEND"));
+    assert!(report
+        .findings
+        .iter()
+        .any(|f| f.diagnostic.code == "EU_SIZE"));
+    assert_eq!(
+        europacss::compile(&request(".a{@keyframes k{to{opacity:1}}}", config()))
+            .unwrap_err()
+            .code,
+        "EU_NESTED_KEYFRAMES"
+    );
+}
+
+#[test]
+fn migration_flags_scope_splits_and_authored_cross_selector_reordering() {
+    let mut cfg = config();
+    cfg["theme"]["columns"]["gutters"] = json!({"mobile":"1vw","tablet":"1vw","desktop":"1vw"});
+    let report = migration::analyze(
+        &request(
+            "@layer brando{.a .b{@space margin-bottom 1}} @layer brando{.c .b{margin-bottom:20px}}",
+            cfg.clone(),
+        ),
+        migration::LEGACY_BETA6,
+    )
+    .unwrap();
+    assert!(
+        report.findings.iter().any(|f| f
+            .order
+            .as_ref()
+            .is_some_and(|o| o.reason.contains("global responsive append"))),
+        "{report:?}"
+    );
+    let report = migration::analyze(
+        &request(
+            "@layer brando{.a .b{@space margin-bottom 1}.c .b{margin-bottom:20px}}",
+            cfg,
+        ),
+        migration::LEGACY_BETA6,
+    )
+    .unwrap();
+    assert!(!report.findings.iter().any(|f| f
+        .order
+        .as_ref()
+        .is_some_and(|o| o.reason.contains("global responsive append"))));
+    let report = analyze(
+        ".a .b{flex:1 1 0}@media(max-width:600px){.a .b{flex-basis:100%}}.c .b{flex:0 0 130px}",
+    );
+    assert!(
+        report.findings.iter().any(|f| f
+            .order
+            .as_ref()
+            .is_some_and(|o| o.reason.contains("authored media moved"))),
+        "{report:?}"
+    );
+}
+
+#[test]
 fn beta11_profile_distinguishes_its_changes_from_beta6_and_beta16() {
     let mut cfg = config();
     cfg["theme"]["colors"] = json!({"brand":{"dark":"red"}});

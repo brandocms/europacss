@@ -8,6 +8,14 @@ JSON5 permits comments, trailing commas, unquoted identifier keys and single quo
 
 Except for complete `{ … }` examples, the snippets below are fragments to place under `theme` or the named section. Start with the [complete getting-started config](./getting-started#create-a-project-configuration).
 
+## Nesting semantics
+
+The top-level `nesting` option accepts `'native'` (default) or `'expanded'`.
+Expanded mode emits explicit selector lists with per-branch specificity and
+matching. It can be inherited and overridden like other config values. See
+[expanded selectors](../reference/nesting#expanded-selector-mode) for examples,
+limits, and differences from native CSS nesting.
+
 ## Inherit a shared config
 
 Use a top-level `extends` path to inherit another JSON5 or JSON file:

@@ -2,6 +2,15 @@ use europacss::{json_to_json5, resolve_config};
 use serde_json::{json, Value};
 
 #[test]
+fn migrated_wrappers_leave_clean_spacing_without_reformatting_values() {
+    let input = "module.exports = {\n  theme: {\n    colors: () => ({ dark: '#272b2a', label: 'keep  spaces' }),\n  },\n};\n";
+    assert_eq!(
+        europacss::migrate_config(input, "js").unwrap(),
+        "{\n  theme: {\n    colors: { dark: '#272b2a', label: 'keep  spaces' },\n  },\n}\n"
+    );
+}
+
+#[test]
 fn static_javascript_config_migration_preserves_comments_strings_and_token_data() {
     let source = r#"/* original comments */
         'use strict';

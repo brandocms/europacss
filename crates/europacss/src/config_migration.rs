@@ -20,7 +20,11 @@ pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {
     let mut edits = Vec::new();
     let mut start = 0;
     if matches!(text(0), Some("'use strict'" | "\"use strict\"")) && text(1) == Some(";") {
-        edits.extend(tokens[..2].iter().map(|&(a, b)| (a, b, " ".repeat(b - a))));
+        edits.extend(
+            tokens[..2]
+                .iter()
+                .map(|&(a, b)| remove_token(source, a, b, false)),
+        );
         start = 2;
     }
     let prefix = if (0..4).map(|n| text(start + n)).eq([
@@ -44,11 +48,11 @@ pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {
     edits.extend(
         tokens[start..start + prefix]
             .iter()
-            .map(|&(a, b)| (a, b, " ".repeat(b - a))),
+            .map(|&(a, b)| remove_token(source, a, b, false)),
     );
     if text(tokens.len().saturating_sub(1)) == Some(";") {
         let &(a, b) = tokens.last().unwrap();
-        edits.push((a, b, " ".into()));
+        edits.push(remove_token(source, a, b, true));
     }
     edits.extend(static_theme_callbacks(source, &tokens, start + prefix)?);
     for (index, &(a, b)) in tokens.iter().enumerate().skip(start + prefix) {
@@ -145,7 +149,7 @@ fn static_theme_callbacks(
                 }
                 for index in (i..i + 5).chain(std::iter::once(end)) {
                     let (a, b) = tokens[index];
-                    edits.push((a, b, " ".repeat(b - a)));
+                    edits.push(remove_token(source, a, b, index == end));
                 }
                 // No recursive callback conversion inside the returned object.
                 i = end;
@@ -155,6 +159,25 @@ fn static_theme_callbacks(
         i += 1;
     }
     Ok(edits)
+}
+
+// Remove only the wrapper token and adjacent horizontal whitespace. Comments,
+// newlines, indentation inside the object, and string contents stay authored.
+fn remove_token(
+    source: &str,
+    mut start: usize,
+    mut end: usize,
+    before: bool,
+) -> (usize, usize, String) {
+    while matches!(source.as_bytes().get(end), Some(b' ' | b'\t')) {
+        end += 1;
+    }
+    if before {
+        while start > 0 && matches!(source.as_bytes()[start - 1], b' ' | b'\t') {
+            start -= 1;
+        }
+    }
+    (start, end, String::new())
 }
 
 // JavaScript sorts array-index property names ahead of other keys; preserve the

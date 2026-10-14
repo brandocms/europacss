@@ -45,6 +45,32 @@ test('production build handles ordinary CSS imports, rebased assets and source m
   assert.match(await readFile(path.join(root, 'app.css'), 'utf8'), /@import/);
 });
 
+test('package exports and aliases resolve through Vite with layers, assets and dependency reloads', async (t) => {
+  const { root, config, write } = await fixture(t);
+  await mkdir(path.join(root, 'node_modules/vendor/styles'), { recursive: true });
+  await write('node_modules/vendor/package.json', JSON.stringify({ name: 'vendor', version: '1.0.0', exports: { './theme.css': './styles/theme.css' } }));
+  await write('node_modules/vendor/styles/theme.css', "@import 'vendor-alias'; .vendor{color:green;background:url('./icon.svg')}");
+  await write('node_modules/vendor/styles/icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"></svg>');
+  await write('nested/alias.css', '.alias{color:purple}');
+  await write('app.css', "@layer vendor,app; @import 'vendor/theme.css' layer(vendor); @layer app{.entry{color:blue}}");
+  config.resolve = { alias: { 'vendor-alias': path.join(root, 'nested/alias.css') } };
+  const built = await build({ ...config, build: { write: false, assetsInlineLimit: 0 } });
+  const css = built.output.find(asset => asset.fileName.endsWith('.css')).source;
+  assert.match(css, /@layer vendor/);
+  assert.match(css, /\.vendor/);
+  assert.match(css, /\.alias/);
+  assert.match(css, /\/assets\/icon-.*\.svg/);
+  assert.doesNotMatch(css, /@import/);
+  const server = await createServer({ ...config, server: { host: '127.0.0.1', port: 0 } });
+  t.after(() => server.close());
+  await server.listen();
+  assert.match((await server.transformRequest('/app.css')).code, /green/);
+  const module = server.moduleGraph.getModuleById(path.join(root, 'app.css'));
+  await write('node_modules/vendor/styles/theme.css', '.vendor{color:orange}');
+  await eventually(() => module.transformResult === null);
+  assert.match((await server.transformRequest('/app.css')).code, /orange/);
+});
+
 test('inherited config chains reload, recover missing parents and stop watching replaced packages', async (t) => {
   const { root, config, write } = await fixture(t);
   await mkdir(path.join(root, 'node_modules/preset'), { recursive: true });

@@ -70,6 +70,19 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > m
 
 Replace the version with your actual supported source version. These commands are read-only. The entry and its local imports are checked using the supplied config. Exit 1 means unresolved findings or incomplete analysis, so a report can be useful even when the command fails. `--json` writes the full report to stdout; no CSS build is produced.
 
+Expansion failures are collected across independent rules instead of stopping at
+the first one. Unsupported `@row`, misplaced placeholders, unknown extensions,
+and nested keyframes retain their compiler diagnostic codes and suggested next
+steps. The report remains incomplete and cannot be accepted until those errors
+are resolved. A structural parse/import/config failure can still prevent loading
+the complete graph.
+
+To retain per-branch nesting specificity without manually flattening parent
+lists, select [`nesting: 'expanded'`](../reference/nesting#expanded-selector-mode)
+in the config used by both migration and compilation. This also preserves
+same-parent matching for repeated `&`. It does not eliminate authored `:has()`
+or measure selector performance.
+
 The default terminal report groups unresolved findings by source location and diagnostic code, showing one source excerpt per review item. Declaration-order items list the earlier source, affected properties and breakpoint conditions together. One `padding` declaration can produce comparisons for four sides across several breakpoints; those comparisons belong to one review item, not dozens of separate edits.
 
 For a large site, `--summary` lists both review-item and finding counts by file and code. Use `--details` for each finding's full diagnostic, or `--json` for the complete machine-readable review. Grouping changes only presentation: every check still runs, the exit status is unchanged, and acceptance still applies to individual findings. Choose one output mode per command.
@@ -120,7 +133,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept r
 
 Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply` and `--accept` as separate stages.
 
-Analyzer version 10 reflects [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 9; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
+Analyzer version 11 includes layer-scope and potential cross-selector ordering checks, expanded nesting, and independent compiler diagnostics. See [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 10; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
 ## Sources older than beta.6
 
@@ -144,12 +157,41 @@ There is no profile for 0.x sources (for example 0.6.1, the version Brando 0.51 
 
 | 0.x | Now |
 | --- | --- |
-| `@row 2/wrap;` | Error `EU_DEPRECATED`. Use `@display flex/row/wrap;` and `@space column-gap 1;`. The column math matches 0.x's margin gutters. |
+| `@row 2/wrap;` | Error `EU_DEPRECATED`. Preserve the explicit flex-wrap and child margins/nth-child resets shown below. CSS gap is not equivalent. |
 | `@container;` | Parsed as a CSS container query and rejected. Use `@space container;`, which has the same output. |
+
+For legacy 0.13, the explicit form of `@row 2;` is:
+
+```css
+.row {
+  display: flex;
+  flex-wrap: nowrap;
+  > * {
+    @space margin-left 1;
+    &:nth-child(2n+1) { margin-left: 0; }
+  }
+}
+```
+
+For `@row 2/wrap;`, change only `flex-wrap` to `wrap`. Bare `@row;` resets
+`:nth-child(1)`; `@row N;` resets `:nth-child(Nn+1)` even without wrapping.
+For `@row N/wrap/GAP`, also apply `@space margin-top GAP` to children and reset
+the first N children's `margin-top` to zero. Keep breakpoint-qualified rows
+inside their equivalent responsive condition. The old plugin prepended
+display/flex-wrap to the containing rule, so retain that placement when other
+declarations override them. Child column offsets can interact with margin-left;
+substituting `gap` changes those interactions. This is documented migration
+guidance, not a new automatic appearance fix.
+
+When introducing layers, keep a legacy package's component imports inside one
+aggregate stylesheet and apply `layer(brando)` to that aggregate. Applying the
+layer separately per component interrupts global responsive append order; see
+[package scope](../reference/cascade#migrating-a-package-with-many-css-files).
 
 **Errors where 0.x emitted something harmless:**
 
-- `@keyframes` nested inside a rule: hoist it to the top level.
+- `@keyframes` nested inside a rule: `EU_NESTED_KEYFRAMES` asks you to hoist it
+  outside the selector while retaining its enclosing layer and conditions.
 - IE hacks such as `*zoom: 1`: delete them.
 - Unknown size keys (`@space padding-top lg` when `lg` is not a spacing key): 0.x wrote `NaNvw`, which browsers drop, so deleting the declaration changes nothing.
 
@@ -158,5 +200,9 @@ There is no profile for 0.x sources (for example 0.6.1, the version Brando 0.51 
 ## Verify the site
 
 A clean migration report covers its listed checks; it does not prove an identical site. Build with the intended [browser targets](./build#browser-targets), compare representative pages and interaction states, and inspect breakpoint boundaries. Studio is useful for token comparisons, but it cannot reproduce an entire site's cascade or layout.
+
+Use [`europa compare`](./compare) to compare the two compiled stylesheets on the
+same DOM, including computed properties and element boxes. It reports actual
+cross-selector effects that source analysis can only identify as potential risks.
 
 For CI, run the read-only check or replay a valid reviewed report before the production build. Never hide its nonzero status with `|| true`. Since reviews include canonical paths, a report saved in another checkout may need regeneration and review.

@@ -29,6 +29,27 @@ fn css(source: &str) -> String {
 }
 
 #[test]
+fn leading_layer_order_stays_at_the_front_with_empty_and_populated_layers() {
+    for minify in [true, false] {
+        let mut req = request(
+            "@layer reset,vendor,brando,app;@layer reset{*{margin:0}}@layer brando{.a{color:red}}",
+        );
+        req.minify = minify;
+        let output = compile(&req).unwrap();
+        assert!(
+            output.css.starts_with(if minify {
+                "@layer reset,vendor,brando,app;"
+            } else {
+                "@layer reset, vendor, brando, app;"
+            }),
+            "{}",
+            output.css
+        );
+        assert_eq!(output.css.matches("@layer app;").count(), 0);
+    }
+}
+
+#[test]
 fn authored_color_precision_is_unchanged_until_the_lightning_backend() {
     let req = request(".x{background:linear-gradient(rgb(0% 0% 0% / .30375),transparent);color:var(--color,hsl(198,100%,50%))}");
     let frontend = europacss::compile_frontend(&req).unwrap();

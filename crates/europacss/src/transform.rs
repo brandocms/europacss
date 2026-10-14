@@ -36,31 +36,67 @@ fn transform_mode(
         visited: 0,
         migration,
     };
-    for node in &nodes {
+    let mut errors = Vec::new();
+    collect_placeholders(&nodes, true, &mut compiler.placeholders, &mut errors);
+    for error in errors {
+        if !migration {
+            return Err(error);
+        }
+        config.migration_notice(&error.code, error.offset, || error.message);
+    }
+    let mut result = compiler.nodes(nodes, &Context::default(), 0)?;
+    validate_values(&mut result, config.value)?;
+    if migration {
+        Ok(result)
+    } else {
+        crate::nesting::apply(crate::cascade::media_last(result), config.value)
+    }
+}
+
+// Definitions are compile-time templates, not emitted rules. Unconditional layers
+// do not scope them: expansion always inherits the conditions/layer at the use site.
+fn collect_placeholders(
+    nodes: &[Node],
+    allowed: bool,
+    placeholders: &mut HashMap<String, Vec<Node>>,
+    errors: &mut Vec<Error>,
+) {
+    for node in nodes {
         if node.text.starts_with('%') {
+            if !allowed {
+                errors.push(error(node, "EU_PLACEHOLDER", "Placeholders must be defined at the stylesheet root or inside unconditional @layer blocks"));
+                continue;
+            }
             if !placeholder(&node.text) || node.children.is_none() {
-                return Err(error(
+                errors.push(error(
                     node,
                     "EU_PLACEHOLDER",
                     "A placeholder must be a single %name block",
                 ));
+                continue;
             }
-            if compiler
-                .placeholders
-                .insert(node.text.clone(), node.children.clone().unwrap())
-                .is_some()
-            {
-                return Err(error(
+            if placeholders.contains_key(&node.text) {
+                errors.push(error(
                     node,
                     "EU_PLACEHOLDER",
                     "Duplicate placeholder definition",
                 ));
+                continue;
             }
+            placeholders.insert(node.text.clone(), node.children.clone().unwrap());
+        }
+        if let Some(children) = &node.children {
+            collect_placeholders(
+                children,
+                allowed
+                    && node
+                        .at_rule()
+                        .is_some_and(|(name, _)| name.eq_ignore_ascii_case("layer")),
+                placeholders,
+                errors,
+            );
         }
     }
-    let mut result = compiler.nodes(nodes, &Context::default(), 0)?;
-    validate_values(&mut result, config.value)?;
-    Ok(crate::cascade::media_last(result))
 }
 
 fn validate_values(nodes: &mut [Node], config: &Value) -> Result<(), Error> {
@@ -124,6 +160,30 @@ fn decl(prop: &str, value: &str, node: &Node, important: bool) -> Node {
 
 impl Compiler<'_, '_> {
     fn nodes(&mut self, nodes: Vec<Node>, ctx: &Context, depth: usize) -> Result<Vec<Node>, Error> {
+        if !self.migration {
+            return self.nodes_inner(nodes, ctx, depth);
+        }
+        let mut result = Vec::new();
+        for node in nodes {
+            let expanding = self.expanding.len();
+            match self.nodes_inner(vec![node], ctx, depth) {
+                Ok(mut expanded) => result.append(&mut expanded),
+                Err(error) => {
+                    self.expanding.truncate(expanding);
+                    self.config
+                        .migration_notice(&error.code, error.offset, || error.message);
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    fn nodes_inner(
+        &mut self,
+        nodes: Vec<Node>,
+        ctx: &Context,
+        depth: usize,
+    ) -> Result<Vec<Node>, Error> {
         if depth > 128 {
             return Err(Error::new(
                 "EU_LIMIT",
@@ -380,8 +440,11 @@ impl Compiler<'_, '_> {
                         return Err(error(
                             &node,
                             "EU_DEPRECATED",
-                            "@row is deprecated; use @display flex/row/wrap and @space gap 1",
+                            "@row is unsupported; preserve its flex-wrap and child margin/nth-child gutter rules explicitly (see the migration guide); gap is not an equivalent replacement",
                         ))
+                    }
+                    _ if ctx.style && (name.eq_ignore_ascii_case("keyframes") || name.eq_ignore_ascii_case("-webkit-keyframes")) => {
+                        return Err(error(&node, "EU_NESTED_KEYFRAMES", "Move @keyframes outside the selector to the stylesheet root, retaining any enclosing layer or conditional group"));
                     }
                     "at-root" => {
                         return Err(error(
@@ -422,13 +485,6 @@ impl Compiler<'_, '_> {
                 }
             } else if node.children.is_some() {
                 if node.text.starts_with('%') {
-                    if depth != 0 {
-                        return Err(error(
-                            &node,
-                            "EU_PLACEHOLDER",
-                            "Placeholders must be defined at the stylesheet root",
-                        ));
-                    }
                     continue;
                 }
                 if let Some(offset) = suffix_offset(&node.text)?.filter(|_| !self.migration) {

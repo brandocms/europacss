@@ -42,7 +42,7 @@ fn tuple(value: u32) -> String {
     )
 }
 
-pub(super) fn expand(selector: &str, parents: &[String]) -> Result<Option<Vec<String>>, Error> {
+pub(crate) fn expand(selector: &str, parents: &[String]) -> Result<Option<Vec<String>>, Error> {
     let offsets = parser::nesting_offsets(selector)?;
     if parents.len() > BRANCH_LIMIT {
         return Ok(None);

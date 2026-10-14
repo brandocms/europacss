@@ -84,6 +84,210 @@ struct Declaration {
     raw_property: String,
 }
 
+type CascadeKey = (usize, String, Vec<String>, Vec<String>);
+struct CascadeDeclaration {
+    declaration: Declaration,
+    selector: String,
+    specificity: u32,
+    scopes: Vec<String>,
+    boundaries: Vec<usize>,
+    generated: bool,
+    rank: usize,
+}
+impl CascadeDeclaration {
+    fn key(&self) -> CascadeKey {
+        (
+            self.declaration.offset,
+            self.selector.clone(),
+            self.scopes.clone(),
+            self.declaration.conditions.clone(),
+        )
+    }
+}
+
+/// Compare actual expansion before/after the ordering pass. Named layer blocks
+/// share a cascade domain even though each block is an ordering boundary.
+pub(super) fn scope_changes(
+    raw: &[Node],
+    ordered: &[Node],
+    origins: &Origins,
+    config: &Config<'_>,
+    audit: &mut Audit<'_>,
+) -> Result<(), Error> {
+    #[derive(Clone, Default)]
+    struct Context {
+        selectors: Vec<String>,
+        scopes: Vec<String>,
+        boundaries: Vec<usize>,
+        media: Vec<String>,
+        generated: bool,
+    }
+    fn collect(
+        nodes: &[Node],
+        ctx: &Context,
+        expanded: bool,
+        origins: &Origins,
+        result: &mut Vec<CascadeDeclaration>,
+    ) -> Result<(), Error> {
+        for node in nodes {
+            if result.len() > 50_000 {
+                return Err(Error::new(
+                    "EU_LIMIT",
+                    "Cross-selector analysis exceeded its 50000-declaration budget",
+                    node.offset,
+                ));
+            }
+            if let Some(children) = &node.children {
+                let mut child = ctx.clone();
+                match node.at_rule() {
+                    Some(("media", _)) => {
+                        child.media.push(node.text.clone());
+                        child.generated |= origins
+                            .labels
+                            .get(&node.offset)
+                            .is_some_and(|label| label != "@media");
+                    }
+                    Some(("layer" | "supports" | "container" | "starting-style", params)) => {
+                        child.scopes.push(if params.is_empty() {
+                            format!("{}#{}", node.text, node.offset)
+                        } else {
+                            node.text.clone()
+                        });
+                        child.boundaries.push(node.offset);
+                    }
+                    Some(_) => continue,
+                    None => {
+                        child.selectors.clear();
+                        for selector in parser::split_top_level(&node.text, ',')? {
+                            let values = if ctx.selectors.is_empty() {
+                                vec![selector.to_owned()]
+                            } else {
+                                let parents = if expanded {
+                                    ctx.selectors.clone()
+                                } else {
+                                    vec![format!(":is({})", ctx.selectors.join(", "))]
+                                };
+                                let Some(values) = super::selectors::expand(selector, &parents)?
+                                else {
+                                    return Err(Error::new("EU_LIMIT", "Cross-selector analysis exceeded its selector expansion budget", node.offset));
+                                };
+                                values
+                            };
+                            child.selectors.extend(values);
+                            if child.selectors.len() > 256 {
+                                return Err(Error::new(
+                                    "EU_LIMIT",
+                                    "Cross-selector analysis exceeded 256 selector branches",
+                                    node.offset,
+                                ));
+                            }
+                        }
+                    }
+                }
+                collect(children, &child, expanded, origins, result)?;
+            } else if !ctx.selectors.is_empty()
+                && node.at_rule().is_none()
+                && !node.text.starts_with("/*")
+            {
+                let Some((property, _)) = node.text.split_once(':') else {
+                    continue;
+                };
+                let Some(parsed) = values(&node.text) else {
+                    continue;
+                };
+                for selector in &ctx.selectors {
+                    let Some((specificity, _)) = super::selectors::specificity(selector) else {
+                        continue;
+                    };
+                    result.push(CascadeDeclaration {
+                        declaration: Declaration {
+                            offset: node.offset,
+                            conditions: ctx.media.clone(),
+                            values: parsed.clone(),
+                            raw_property: property.trim().into(),
+                        },
+                        selector: selector.clone(),
+                        specificity,
+                        scopes: ctx.scopes.clone(),
+                        boundaries: ctx.boundaries.clone(),
+                        generated: ctx.generated,
+                        rank: result.len(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+    let expanded = config.value.get("nesting").and_then(|v| v.as_str()) == Some("expanded");
+    let mut before = Vec::new();
+    let mut after = Vec::new();
+    collect(raw, &Context::default(), expanded, origins, &mut before)?;
+    collect(ordered, &Context::default(), expanded, origins, &mut after)?;
+    let mut ranks: HashMap<CascadeKey, std::collections::VecDeque<usize>> = HashMap::new();
+    for item in before {
+        ranks.entry(item.key()).or_default().push_back(item.rank);
+    }
+    for item in &mut after {
+        item.rank = ranks
+            .get_mut(&item.key())
+            .and_then(|ranks| ranks.pop_front())
+            .unwrap_or(item.rank);
+    }
+    let mut histories: HashMap<(Vec<String>, u32), DeclarationIndex> = HashMap::new();
+    let mut work = 0usize;
+    for (index, current) in after.iter().enumerate() {
+        let history = histories
+            .entry((current.scopes.clone(), current.specificity))
+            .or_default();
+        let candidates = history.candidates(&current.declaration);
+        history.insert(index, &current.declaration);
+        for candidate in candidates {
+            let previous = &after[candidate];
+            work += 1;
+            if work > 1_000_000 {
+                audit.incomplete(
+                    &Node::leaf("", current.declaration.offset),
+                    "Cross-selector order analysis exceeded its comparison budget",
+                );
+                return Ok(());
+            }
+            let split_append = previous.generated
+                && !current.generated
+                && previous.boundaries != current.boundaries;
+            let authored_move = previous.selector != current.selector
+                && previous.rank > current.rank
+                && !current.generated
+                && !current.declaration.conditions.is_empty();
+            if !split_append && !authored_move {
+                continue;
+            }
+            let first = &previous.declaration;
+            let second = &current.declaration;
+            for old in &first.values {
+                for new in &second.values {
+                    if !overlaps(&old.property, &new.property)
+                        || old.text == new.text
+                        || old.important != new.important
+                    {
+                        continue;
+                    }
+                    let source = audit.sources.locate(Error::new("", "", first.offset));
+                    let reason = if split_append {
+                        "separate layer/condition blocks interrupt legacy global responsive append order"
+                    } else {
+                        "authored media moved after a different equal-specificity selector"
+                    };
+                    audit.add_order(format!("Potential cascade change: {reason}. `{}` ({}) precedes `{}` ({}) in native output", previous.selector, old.text, current.selector, new.text), second.offset,
+                        if split_append { "For a legacy package, import one aggregate stylesheet with layer(name), and keep its component imports unlayered inside that file. Compare computed styles where both selectors match; do not merge distinct semantic layers or conditions." }
+                        else { "The selectors may match the same element. Compare computed styles at the affected viewport; source analysis cannot prove DOM overlap. Review authored media ordering against the old compiled stylesheet. No automatic appearance edit is made." },
+                        None, OrderConflict { earlier_source: source.into(), earlier_label: previous.selector.clone(), earlier: old.text.clone(), later: new.text.clone(), earlier_conditions: first.conditions.clone(), later_conditions: second.conditions.clone(), reason: reason.into(), selector_path: vec![previous.selector.clone(), current.selector.clone()] });
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn values(text: &str) -> Option<Vec<Value>> {
     let css = format!(".migration-probe{{{text};}}");
     let sheet = StyleSheet::parse(&css, ParserOptions::default()).ok()?;

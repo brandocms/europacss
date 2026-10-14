@@ -7,6 +7,7 @@ mod config_migration;
 mod emit;
 mod imports;
 pub mod migration;
+mod nesting;
 mod optimize;
 pub mod parser;
 mod provenance;

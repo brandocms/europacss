@@ -13,7 +13,7 @@ pub(crate) fn media_last(nodes: Vec<Node>) -> Vec<Node> {
 struct Partition {
     common: Vec<Node>,
     responsive: Vec<Node>,
-    // Registrations (especially the first declaration of a layer) must not move.
+    // Layer registration and unknown rules must not move across pending media.
     // Propagate this boundary through selectors and enclosing conditional groups.
     boundary: bool,
 }
@@ -51,10 +51,14 @@ fn partition(nodes: Vec<Node>) -> Partition {
                     result.common.push(node);
                 }
             }
-            Some(_) => {
-                // Keep imports, layer statements, keyframes, font faces, property
-                // registrations and unknown at-rules in their authored position.
+            Some("keyframes" | "-webkit-keyframes" | "font-face" | "property") => {
+                // Registrations are independent of style-rule order. Preserve their
+                // relative order without splitting the scope's responsive tail.
                 // Descriptor/keyframe blocks are not selector trees.
+                result.common.push(node);
+            }
+            Some(_) => {
+                // Imports, layer statements and unknown at-rules remain barriers.
                 result.barrier(node);
             }
             None if node.children.is_some() => {

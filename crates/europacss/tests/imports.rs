@@ -51,6 +51,101 @@ impl Drop for Project {
 }
 
 #[test]
+fn layer_imports_can_define_global_placeholders_expanded_at_the_use_site() {
+    let p = Project::new();
+    p.write("app.css", "@layer definitions,brando,app; @import 'definitions.css' layer(definitions); @import 'use.css' layer(brando); @layer app{.app{@extend %button}}");
+    p.write(
+        "definitions.css",
+        "@layer nested{%button{color:red;@responsive >=md{padding:12px}}}",
+    );
+    p.write("use.css", ".button{@extend %button}");
+    let output = p.compile().unwrap();
+    assert!(!output.css.contains('%'));
+    assert!(output.css.contains(".button"));
+    assert!(output.css.contains(".app"));
+    assert!(output.css.find("@layer brando").unwrap() < output.css.find(".button").unwrap());
+    p.write(
+        "definitions.css",
+        "%button{color:red} @layer inner{%button{color:blue}}",
+    );
+    let error = p.compile().unwrap_err();
+    assert_eq!(error.code, "EU_PLACEHOLDER");
+    assert!(error.message.contains("Duplicate"));
+    assert!(error.filename.unwrap().ends_with("definitions.css"));
+    p.write(
+        "definitions.css",
+        "@media print{@layer nested{%button{color:red}}}",
+    );
+    let error = p.compile().unwrap_err();
+    assert_eq!(error.code, "EU_PLACEHOLDER");
+    assert!(error.message.contains("unconditional"));
+}
+
+#[test]
+fn migration_checks_order_and_independent_errors_across_imported_files() {
+    use europacss::migration::{analyze_file, LEGACY_BETA6};
+    let p = Project::new();
+    p.write(
+        "app.css",
+        "@import 'responsive.css' layer(brando); @import 'common.css' layer(brando);",
+    );
+    p.write("responsive.css", ".a .b{@space margin-bottom 1}");
+    p.write("common.css", ".c .b{margin-bottom:20px}");
+    let report = analyze_file(&p.request(), LEGACY_BETA6).unwrap();
+    let finding = report
+        .findings
+        .iter()
+        .find(|f| {
+            f.order
+                .as_ref()
+                .is_some_and(|o| o.reason.contains("global responsive append"))
+        })
+        .expect("cross-file layer boundary finding");
+    assert!(finding
+        .diagnostic
+        .filename
+        .as_deref()
+        .unwrap()
+        .ends_with("common.css"));
+    assert!(finding
+        .order
+        .as_ref()
+        .unwrap()
+        .earlier_source
+        .filename
+        .as_deref()
+        .unwrap()
+        .ends_with("responsive.css"));
+
+    p.write("responsive.css", ".a{@row 2} .b{@row 3/wrap}");
+    p.write(
+        "common.css",
+        ".c{@keyframes spin{to{opacity:1}}} .d{@extend %missing}",
+    );
+    let report = analyze_file(&p.request(), LEGACY_BETA6).unwrap();
+    assert!(!report.analysis_complete);
+    for (code, filename, count) in [
+        ("EU_DEPRECATED", "responsive.css", 2),
+        ("EU_NESTED_KEYFRAMES", "common.css", 1),
+        ("EU_EXTEND", "common.css", 1),
+    ] {
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|f| f.diagnostic.code == code
+                    && f.diagnostic
+                        .filename
+                        .as_deref()
+                        .is_some_and(|name| name.ends_with(filename)))
+                .count(),
+            count,
+            "{report:?}"
+        );
+    }
+}
+
+#[test]
 fn imported_library_media_follow_common_rules_and_stay_in_the_library_layer() {
     let p = Project::new();
     p.write("app.css", "@layer brando, app; @import 'brando.css' layer(brando); @import 'overrides.css' layer(app);");

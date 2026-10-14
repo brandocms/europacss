@@ -4,6 +4,10 @@ The optional adapter runs the native `europa` executable before Vite's CSS pipel
 
 The adapter is a private, local package in this checkout, tested with Vite 6.4.3 and 8.3.0. There is no published native-adapter npm installation yet.
 
+Local directory dependencies and `npm pack` work with the private preview. If
+using yalc, run `yalc publish --private` from `packages/vite`, then add it in the
+consumer. Keep the local adapter and executable on the same revision.
+
 ## Install from your checkout
 
 Build or install the native compiler using [getting started](./getting-started). Then, from your Vite application's directory:
@@ -65,7 +69,7 @@ The adapter's config default differs from the CLI, where `--config` is always ex
 
 Set browser support in `europa({ targets: [...] })`. At startup, the native executable resolves the Browserslist queries. The adapter gives that policy to Europa's browser transforms, Vite's `build.cssTarget` and `css.lightningcss.targets`. Do not configure those two Vite CSS settings separately: the adapter replaces them, including the CSS default from `@vitejs/plugin-legacy`. A later plugin that changes them causes an error.
 
-Both CSS passes remain useful. Europa expands directives and applies browser transforms; Vite processes the assembled stylesheets and minifies the final CSS, including third-party styles that bypass Europa. Install `lightningcss` in your application and use `build.cssMinify: 'lightningcss'` for that final pass. The adapter preserves your minifier choice; it does not turn minification on or off. An esbuild minifier also receives the shared targets, but does not replace Lightning CSS's prefixing of styles that bypass Europa.
+Both CSS passes remain useful. Europa expands directives and applies browser transforms; Vite processes the assembled stylesheets and minifies the final CSS, including third-party styles that bypass Europa. Use `build.cssMinify: 'lightningcss'` for that final pass. Vite 6 requires installing `lightningcss` in your application; [Vite 8 already includes it](https://vite.dev/blog/announcing-vite8#install-size). The adapter preserves your minifier choice; it does not turn minification on or off. An esbuild minifier also receives the shared targets, but does not replace Lightning CSS's prefixing of styles that bypass Europa.
 
 This policy controls **CSS only**. Keep JavaScript support in `build.target` and the options for `@vitejs/plugin-legacy`; the adapter does not change those settings. The legacy plugin supplies JavaScript compatibility, not CSS prefixing.
 
@@ -75,7 +79,7 @@ Update the executable and local adapter together when updating this preview. The
 
 ## Imports, reloads and errors
 
-The Rust bundler resolves relative CSS imports before Vite sees the result. Use exact relative paths, including `.css`. Vite aliases, package imports, globs and virtual Vue/Svelte styles are not supported by this resolver. `?raw` and `?url` imports are left to Vite.
+The Rust bundler resolves exact relative CSS imports before Vite sees the result. For imports that are not local files, the adapter asks Vite to resolve package exports and aliases, then supplies the resulting absolute paths to Rust. Imports such as `@import "tippy.js/dist/tippy.css" layer(vendor);` stay inside the same native compilation, retaining qualifiers, asset rebasing, dependency tracking, and source maps. Globs and virtual Vue/Svelte styles are not supported. The standalone CLI has no Vite resolver and still requires exact local paths. `?raw` and `?url` imports are left to Vite.
 
 Changes to a used JSON5 config or local CSS dependency update the affected CSS through HMR. Creating or deleting files uses a full reload to recover missing inputs. Compiler diagnostics retain their originating file, line and column. Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 

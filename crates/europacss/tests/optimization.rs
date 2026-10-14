@@ -4,6 +4,44 @@ use serde_json::json;
 use support::{assert_css, config, request};
 
 #[test]
+fn all_width_unions_unwrap_in_place_without_changing_cascade_or_fractional_gaps() {
+    let mut cfg = config();
+    cfg["theme"]["columns"]["gutters"] = json!({"mobile":"1vw","tablet":"1vw","desktop":"1vw"});
+    let result = compile(&request(
+        ".a{@space margin-left 1}.b{margin-left:20px}",
+        cfg,
+    ))
+    .unwrap();
+    assert!(!result.css.contains("@media"), "{}", result.css);
+    assert!(result.css.find("20px").unwrap() < result.css.find("1vw").unwrap());
+    for query in [
+        "(width < 740px), (width > 740px)",
+        "(width <= 739px), (width >= 740px)",
+        "print, (width >= 0px)",
+    ] {
+        let output = compile(&request(
+            &format!("@media {query}{{.a{{color:red}}}}"),
+            config(),
+        ))
+        .unwrap();
+        assert!(output.css.contains("@media"), "{query}: {}", output.css);
+    }
+    let output = compile(&request(
+        "@supports(display:grid){@media(width < 740px),(width >= 740px){.a{color:red}}}",
+        config(),
+    ))
+    .unwrap();
+    assert!(output.css.contains("@supports"));
+    assert!(!output.css.contains("@media"));
+    let output = compile(&request(
+        "@media(max-width:740px),(min-width:740px){.a{color:red}}",
+        config(),
+    ))
+    .unwrap();
+    assert!(!output.css.contains("@media"));
+}
+
+#[test]
 fn repeated_generated_values_share_contiguous_conditions() {
     let mut cfg = config();
     cfg["theme"]["spacing"] = json!({"gap":{"mobile":"12px","tablet":"12px","desktop":"24px"}});

@@ -41,7 +41,13 @@ fn check(source: &str, expected: &str) {
         req.browsers = vec![target.into()];
         let output = compile(&req).unwrap();
         assert!(output.warnings.is_empty(), "{:?}", output.warnings);
-        assert_eq!(output.css, plain_css(expected, &req), "{target}: {source}");
+        // Normalize the retained layer prelude through the independent backend;
+        // it may shorten equivalent registrations but never applies media-last.
+        assert_eq!(
+            plain_css(&output.css, &req),
+            plain_css(expected, &req),
+            "{target}: {source}"
+        );
     }
 }
 
@@ -116,15 +122,12 @@ fn common_declarations_specificity_and_important_flags_are_not_rewritten() {
 }
 
 #[test]
-fn registrations_and_unknown_at_rules_are_ordering_barriers() {
+fn layers_and_unknown_at_rules_are_ordering_barriers() {
     for barrier in [
         "@layer first;",
         "@layer first{.b{color:green}}",
         "@media print{@layer first{.b{color:green}}}",
         "@supports(display:grid){@layer first{.b{color:green}}}",
-        "@font-face{font-family:Demo;src:url(demo.woff2)}",
-        "@property --amount{syntax:'<number>';inherits:false;initial-value:0}",
-        "@keyframes fade{from{opacity:0}to{opacity:1}}",
         "@custom-rule{.b{color:green}}",
     ] {
         let source = format!("@media print{{.a{{color:red}}}}{barrier}.a{{color:blue}}");
@@ -133,6 +136,25 @@ fn registrations_and_unknown_at_rules_are_ordering_barriers() {
         assert_eq!(nodes[0].text, "@media print", "{barrier}: {css}");
         assert_eq!(nodes[2].text, ".a", "{barrier}: {css}");
     }
+}
+
+#[test]
+fn name_registrations_preserve_their_order_without_splitting_responsive_rules() {
+    let registrations = "@keyframes k{to{opacity:1}} @font-face{font-family:Demo;src:url(a.woff2)} @property --x{syntax:'<number>';inherits:false;initial-value:0} @keyframes k{to{opacity:0}}";
+    let source = format!("@layer brando{{.a .b{{@space margin-bottom 1;}} {registrations} .c .b{{margin-bottom:20px}}}}");
+    let mut cfg = config();
+    cfg["theme"]["columns"]["gutters"] =
+        serde_json::json!({"mobile":"1vw","tablet":"1vw","desktop":"1vw"});
+    let css = compile_frontend(&request(&source, cfg)).unwrap().css;
+    assert!(
+        css.find("20px").unwrap() < css.find("@media").unwrap(),
+        "{css}"
+    );
+    let first = css.find("@keyframes k").unwrap();
+    let font = css.find("@font-face").unwrap();
+    let property = css.find("@property").unwrap();
+    let last = css.rfind("@keyframes k").unwrap();
+    assert!(first < font && font < property && property < last, "{css}");
 }
 
 #[test]

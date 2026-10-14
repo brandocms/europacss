@@ -1,6 +1,7 @@
 use crate::{sources::Sources, Error, Output, Request};
 use lightningcss::{
     error::ErrorLocation,
+    rules::CssRule,
     stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet},
     targets::{Browsers, Targets},
 };
@@ -47,6 +48,16 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
             sources,
         )
     })?;
+    // Keep an authored leading layer-order prelude visibly intact. Lightning CSS
+    // otherwise distributes its names among later blocks/statements. Retaining
+    // the AST nodes also retains their original source-map locations.
+    let layer_prelude: Vec<_> = sheet
+        .rules
+        .0
+        .iter()
+        .take_while(|rule| matches!(rule, CssRule::LayerStatement(_)))
+        .cloned()
+        .collect();
     sheet
         .minify(MinifyOptions {
             targets,
@@ -61,6 +72,17 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
                 sources,
             )
         })?;
+    if !layer_prelude.is_empty() {
+        let names: Vec<_> = layer_prelude
+            .iter()
+            .flat_map(|rule| match rule {
+                CssRule::LayerStatement(layer) => layer.names.clone(),
+                _ => unreachable!(),
+            })
+            .collect();
+        sheet.rules.0.retain(|rule| !matches!(rule, CssRule::LayerStatement(layer) if layer.names.iter().all(|name| names.contains(name))));
+        sheet.rules.0.splice(0..0, layer_prelude);
+    }
     let comments = request.debug_tokens && !request.minify;
     let mut map = (request.source_map || comments).then(|| SourceMap::new("/"));
     let mut printed = sheet
