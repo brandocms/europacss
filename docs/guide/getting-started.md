@@ -3,12 +3,12 @@
 EuropaCSS turns design tokens and directives such as `@space` and `@fontsize` into responsive CSS. The native compiler uses Rust, JSON5 configuration and Lightning CSS for browser transforms. Its executable and Config Studio need no Node or PostCSS.
 
 ::: info Native beta
-The first native npm release is being prepared as `0.1.0-beta.0`. Install commands below require that release to be published. Existing PostCSS projects should start with [migration](./lint-and-migration), or use the [legacy setup](./legacy-postcss).
+The native npm beta is published as `0.1.0-beta.0`. Existing PostCSS projects should start with [migration](./lint-and-migration), or use the [legacy setup](./legacy-postcss).
 :::
 
 ## Install the native executable
 
-With Node 22.12+ or Node 24+, once the beta is published:
+With Node 22.12+ or Node 24+:
 
 ```sh
 pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0

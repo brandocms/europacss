@@ -4,9 +4,10 @@ The repository contains two implementations: the experimental native compiler an
 
 ## Native npm beta
 
-The first native npm release is being prepared as **0.1.0-beta.0**. Package
-preparation does not mean the version is published. Check the public registry
-before handing installation commands to consumers.
+The first native npm release, **0.1.0-beta.0**, was published on October 15,
+2026 from commit `89ce6c63e08465a991010b65bcda578ebbf8f8b4`. All nine published
+packages match the tarballs from the successful [cross-platform release run](https://github.com/brandocms/europacss/actions/runs/38767861670).
+The packages are public and available under the `beta` tag.
 
 The CLI, adapter, Cargo executable and all platform packages share one version:
 

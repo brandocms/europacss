@@ -6,7 +6,7 @@ EuropaCSS turns design tokens and directives such as `@space`, `@fontsize` and `
 
 ## Getting started
 
-After the native beta is published, install the prebuilt executable with Node 22.12+ or Node 24+:
+Install the prebuilt executable with Node 22.12+ or Node 24+:
 
 ```sh
 pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0
