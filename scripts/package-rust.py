@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def command(*args):
-    return subprocess.check_output(args, cwd=ROOT, text=True)
+    return subprocess.check_output(args, cwd=ROOT, text=True, encoding="utf-8")
 
 
 def main():
@@ -102,11 +102,11 @@ def main():
             unpacked = extracted / name
             environment = {**os.environ, "PATH": "", "NO_COLOR": "1"}
             exe = str(unpacked / binary)
-            version = subprocess.check_output([exe, "--version"], env=environment, text=True)
+            version = subprocess.check_output([exe, "--version"], env=environment, text=True, encoding="utf-8")
             if package["version"] not in version:
                 raise RuntimeError("Packaged version does not match Cargo metadata")
             subprocess.run([exe, "examples/app.css", "--config", "examples/europa.json5", "--source-map", "-o", "example.css"], cwd=unpacked, env=environment, check=True)
-            if not (unpacked / "example.css").stat().st_size or not json.loads((unpacked / "example.css.map").read_text())["sources"]:
+            if not (unpacked / "example.css").stat().st_size or not json.loads((unpacked / "example.css.map").read_text(encoding="utf-8"))["sources"]:
                 raise RuntimeError("Packaged compiler did not produce CSS and a source map")
             print("Packaged binary smoke test passed with an empty PATH")
         else:

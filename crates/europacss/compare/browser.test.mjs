@@ -27,7 +27,9 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     }
     server?.closeAllConnections();
     if (server?.listening) await new Promise(resolve => server.close(resolve));
-    await rm(directory, { recursive: true, force: true });
+    // Chrome helper processes can finish profile writes after the parent exits.
+    // Retry directory removal briefly without rerunning or weakening assertions.
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
   const before = ':root{--palette:red}.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}.motion,.touch{color:black}';
   const after = ':root{--palette:blue}.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}.motion,.touch{color:black}@media(prefers-reduced-motion:reduce){.motion{color:purple}}@media(pointer:coarse) and (hover:none){.touch{color:purple}}';

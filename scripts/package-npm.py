@@ -21,7 +21,7 @@ def read_json(path):
 
 def pack(stage, output):
     npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
-    result = subprocess.check_output([npm, "pack", "--ignore-scripts", "--json", "--pack-destination", str(output)], cwd=stage, text=True)
+    result = subprocess.check_output([npm, "pack", "--ignore-scripts", "--json", "--pack-destination", str(output)], cwd=stage, text=True, encoding="utf-8")
     package = json.loads(result)[0]
     archive = output / package["filename"]
     checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
@@ -39,7 +39,7 @@ def main():
         parser.error("supply --archive and/or --shared")
     cli = read_json(ROOT / "packages/cli/package.json")
     vite = read_json(ROOT / "packages/vite/package.json")
-    cargo = tomllib.loads((ROOT / "crates/europacss/Cargo.toml").read_text())
+    cargo = tomllib.loads((ROOT / "crates/europacss/Cargo.toml").read_text(encoding="utf-8"))
     version = cli["version"]
     if vite["version"] != version or cargo["package"]["version"] != version or vite["dependencies"][cli["name"]] != version:
         raise ValueError("Cargo, CLI, adapter and adapter's compiler dependency must have the same exact version")
