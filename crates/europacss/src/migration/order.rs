@@ -296,6 +296,7 @@ pub(super) fn scope_changes(
             let mut properties = Vec::new();
             let mut old_values = Vec::new();
             let mut new_values = Vec::new();
+            let mut important = false;
             for old in &first.values {
                 for new in &second.values {
                     if overlaps(&old.property, &new.property)
@@ -305,6 +306,7 @@ pub(super) fn scope_changes(
                         properties.push(new.property.clone());
                         old_values.push(old.text.clone());
                         new_values.push(new.text.clone());
+                        important |= new.important;
                     }
                 }
             }
@@ -347,6 +349,10 @@ pub(super) fn scope_changes(
                 group.properties.extend(properties);
                 group.properties.sort();
                 group.properties.dedup();
+                if important {
+                    group.review_priority.important = true;
+                    group.review_priority.rank = 1;
+                }
                 if group.examples.len() < 5 {
                     group.examples.push(evidence);
                 }
@@ -360,6 +366,9 @@ pub(super) fn scope_changes(
                         occurrences: 1,
                         properties,
                         examples: vec![evidence],
+                        review_priority: previous
+                            .subject
+                            .review_priority(&current.subject, important),
                     });
                     groups.insert(key, index);
                 }

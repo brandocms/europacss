@@ -226,6 +226,32 @@ its properties and breakpoints. `order_group` contains the occurrence count,
 property names, and up to five representative examples. Its ordinary
 `accepted: true` decision reviews the entire group.
 
+Each group's `review_priority` provides a review hint, with lower ranks first:
+
+| Rank | Reason |
+| --- | --- |
+| 1 | At least one conflicting pair has `!important` on both declarations |
+| 2 | The subject compounds share a direct class |
+| 3 | At least one subject has no direct class (for example a type, attribute, or universal selector) |
+| 4 | A class is shared elsewhere in the selectors |
+| 5 | No class is shared |
+
+The object records `rank`, `relationship`, `important`, `shared_subject_classes`,
+and `shared_classes`. CSS parsing handles escaped class names and keeps classes
+inside `:has()`, `:not()`, and other functional pseudos out of the direct-subject
+tier. This is a heuristic, not evidence of DOM overlap or disjointness. No finding
+is removed or accepted by its priority. Terminal reports include unresolved group
+counts by priority; JSON findings retain source order. For a ranked review list:
+
+```sh
+jq '[.findings[] | select(.order_group != null)] |
+    sort_by(.order_group.review_priority.rank, .filename, .offset)' \
+  migration.json > order-priorities.json
+```
+
+Keep the full report for acceptance and browser evidence. Report version 13
+requires older acceptance receipts to be regenerated and reviewed.
+
 After reviewing the full report and browser evidence, you can accept all findings
 of a semantic diagnostic code with a compact receipt. For example, from a fresh,
 complete `migration.json` report:

@@ -425,6 +425,38 @@ impl Ui {
             eprintln!("  {}\n", self.paint("1;31", "Analysis incomplete — resolve the analysis diagnostics before accepting this report."));
         }
     }
+    pub fn migration_order_priorities(&self, report: &europacss::migration::Report) {
+        let mut counts = std::collections::BTreeMap::<u8, usize>::new();
+        for group in report
+            .findings
+            .iter()
+            .filter(|f| !f.accepted)
+            .filter_map(|f| f.order_group.as_ref())
+        {
+            *counts.entry(group.review_priority.rank).or_default() += 1;
+        }
+        if counts.is_empty() {
+            return;
+        }
+        eprintln!(
+            "\n  {}",
+            self.paint(
+                "1;36",
+                "Cross-selector review priorities (unresolved groups)"
+            )
+        );
+        for (rank, count) in counts {
+            let label = match rank {
+                1 => "both declarations !important",
+                2 => "shared subject class",
+                3 => "subject without a direct class",
+                4 => "class shared elsewhere",
+                _ => "no shared class",
+            };
+            eprintln!("    P{rank}  {count:>5} groups  {label}");
+        }
+        eprintln!("    {}", self.dim("Review hints only; all groups remain unresolved until reviewed. JSON: order_group.review_priority."));
+    }
 }
 
 fn counted(count: usize, singular: &str, plural: &str) -> String {

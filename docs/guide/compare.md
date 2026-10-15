@@ -88,7 +88,7 @@ Exit codes are **0** for no detected differences, **1** for differences, and
 `complete: false`. A successful comparison means only the recorded page state
 and viewports were checked.
 
-Reports use schema version 2. `--ignore-custom-properties` excludes computed
+Reports use schema version 3. `--ignore-custom-properties` excludes computed
 `--*` properties from differences, avoiding inherited palette changes repeated
 on every descendant. Ordinary computed properties still reveal their visual
 effects. `nonCustomChangedElements` counts samples with geometry, pseudo-element
@@ -99,6 +99,21 @@ that fails to reproduce on returning to A is excluded from `changes` and listed
 in `discardedGeometry` with the initial and returned measurements. Such a run is
 marked incomplete (exit 2), so excluded evidence cannot silently pass CI.
 Non-reproducing computed styles also make the run incomplete.
+
+Some native controls change geometry on the first stylesheet replacement even
+when comparing a sheet with itself. Use `--prime` to perform one unmeasured
+A/B/A swap cycle before the measured A/B/A cycle. Fonts, layout frames, and the
+configured `--settle` delay are awaited after each swap; animation suppression
+remains active throughout. The report records `priming: "A/B/A"` (or `"none"`
+without the flag), including on errors. This tests the state after priming;
+it does not certify the initial replacement or subtract control differences.
+
+Priming keeps the same DOM, stylesheet position, and original-sheet restoration.
+DOM mutations during priming make the run incomplete. All measured stability and
+return-to-baseline checks still apply, including `discardedGeometry`. Comparing
+identical CSS still runs the complete measurement sequence. Rerun the affected
+state with `--before` and `--after` pointing to the same sheet to check whether
+priming resolves its replacement artefact, then compare the actual two builds.
 
 Instability errors include an `evidence` object with the phase, changed-sample
 count, and up to five selectors with geometry and property values (up to ten

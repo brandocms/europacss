@@ -51,6 +51,7 @@ function browser(snapshots, failure) {
         let value;
         if (params.expression.includes('document.readyState')) value = true;
         if (params.expression.includes('.snapshot()')) value = snapshots.shift();
+        if (params.expression.includes('.checkMutations()')) value = { mutations: 0 };
         if (params.expression.includes('innerWidth')) value = { width: 600, height: 900, devicePixelRatio: 1 };
         return { result: { value } };
       }
@@ -110,4 +111,53 @@ test('unstable errors identify the sample stage, selector, property and both val
     assert.deepEqual(error.evidence.examples[0].properties.width, {before:'70.79px',after:'70.99px'});
     return true;
   });
+});
+
+test('priming settles replacement history for identical CSS without bypassing measurement', async () => {
+  assert.equal(parseArgs([...args, '--prime']).prime, true);
+  for (const prime of [false, true]) {
+    const cdp = browser([]);
+    const send = cdp.send.bind(cdp);
+    let replacements = 0;
+    cdp.send = async (method, params, sessionId) => {
+      if (method === 'CSS.setStyleSheetText') replacements++;
+      if (method === 'Runtime.evaluate' && params.expression.includes('.snapshot()')) {
+        return { result: { value: snapshot([element({}, {x:0,y:replacements < 2 ? 259.47 : 258.47,width:100,height:20})]) } };
+      }
+      return send(method, params, sessionId);
+    };
+    const result = await comparePage(cdp, {...parseArgs([...args, '--target', 'prepared']), settle:0, prime}, 'same', 'same');
+    assert.equal(result.priming, prime ? 'A/B/A' : 'none');
+    assert.equal(result.changes.length, 0);
+    assert.equal(result.discardedGeometry.length, prime ? 0 : 1);
+  }
+});
+
+test('priming is recorded, retains real differences, and leaves instability checks active', async () => {
+  const before = snapshot([element({color:'red'})]), after = snapshot([element({color:'blue'})]);
+  const options = {...parseArgs([...args, '--target', 'prepared', '--prime']), settle:0};
+  const cdp = browser([before, before, after, after, before, before]);
+  const result = await comparePage(cdp, options, 'before', 'after');
+  assert.equal(result.priming, 'A/B/A');
+  assert.equal(result.changes[0].properties.color.after, 'blue');
+  assert.deepEqual(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').map(c => c.params.text), ['before', 'before', 'after', 'before', 'after', 'before', 'original']);
+  const unstable = browser([before, after]);
+  await assert.rejects(comparePage(unstable, options, 'before', 'after'), /Baseline styles or geometry are unstable/);
+  assert.equal(unstable.calls.filter(c => c.method === 'CSS.setStyleSheetText').at(-1).params.text, 'original');
+});
+
+test('priming rejects DOM mutations and restores the prepared tab even when a swap fails', async () => {
+  const options = {...parseArgs([...args, '--target', 'prepared', '--prime']), settle:0};
+  for (const failure of [false, true]) {
+    const cdp = browser([], failure);
+    const send = cdp.send.bind(cdp);
+    let checks = 0;
+    cdp.send = async (method, params, sessionId) => {
+      if (method === 'Runtime.evaluate' && params.expression.includes('.checkMutations()')) return {result:{value:{mutations:checks++}}};
+      return send(method, params, sessionId);
+    };
+    await assert.rejects(comparePage(cdp, options, 'before', 'after'), failure ? /candidate rejected/ : /DOM changed during priming/);
+    assert.equal(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').at(-1).params.text, 'original');
+    assert.ok(!cdp.calls.some(c => ['Page.navigate', 'Target.closeTarget', 'Emulation.setDeviceMetricsOverride'].includes(c.method)));
+  }
 });

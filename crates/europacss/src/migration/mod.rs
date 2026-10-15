@@ -23,7 +23,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 12;
+pub const REPORT_VERSION: u32 = 13;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -76,11 +76,24 @@ pub struct OrderConflict {
 }
 
 #[derive(Debug, Serialize)]
+pub struct OrderReviewPriority {
+    /// Review hint only: 1 (important) through 5 (no shared class).
+    /// Lower priority never proves selectors cannot match the same element.
+    pub rank: u8,
+    pub relationship: String,
+    /// At least one conflicting pair has !important on both declarations.
+    pub important: bool,
+    pub shared_subject_classes: Vec<String>,
+    pub shared_classes: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct OrderGroup {
     pub occurrences: usize,
     pub properties: Vec<String>,
     /// Up to five representative conflicts; the snapshot binds the full group.
     pub examples: Vec<OrderConflict>,
+    pub review_priority: OrderReviewPriority,
 }
 
 #[derive(Debug, Serialize)]

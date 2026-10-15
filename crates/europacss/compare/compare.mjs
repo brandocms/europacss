@@ -13,6 +13,7 @@ const HELP = `Usage: europa compare <url> --before old.css --after new.css --sty
   --settle <ms>        Wait between stability samples (default 250)
   --tolerance <px>     Ignore smaller geometry differences (default 0.1)
   --ignore-custom-properties  Omit computed custom properties from differences
+  --prime             Run an unmeasured A/B/A swap before the measured A/B/A
   --json              Write the complete structured report to stdout
 
 Requires Node.js 22+ and Chromium started with remote debugging. Uses an existing
@@ -29,6 +30,7 @@ export function parseArgs(args) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') return { help: true };
     if (arg === '--ignore-custom-properties') { options.ignoreCustomProperties = true; continue; }
+    if (arg === '--prime') { options.prime = true; continue; }
     if (arg === '--json') { options.json = true; continue; }
     if (arg === '--viewport') {
       const match = /^(\d+)x(\d+)$/.exec(args[++i] ?? '');
@@ -157,6 +159,10 @@ export function installCapture(key, selector) {
     }
     return { mutations: state.mutations, mutationDetails: state.mutationDetails, elements: records, coverage: { elements: elements.length, pseudoElements: records.length - elements.length, framesExcluded: frames, openShadowRootsExcluded: shadowRoots } };
   };
+  state.checkMutations = () => {
+    observe(observer.takeRecords());
+    return { mutations: state.mutations, mutationDetails: state.mutationDetails };
+  };
   state.dispose = () => { observer.disconnect(); freeze.remove(); delete window[key]; };
   window[key] = state;
 }
@@ -262,6 +268,23 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     await settle();
     await evaluate(`(${installCapture.toString()})(${JSON.stringify(key)}, ${JSON.stringify(options.root)})`);
     await settle();
+    if (options.prime) {
+      const mutationState = () => evaluate(`window[${JSON.stringify(key)}].checkMutations()`);
+      const start = await mutationState();
+      // Warm the same replacement path used by the measured run. Keep capture
+      // and animation suppression installed throughout; do not reset the DOM
+      // observer or reuse measurements from before this cycle.
+      for (const text of [beforeCSS, afterCSS, beforeCSS]) {
+        await send('CSS.setStyleSheetText', { styleSheetId, text });
+        await settle();
+      }
+      const end = await mutationState();
+      if (end.mutations !== start.mutations) {
+        const error = new Error('DOM changed during priming; prepare a stable page state and rerun');
+        error.evidence = { stage: 'priming', mutations: { before: start.mutations, after: end.mutations }, examples: end.mutationDetails ?? [] };
+        throw error;
+      }
+    }
     const snapshot = () => evaluate(`window[${JSON.stringify(key)}].snapshot()`);
     const before = await snapshot();
     await settle();
@@ -280,7 +303,7 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     const returnDrift = differences(returned, await snapshot(), options.tolerance, options.ignoreCustomProperties);
     if (returnDrift.length) throw unstable('Returned baseline styles or geometry are unstable', 'baseline-return', returnDrift);
     const result = reproducibleChanges(before, after, returned, options.tolerance, options.ignoreCustomProperties);
-    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, ...result,
+    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, priming: options.prime ? 'A/B/A' : 'none', ...result,
       nonCustomChangedElements: result.changes.filter(change => change.presence || Object.keys(change.geometry).length || Object.keys(change.properties).some(name => !name.startsWith('--'))).length };
   } finally {
     const cleanup = [];
@@ -310,11 +333,12 @@ export async function main(args = process.argv.slice(2)) {
     for (const viewport of options.target ? [null] : options.viewports) results.push(await comparePage(cdp, options, before, after, viewport));
     const changedElements = results.reduce((sum, result) => sum + result.changes.length, 0);
     const discardedGeometry = results.reduce((sum, result) => sum + result.discardedGeometry.length, 0);
-    const report = { version: 2, complete: discardedGeometry === 0, discardedGeometry, nonCustomChangedElements: results.reduce((sum, result) => sum + result.nonCustomChangedElements, 0), customProperties: options.ignoreCustomProperties ? 'ignored' : 'all', url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
+    const report = { version: 3, complete: discardedGeometry === 0, discardedGeometry, priming: options.prime ? 'A/B/A' : 'none', nonCustomChangedElements: results.reduce((sum, result) => sum + result.nonCustomChangedElements, 0), customProperties: options.ignoreCustomProperties ? 'ignored' : 'all', url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
       sampling: 'A/B/A with two stability samples per phase; non-reproducing geometry excluded', limitations: ['Current page state and selected viewports only; no selector-performance measurement', 'Animations and transitions disabled during sampling', 'Main document subtree and ::before/::after computed styles; iframe and shadow-root contents and pseudo-element boxes excluded', 'Geometry uses a pixel tolerance; computed property strings are compared exactly'] };
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     else {
       console.log(`${changedElements} changed element/pseudo-element samples across ${results.length} viewport(s); ${report.nonCustomChangedElements} with non-custom changes.`);
+      if (options.prime) console.log('Priming: one unmeasured A/B/A swap before each measured comparison.');
       if (discardedGeometry) console.error(`${discardedGeometry} geometry differences did not reproduce after A/B/A and were excluded; comparison is incomplete. See --json for evidence.`);
       for (const result of results) for (const change of result.changes) {
         console.log(`\n${result.viewport.width}x${result.viewport.height} ${change.label}\n  ${change.selector}`);
@@ -326,7 +350,7 @@ export async function main(args = process.argv.slice(2)) {
     }
     return discardedGeometry ? 2 : changedElements ? 1 : 0;
   } catch (error) {
-    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 2, complete: false, error: error.message, ...(error.evidence ? { evidence: error.evidence } : {}) }) + '\n');
+    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 3, complete: false, priming: options?.prime ? 'A/B/A' : 'none', error: error.message, ...(error.evidence ? { evidence: error.evidence } : {}) }) + '\n');
     else { console.error(`europa compare: ${error.message}`); if (error.evidence) console.error(JSON.stringify(error.evidence, null, 2)); }
     return 2;
   } finally { cdp?.close(); }

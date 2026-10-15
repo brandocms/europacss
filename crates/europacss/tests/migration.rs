@@ -1200,6 +1200,70 @@ fn cross_selector_subject_constraints_prune_only_proven_disjoint_pairs() {
 }
 
 #[test]
+fn cross_selector_review_priorities_use_parsed_subjects_without_dropping_findings() {
+    for (a, b, rank, relationship) in [
+        (".a .x", ".b .x", 2, "shared-subject-class"),
+        (".a .x::before", ".b .x::before", 2, "shared-subject-class"),
+        (r".a .x\:y", r".b .x\3a y", 2, "shared-subject-class"),
+        (".a [data-icon]", ".b .x", 3, "classless-subject"),
+        (".a button", ".b button", 3, "classless-subject"),
+        (".a *", ".b *", 3, "classless-subject"),
+        (".shared .a", ".shared .b", 4, "shared-class-elsewhere"),
+        (".a:has(.x)", ".b:has(.x)", 4, "shared-class-elsewhere"),
+        (".a:not(.x)", ".b:not(.x)", 4, "shared-class-elsewhere"),
+        (
+            ".a[data-label='.x']",
+            ".b[data-label='.x']",
+            5,
+            "no-shared-class",
+        ),
+        (".a .x", ".b .y", 5, "no-shared-class"),
+    ] {
+        let source = format!("@media(width < 600px){{{a}{{padding:1px}}}}{b}{{padding:2px}}");
+        let report = analyze(&source);
+        let groups: Vec<_> = report
+            .findings
+            .iter()
+            .filter_map(|f| f.order_group.as_ref())
+            .collect();
+        assert_eq!(groups.len(), 1, "{a} / {b}: {report:?}");
+        let priority = &groups[0].review_priority;
+        assert_eq!(
+            (
+                priority.rank,
+                priority.relationship.as_str(),
+                priority.important
+            ),
+            (rank, relationship, false),
+            "{a} / {b}"
+        );
+        assert_eq!(
+            priority.shared_subject_classes.is_empty(),
+            rank != 2,
+            "{a} / {b}"
+        );
+        assert!(report.findings.iter().all(|f| !f.accepted));
+    }
+}
+
+#[test]
+fn important_conflicts_raise_the_whole_selector_pair_group_priority() {
+    let report = analyze("@media(width < 600px){.a{padding:1px;margin:1px!important}}.b{padding:2px;margin:2px!important}");
+    let groups: Vec<_> = report
+        .findings
+        .iter()
+        .filter_map(|f| f.order_group.as_ref())
+        .collect();
+    assert_eq!(groups.len(), 1);
+    let group = groups[0];
+    assert_eq!(group.occurrences, 2);
+    assert_eq!(group.review_priority.rank, 1);
+    assert!(group.review_priority.important);
+    assert_eq!(group.review_priority.relationship, "no-shared-class");
+    assert!(group.review_priority.shared_classes.is_empty());
+}
+
+#[test]
 fn cross_selector_groups_can_be_accepted_with_a_compact_snapshot_bound_receipt() {
     let req = request(
         "@media(width < 600px){.a{padding:1px;margin:2px}} .b{padding:2px;margin:3px}",

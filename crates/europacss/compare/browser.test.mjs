@@ -79,6 +79,15 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
   const same = await compare(page, 'before.css');
   assert.equal(same.code, 0, JSON.stringify(same.report));
   assert.equal(same.report.changedElements, 0);
+  const primed = await compare(page, 'after.css', ['--prime', '--ignore-custom-properties']);
+  assert.equal(primed.code, 1, JSON.stringify(primed.report));
+  assert.equal(primed.report.complete, true);
+  assert.equal(primed.report.priming, 'A/B/A');
+  assert.ok(primed.report.results[0].changes.some(c => c.properties['margin-bottom']?.after === '20px'));
+  const primedSame = await compare(page, 'before.css', ['--prime']);
+  assert.equal(primedSame.code, 0, JSON.stringify(primedSame.report));
+  assert.equal(primedSame.report.priming, 'A/B/A');
+  assert.equal(primedSame.report.changedElements, 0);
   const unstable = await compare(page + '?unstable', 'after.css');
   assert.equal(unstable.code, 2, JSON.stringify(unstable.report));
   assert.equal(unstable.report.complete, false);

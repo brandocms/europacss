@@ -198,6 +198,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
                 ui.migration_item(item, &input);
             }
         }
+        ui.migration_order_priorities(&report);
         ui.migration_summary(MigrationSummary {
             files: report.files.len(),
             findings: report.findings.len(),
