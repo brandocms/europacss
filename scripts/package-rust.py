@@ -84,7 +84,9 @@ def main():
         # Replace only our known archive after it has been fully created.
         draft = Path(temporary) / archive.name
         if suffix == ".zip":
-            with zipfile.ZipFile(draft, "w", zipfile.ZIP_DEFLATED) as handle:
+            # Crate archives may stamp notices at the Unix epoch, before ZIP's
+            # 1980 timestamp floor. Preserve their bytes and clamp timestamps.
+            with zipfile.ZipFile(draft, "w", zipfile.ZIP_DEFLATED, strict_timestamps=False) as handle:
                 for path in sorted(stage.rglob("*")):
                     if path.is_file():
                         handle.write(path, path.relative_to(stage.parent))

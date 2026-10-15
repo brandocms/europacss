@@ -2,7 +2,7 @@ use europacss::{compile, resolve_config, studio, Request};
 use serde_json::{json, Value};
 use std::{
     fs,
-    io::{Read, Write},
+    io::{BufRead, BufReader, Read, Write},
     net::TcpStream,
     process::{Command, Stdio},
     time::{Duration, Instant},
@@ -136,9 +136,29 @@ fn studio_server_runs_without_node_and_never_rewrites_the_config() {
         stream
             .set_read_timeout(Some(Duration::from_secs(10)))
             .unwrap();
-        write!(stream,"{method} {path} HTTP/1.1\r\nHost: {address}\r\nContent-Length: {}\r\n{headers}\r\n{body}",body.len()).unwrap();
+        let request = format!("{method} {path} HTTP/1.1\r\nHost: {address}\r\nContent-Length: {}\r\n{headers}\r\n{body}", body.len());
+        stream.write_all(request.as_bytes()).unwrap();
+        // A rejected request can close with unread body bytes. Read the full
+        // framed response without depending on a graceful TCP EOF afterward.
+        let mut reader = BufReader::new(stream);
         let mut response = String::new();
-        stream.read_to_string(&mut response).unwrap();
+        loop {
+            let mut line = String::new();
+            assert!(reader.read_line(&mut line).unwrap() > 0);
+            response.push_str(&line);
+            if line == "\r\n" {
+                break;
+            }
+        }
+        let length: usize = response
+            .lines()
+            .find_map(|line| line.strip_prefix("Content-Length: "))
+            .unwrap()
+            .parse()
+            .unwrap();
+        let mut body = vec![0; length];
+        reader.read_exact(&mut body).unwrap();
+        response.push_str(std::str::from_utf8(&body).unwrap());
         response
     };
     let fonts = send("GET", "/api/fonts", "", "");
