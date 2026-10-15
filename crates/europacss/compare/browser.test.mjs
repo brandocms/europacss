@@ -14,11 +14,11 @@ const browser = process.env.EUROPA_COMPARE_BROWSER;
 const binary = process.env.EUROPA_BINARY;
 const cli = fileURLToPath(new URL('./compare.mjs', import.meta.url));
 
-test('CDP command compares real styles and geometry, preserves the cascade, and rejects live DOM changes', { skip: !browser, timeout: 45000 }, async t => {
+test('CDP command compares real styles and geometry, preserves the cascade, and rejects live DOM changes', { skip: !browser, timeout: 60000 }, async t => {
   const directory = await mkdtemp(path.join(tmpdir(), 'europa-compare-browser-'));
   let chrome, server;
   t.after(async () => {
-    if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
+    if (chrome?.pid && chrome.exitCode === null && chrome.signalCode === null) {
       const exited = new Promise(resolve => chrome.once('exit', resolve));
       chrome.kill();
       const force = setTimeout(() => chrome.kill('SIGKILL'), 5000);
@@ -44,12 +44,18 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const page = `http://127.0.0.1:${server.address().port}/`;
-  chrome = spawn(browser, ['--headless=new', '--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${path.join(directory, 'profile')}`, '--no-first-run', '--use-mock-keychain', '--password-store=basic', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: 'ignore' });
+  chrome = spawn(browser, ['--headless=new', '--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${path.join(directory, 'profile')}`, '--no-first-run', '--use-mock-keychain', '--password-store=basic', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let chromeError, chromeLog = '';
+  chrome.on('error', error => { chromeError = error; });
+  chrome.stderr.on('data', data => { chromeLog = (chromeLog + data).slice(-16384); });
   let port;
-  const deadline = Date.now() + 10000;
+  // A fresh Chrome profile can take longer on a busy hosted runner. Retain
+  // startup diagnostics so crashes are distinguishable from a slow launch.
+  const deadline = Date.now() + 30000;
   while (!port) {
     try { port = Number((await readFile(path.join(directory, 'profile/DevToolsActivePort'), 'utf8')).split('\n')[0]); } catch {}
-    if (Date.now() > deadline || chrome.exitCode !== null) throw new Error('Temporary Chromium did not expose CDP');
+    if (chromeError) throw chromeError;
+    if (Date.now() > deadline || chrome.exitCode !== null || chrome.signalCode !== null) throw new Error(`Temporary Chromium did not expose CDP (exit ${chrome.exitCode}, signal ${chrome.signalCode})\n${chromeLog}`);
     if (!port) await new Promise(resolve => setTimeout(resolve, 25));
   }
   const compare = async (url, candidate, extra = []) => {

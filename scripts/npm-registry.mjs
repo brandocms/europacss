@@ -11,7 +11,9 @@ export async function readPackages(directory) {
   const packages = new Map();
   for (const filename of (await readdir(directory)).filter(f => f.endsWith('.tgz'))) {
     const file = path.resolve(directory, filename);
-    const manifest = JSON.parse(execFileSync('tar', ['-xOf', file, 'package/package.json'], { encoding: 'utf8' }));
+    // A Windows drive prefix looks like a remote host to GNU tar. Read from
+    // the archive's directory using its basename, which also works with BSD tar.
+    const manifest = JSON.parse(execFileSync('tar', ['-xOf', path.basename(file), 'package/package.json'], { cwd: path.dirname(file), encoding: 'utf8' }));
     if (!manifest.name.startsWith('@brandocms/europacss-') && manifest.name !== '@brandocms/vite-plugin-europacss') {
       throw new Error(`Unexpected release package: ${manifest.name}`);
     }

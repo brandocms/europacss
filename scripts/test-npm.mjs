@@ -57,7 +57,7 @@ try {
     lightningcss: '1.33.0',
   } }));
   const install = values.manager === 'pnpm' ? ['install', '--ignore-scripts', '--store-dir', path.join(root, 'store')] : ['install', '--ignore-scripts', '--cache', path.join(root, 'cache')];
-  await run(install);
+  await run(values.manager === 'pnpm' ? [...install, '--no-frozen-lockfile'] : install);
   // A second clean install must honor the same lockfile, including optional binaries.
   await rm(path.join(root, 'node_modules'), { recursive: true, force: true });
   await run(values.manager === 'pnpm' ? [...install, '--frozen-lockfile'] : ['ci', ...install.slice(1)]);
@@ -111,7 +111,9 @@ try {
   delete manifest.devDependencies['@brandocms/europacss-cli'];
   await writeFile(path.join(root, 'package.json'), JSON.stringify(manifest));
   await rm(path.join(root, 'node_modules'), { recursive: true, force: true });
-  await run(install);
+  // This fixture intentionally changed package.json; update its lockfile even
+  // under CI=true. The unchanged manifest's frozen reinstall was checked above.
+  await run(values.manager === 'pnpm' ? [...install, '--no-frozen-lockfile'] : install);
   await run(['run', 'build']);
   if (registry) assert.deepEqual(registry.unexpectedDownloads, [], 'Installed an incompatible or unbuilt platform');
   console.log(`Passed: Node ${process.versions.node}, ${values.manager}, Vite ${values.vite}, ${process.platform}/${process.arch}; clean install, frozen reinstall, CLI, migration, error exit, and adapter-only build`);
