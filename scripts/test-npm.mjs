@@ -1,7 +1,7 @@
 // End-to-end installation of actual release tarballs with no install scripts.
 import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, mkdir, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, rm, readdir, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -19,7 +19,9 @@ const registry = values.registry ? null : await startRegistry(values.packages);
 const origin = values.registry ?? registry.origin;
 const version = values.version ?? registry?.version;
 assert.ok(version, '--version is required with --registry');
-const root = await mkdtemp(path.join(tmpdir(), 'europa npm smoke '));
+// Windows runners expose TMP through an 8.3 alias (RUNNER~1). Vite resolves
+// entry files to long paths, so its root must use that same canonical spelling.
+const root = await realpath(await mkdtemp(path.join(tmpdir(), 'europa npm smoke ')));
 const env = { ...process.env, npm_config_userconfig: path.join(root, '.npmrc'), NO_COLOR: '1' };
 delete env.EUROPA_BINARY;
 // Run package-manager JS entrypoints directly so Windows never needs a shell.

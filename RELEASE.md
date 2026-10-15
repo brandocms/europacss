@@ -72,12 +72,22 @@ adapter checks from [rust.yml](.github/workflows/rust.yml).
    pass on the release commit. Review the `npm-*` and `archive-*` artifacts.
 3. Configure npm publishing access to the `@brandocms` scope. For the first
    publication of new package names, publish the **tested tarballs** from an
-   authenticated npm session (with any required 2FA), then configure each
-   package's trusted publisher for `brandocms/europacss`, workflow
-   `native-release.yml`, environment `npm`, with direct `npm publish` allowed.
-   Use the GitHub `npm` environment for the publishing job. Trusted publishing
-   requires npm >=11.5.1 and Node >=22.14; the release job uses Node 24.
-4. For later releases, push the matching `native-v0.1.0-beta.N` tag. Only those
+   authenticated npm session (with any required 2FA).
+4. Before the next release, configure each package's trusted publisher for
+   `brandocms/europacss`, workflow `native-release.yml`, environment `npm`, with
+   direct `npm publish` allowed. Use the GitHub `npm` environment for the
+   publishing job. Trusted publishing requires npm >=11.5.1 and Node >=22.14;
+   the release job uses Node 24. With npm >=11.15.0, the configuration command is:
+
+   ```sh
+   npm trust github @brandocms/europacss-cli --repo brandocms/europacss --file native-release.yml --env npm --allow-publish --yes
+   ```
+
+   Repeat for the adapter and all seven platform packages. This requires an
+   authenticated package maintainer with account 2FA. A new configuration must
+   complete its first successful publish within two days or it expires, so
+   configure it when that next release is ready. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+5. For later releases, push the matching `native-v0.1.0-beta.N` tag. Only those
    tags run the publisher, after all checks pass. Branch/manual runs never
    publish. The JavaScript workflow excludes native tags.
 
