@@ -118,7 +118,10 @@ test('inherited config chains reload, recover missing parents and stop watching 
 
 test('dev HMR follows transitive CSS/config edits, diagnoses errors and recovers missing imports', async (t) => {
   const { root, config, write } = await fixture(t);
-  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1' } });
+  // Programmatic writes can arrive inside Chokidar's 50ms change-event throttle
+  // on Linux. Wait for each complete write so successive fixture edits have
+  // distinct events, just as editor writes do; no HMR assertion is bypassed.
+  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1', watch: { awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 10 } } } });
   t.after(() => server.close());
   await server.listen();
   const messages = [];

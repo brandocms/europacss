@@ -1237,10 +1237,11 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
     let mut selected = 0;
     for finding in report["findings"].as_array_mut().unwrap() {
         finding["accepted"] = false.into();
-        if finding["filename"]
-            .as_str()
-            .is_some_and(|name| name.ends_with("/one.css"))
-            && finding["fix"].is_object()
+        if finding["filename"].as_str().is_some_and(|name| {
+            std::path::Path::new(name)
+                .file_name()
+                .is_some_and(|file| file == "one.css")
+        }) && finding["fix"].is_object()
         {
             finding["apply_fix"] = true.into();
             selected += 1;

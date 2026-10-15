@@ -126,12 +126,8 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
             .map_err(|e| Error::new("EU_SOURCE_MAP", e.to_string(), 0))?;
         if let Some(names) = json["sources"].as_array_mut() {
             for name in names {
-                if let Some(file) = sources.files.iter().find(|file| {
-                    name.as_str().is_some_and(|name| {
-                        file.name == name || file.name.strip_prefix('/') == Some(name)
-                    })
-                }) {
-                    *name = file.name.clone().into();
+                if let Some(index) = name.as_str().and_then(|name| sources.map_index(name)) {
+                    *name = sources.files[index].name.clone().into();
                 }
             }
         }

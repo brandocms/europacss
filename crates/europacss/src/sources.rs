@@ -38,6 +38,18 @@ impl Sources {
         &self.text[file.start..file.start + file.len]
     }
 
+    pub fn map_index(&self, name: &str) -> Option<usize> {
+        // Parcel uses forward slashes and removes the '/' project root. On
+        // Windows that also normalizes canonical \\?\ drive/UNC prefixes.
+        self.files.iter().position(|file| {
+            #[cfg(windows)]
+            let normalized = file.name.replace('\\', "/");
+            #[cfg(not(windows))]
+            let normalized = file.name.as_str();
+            file.name == name || normalized.trim_start_matches('/') == name.trim_start_matches('/')
+        })
+    }
+
     pub fn locate(&self, mut error: Error) -> Error {
         if error.filename.is_some() || self.files.is_empty() {
             return error;
@@ -58,12 +70,7 @@ impl Sources {
         line: usize,
         column: usize,
     ) -> Error {
-        // Parcel normalizes absolute sources against its '/' project root.
-        let index = self
-            .files
-            .iter()
-            .position(|file| file.name == name || file.name.strip_prefix('/') == Some(name))
-            .unwrap_or(0);
+        let index = self.map_index(name).unwrap_or(0);
         let offset = emit::offset(self.content(index), line, column);
         self.locate(Error::new(code, message, self.files[index].start + offset))
     }

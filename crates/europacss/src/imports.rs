@@ -475,11 +475,10 @@ pub(crate) fn rebase(
                     offset,
                 )
             })?;
-            let value = format!(
-                "{}{}",
-                encode_path(&relative.to_string_lossy()),
-                &url[end..]
-            );
+            let relative = relative.to_string_lossy();
+            #[cfg(windows)]
+            let relative = relative.replace('\\', "/");
+            let value = format!("{}{}", encode_path(&relative), &url[end..]);
             Ok(quote(&value))
         })
         .map_err(|e| Error::new(&e.code, e.message, offset))?;

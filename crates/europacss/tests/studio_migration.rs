@@ -2,7 +2,7 @@
 use serde_json::{json, Value};
 use std::{
     fs,
-    io::{Read, Write},
+    io::{BufRead, BufReader, Read, Write},
     net::TcpStream,
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -92,13 +92,32 @@ impl Server {
         let origin = origin
             .map(|s| format!("Origin: {s}\r\n"))
             .unwrap_or_default();
-        write!(stream,"{method} {route} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n{origin}\r\n{body}",self.host,body.len()).unwrap();
-        let mut response = String::new();
-        stream.read_to_string(&mut response).unwrap();
-        let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+        let request = format!("{method} {route} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n{origin}\r\n{body}",self.host,body.len());
+        stream.write_all(request.as_bytes()).unwrap();
+        // Rejected origins may close with an unread request body, producing a
+        // TCP reset on Linux after the complete HTTP response. Read the framed
+        // response, rather than requiring a graceful TCP EOF afterward.
+        let mut reader = BufReader::new(stream);
+        let mut headers = String::new();
+        loop {
+            let mut line = String::new();
+            assert!(reader.read_line(&mut line).unwrap() > 0);
+            if line == "\r\n" {
+                break;
+            }
+            headers.push_str(&line);
+        }
+        let length: usize = headers
+            .lines()
+            .find_map(|line| line.strip_prefix("Content-Length: "))
+            .unwrap()
+            .parse()
+            .unwrap();
+        let mut body = vec![0; length];
+        reader.read_exact(&mut body).unwrap();
         (
             headers.split_whitespace().nth(1).unwrap().parse().unwrap(),
-            serde_json::from_str(body).unwrap(),
+            serde_json::from_slice(&body).unwrap(),
         )
     }
     fn get(&self) -> Value {
