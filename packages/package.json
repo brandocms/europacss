@@ -1,0 +1,8 @@
+{
+  "name": "europacss-native-packages",
+  "private": true,
+  "workspaces": ["cli", "vite"],
+  "scripts": {
+    "test": "npm test --workspaces"
+  }
+}

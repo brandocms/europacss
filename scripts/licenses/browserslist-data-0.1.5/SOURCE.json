@@ -1,0 +1,5 @@
+{
+  "url": "https://raw.githubusercontent.com/browserslist/browserslist-rs/e8c18251d3f25eb669d2da65178b2563268ea7f8/LICENSE",
+  "sha256": "982d71ece9934b3bb7b95cec8a143d0db7523537fce588387dec98bbe72edbe5",
+  "note": "Upstream repository license; missing from the published crate archive."
+}

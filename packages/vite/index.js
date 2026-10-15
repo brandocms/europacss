@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { watchFile, unwatchFile } from 'node:fs';
 import path from 'node:path';
+import { getBinaryPath } from '@brandocms/europacss-cli';
 import { sharedTargets, sameTargets } from './targets.js';
 
 const normalize = (file) => path.resolve(file).replaceAll('\\', '/');
@@ -110,7 +111,7 @@ export default function europa(options = {}) {
       order: 'post',
       async handler(userConfig) {
         root = path.resolve(userConfig.root ?? process.cwd());
-        binary = options.binary ?? 'europa';
+        binary = options.binary ?? getBinaryPath();
         if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
         const response = await compile(binary, { version: 1, browsers: options.targets ?? [] }, root, true);
         if (response.error) throw new Error(`[${response.error.code}] ${response.error.message} (resolving EuropaCSS targets; check the query and reinstall europa if the executable is older than the adapter)`);
@@ -130,7 +131,7 @@ export default function europa(options = {}) {
       }
       debugTokens = options.debugTokens === true && resolved.command === 'serve';
       root = resolved.root;
-      binary = options.binary ?? 'europa';
+      binary = options.binary ?? getBinaryPath();
       if (binary.includes('/') || binary.includes('\\')) binary = path.resolve(root, binary);
       config = options.config === false ? null : path.resolve(root, options.config ?? 'europa.json5');
     },

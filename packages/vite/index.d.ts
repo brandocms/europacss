@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite';
 export interface EuropaOptions {
-  /** Executable on PATH, or a path relative to Vite's root. Default: 'europa'. */
+  /** Override the packaged compiler with an executable on PATH or a path relative to Vite's root. */
   binary?: string;
   /** JSON5 config path relative to Vite's root. Default: 'europa.json5'; false uses defaults. */
   config?: string | false;

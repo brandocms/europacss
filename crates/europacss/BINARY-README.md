@@ -33,7 +33,7 @@ Before migrating an existing site, run:
 Review findings and compare rendered pages. `--fix` rewrites supported suffix
 selectors; it never chooses a different appearance for you. Versioned migration
 analysis supports beta.6, beta.11 and beta.16, is bounded, and does not prove complete visual equivalence.
-Analyzer version 12 groups cross-selector risks by selector pair and prunes provably disjoint subjects. `--budget N` adjusts its comparison limit. Large reviews can use snapshot-bound `accept_codes` receipts; see the migration guide before accepting a whole diagnostic code.
+Analyzer version 14 groups cross-selector risks by selector pair and prunes provably disjoint subjects. `--budget N` adjusts its comparison limit. `responsiveOrder: 'generated-last'` preserves authored media positions while appending directive media. `migration: { mediaPacking: 'none' }` disables speculative old-build media-packing checks when the old build did not pack media. Large reviews can use snapshot-bound receipts; see the migration guide before accepting a whole diagnostic code.
 
 The optional `europa compare` command compares computed styles and element boxes
 on the same rendered DOM. It requires Node.js 22+ and an installed Chromium browser
@@ -47,11 +47,14 @@ Supply the old/new compiled CSS and the URL of the stylesheet to replace:
 Run `./europa compare --help` for CDP, viewport, and prepared-tab options. See
 `docs/guide/compare.md` in the source checkout for setup and coverage limits.
 
-These archives are preview build artifacts. They are unsigned and not notarized.
+These archives are native beta build artifacts. They are unsigned and not notarized.
 `manifest.json` records target/toolchain details and file checksums. `Cargo.lock`,
 `dependencies.json`, and `licenses/` record upstream versions and available notices.
-Some crate tarballs omit license files; completing those notices is still required
-before public distribution. No automated package publication is configured.
+For crates that omit license files, versioned supplements record the upstream
+license source or declared license grant. `dependencies.json` also links each
+unmodified crate's source archive. Packaging fails if any notices are missing.
+The native npm workflow publishes tested platform packages, CLI and Vite adapter
+under the `beta` dist-tag for `native-v*` release tags.
 
 Source and compiler documentation: https://github.com/brandocms/europacss
 

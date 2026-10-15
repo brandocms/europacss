@@ -1,0 +1,174 @@
+name: Native npm packages
+
+on:
+  push:
+    branches: ['**']
+    tags: ['native-v*']
+    paths: ['Cargo.toml', 'Cargo.lock', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/native-release.yml']
+  pull_request:
+    paths: ['Cargo.toml', 'Cargo.lock', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/native-release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    uses: ./.github/workflows/rust.yml
+
+  shared:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/package-npm.py --shared
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-shared
+          path: dist/npm/*
+          if-no-files-found: error
+
+  binaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: aarch64-apple-darwin, runner: macos-15 }
+          - { target: x86_64-apple-darwin, runner: macos-15-intel }
+          - { target: x86_64-unknown-linux-gnu, runner: ubuntu-22.04 }
+          - { target: aarch64-unknown-linux-gnu, runner: ubuntu-22.04-arm }
+          - { target: x86_64-unknown-linux-musl, runner: ubuntu-22.04, musl: true }
+          - { target: aarch64-unknown-linux-musl, runner: ubuntu-22.04-arm, musl: true }
+          - { target: x86_64-pc-windows-msvc, runner: windows-2022 }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build, test and archive native binary
+        if: '!matrix.musl'
+        env:
+          RUSTUP_TOOLCHAIN: 1.95.0
+          RUSTFLAGS: ${{ matrix.target == 'x86_64-pc-windows-msvc' && '-C target-feature=+crt-static' || '' }}
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal
+          cargo test --locked -p europacss --target '${{ matrix.target }}'
+          python scripts/package-rust.py --target '${{ matrix.target }}'
+      - name: Build and test musl binary in Alpine
+        if: matrix.musl
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work rust:1.95.0-alpine sh -ec '
+            apk add --no-cache build-base python3
+            cargo test --locked -p europacss
+            python3 scripts/package-rust.py
+          '
+      - name: Pack platform npm package
+        run: |
+          python scripts/package-npm.py --archive "$(find dist/native -type f \( -name '*.tar.gz' -o -name '*.zip' \))"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-${{ matrix.target }}
+          path: dist/npm/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: archive-${{ matrix.target }}
+          path: dist/native/*
+          if-no-files-found: error
+
+  install:
+    needs: [shared, binaries]
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+        platform:
+          - { name: darwin-arm64, runner: macos-15 }
+          - { name: darwin-x64, runner: macos-15-intel }
+          - { name: linux-x64-gnu, runner: ubuntu-22.04, docker: '' }
+          - { name: linux-arm64-gnu, runner: ubuntu-22.04-arm, docker: '' }
+          - { name: linux-x64-musl, runner: ubuntu-22.04, docker: '-alpine' }
+          - { name: linux-arm64-musl, runner: ubuntu-22.04-arm, docker: '-alpine' }
+          - { name: win32-x64, runner: windows-2022 }
+    runs-on: ${{ matrix.platform.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: npm-*
+          path: dist/npm
+          merge-multiple: true
+      - run: node scripts/publish-npm.mjs
+      - name: Test clean npm and pnpm consumer installs
+        if: "!startsWith(matrix.platform.name, 'linux-')"
+        run: |
+          npm install --global pnpm@10.32.1
+          for manager in npm pnpm; do
+            for vite in 6.4.3 8.3.0; do
+              node scripts/test-npm.mjs --manager "$manager" --vite "$vite"
+            done
+          done
+      - name: Test actual Node Docker images
+        if: "startsWith(matrix.platform.name, 'linux-')"
+        run: |
+          docker run --rm -v "$PWD:/work:ro" -w /work 'node:${{ matrix.node }}${{ matrix.platform.docker }}' sh -ec '
+            npm install --global pnpm@10.32.1
+            for manager in npm pnpm; do
+              for vite in 6.4.3 8.3.0; do
+                node scripts/test-npm.mjs --manager "$manager" --vite "$vite"
+              done
+            done
+          '
+
+  publish:
+    needs: [checks, install]
+    if: startsWith(github.ref, 'refs/tags/native-v')
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: npm-*
+          path: dist/npm
+          merge-multiple: true
+      - name: Publish tested packages with npm trusted publishing
+        run: node scripts/publish-npm.mjs --publish --provenance
+      - name: Verify public registry installation on Node 24
+        run: |
+          npm install --global pnpm@10.32.1
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          node scripts/test-npm.mjs --registry https://registry.npmjs.org --version "$VERSION" --manager npm
+          node scripts/test-npm.mjs --registry https://registry.npmjs.org --version "$VERSION" --manager pnpm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify public registry installation on Node 22
+        run: |
+          npm install --global pnpm@10.32.1
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          node scripts/test-npm.mjs --registry https://registry.npmjs.org --version "$VERSION" --manager npm
+          node scripts/test-npm.mjs --registry https://registry.npmjs.org --version "$VERSION" --manager pnpm

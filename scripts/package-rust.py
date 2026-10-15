@@ -47,7 +47,8 @@ def main():
             shutil.copy2(ROOT / "crates/europacss/studio" / editor_notice, stage / editor_notice)
         shutil.copy2(ROOT / "Cargo.lock", stage / "Cargo.lock")
         # Retain available upstream notices and a precise source/license inventory.
-        # Some published crate archives omit their license file; record those gaps.
+        # Some crate archives omit licenses that live at the repository root.
+        # Versioned supplements retain those notices and their upstream sources.
         notices = stage / "licenses"
         notices.mkdir()
         dependencies = []
@@ -60,12 +61,18 @@ def main():
                 license_file = directory / dep["license_file"]
                 if license_file not in files:
                     files.append(license_file)
+            if not files:
+                supplement = ROOT / "scripts/licenses" / f'{dep["name"]}-{dep["version"]}'
+                if supplement.is_dir():
+                    files = sorted(p for p in supplement.iterdir() if p.is_file())
+            if not files:
+                raise RuntimeError(f'Missing license notices for {dep["name"]} {dep["version"]}; add a versioned supplement under scripts/licenses')
             destination = notices / f'{dep["name"]}-{dep["version"]}'
             if files:
                 destination.mkdir()
                 for path in files:
                     shutil.copy2(path, destination / path.name)
-            dependencies.append({"name": dep["name"], "version": dep["version"], "license": dep["license"], "repository": dep["repository"], "source": dep["source"], "included_notices": [p.name for p in files]})
+            dependencies.append({"name": dep["name"], "version": dep["version"], "license": dep["license"], "repository": dep["repository"], "source": dep["source"], "source_archive": f'https://static.crates.io/crates/{dep["name"]}/{dep["name"]}-{dep["version"]}.crate', "included_notices": [p.name for p in files]})
         (stage / "dependencies.json").write_text(json.dumps(dependencies, indent=2) + "\n", encoding="utf-8")
         manifest = {"version": package["version"], "target": target, "rustc": rustc.strip(), "experimental": True, "files": {}}
         for path in sorted(stage.rglob("*")):

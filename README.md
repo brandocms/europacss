@@ -2,11 +2,20 @@
 
 EuropaCSS turns design tokens and directives such as `@space`, `@fontsize` and `@responsive` into responsive CSS. The native compiler uses our Rust parser, JSON5 configuration and Lightning CSS for browser transforms. The executable and Config Studio need no Node, PostCSS or Node bindings.
 
-**The native compiler is an experimental preview.** The root npm package and JavaScript source remain the legacy implementation used for migration comparisons. Installing `@brandocms/europacss` does not install the native CLI. The optional Vite adapter is currently a local, unpublished package.
+**The native compiler is a beta.** Its npm packages are `@brandocms/europacss-cli` and `@brandocms/vite-plugin-europacss`, versioned together. The first native release is `0.1.0-beta.0`; see [release status and publication](RELEASE.md). The root `@brandocms/europacss` npm package remains the JavaScript/PostCSS implementation used for migration comparisons.
 
 ## Getting started
 
-From this checkout, with stable Rust installed:
+After the native beta is published, install the prebuilt executable with Node 22.12+ or Node 24+:
+
+```sh
+pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0
+pnpm exec europa --version
+```
+
+The npm installation needs no Rust or install scripts. Optional dependencies select the binary for your platform. Use `pnpm exec europa` in place of `europa` in the examples below. For Vite, also install `@brandocms/vite-plugin-europacss@0.1.0-beta.0`; it finds its matching executable automatically.
+
+To build from this checkout instead, with stable Rust installed:
 
 ```sh
 cargo install --locked --path crates/europacss
@@ -40,7 +49,7 @@ The VitePress site lives in [`docs/`](docs/guide/getting-started.md). Its guides
 
 - [Getting started](docs/guide/getting-started.md): install and compile a complete starter project.
 - [Configuration](docs/guide/configuration.md): JSON5, references, responsive values and extensions.
-- [Vite](docs/guide/vite.md): local adapter setup, HMR, targets and source maps.
+- [Vite](docs/guide/vite.md): package installation, HMR, targets and source maps.
 - [Build and watch](docs/guide/build.md): CLI options, imports, assets and production output.
 - [Lint and migration](docs/guide/lint-and-migration.md): compilation checks, versioned analysis and reviewed fixes.
 - [Config Studio](docs/guide/studio.md): visual editing, local fonts and accessibility checks.

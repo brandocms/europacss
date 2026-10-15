@@ -3,10 +3,11 @@ name: Native Rust compiler
 on:
   push:
     branches: ['**']
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/vite/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/package-rust.py', 'scripts/licenses/**', '.github/workflows/rust.yml']
   pull_request:
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/vite/**', 'scripts/package-rust.py', '.github/workflows/rust.yml']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/package-rust.py', 'scripts/licenses/**', '.github/workflows/rust.yml']
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -44,22 +45,23 @@ jobs:
       fail-fast: false
       matrix:
         vite: ['6.4.3', '8.3.0']
+        node: [22, 24]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
       - name: Build native compiler
         run: cargo build --locked -p europacss
       - name: Install optional adapter test dependencies
-        working-directory: packages/vite
+        working-directory: packages
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install Vite matrix version
         if: matrix.vite != '6.4.3'
-        working-directory: packages/vite
-        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund vite@${{ matrix.vite }}
+        working-directory: packages
+        run: npm install --workspace @brandocms/vite-plugin-europacss --no-save --package-lock=false --ignore-scripts --no-audit --no-fund vite@${{ matrix.vite }}
       - name: Test Vite build and HMR integration
-        working-directory: packages/vite
+        working-directory: packages
         run: npm test
       - name: Test browser comparison
         run: node --test crates/europacss/compare/*.test.mjs

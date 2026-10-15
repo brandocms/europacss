@@ -2,11 +2,24 @@
 
 EuropaCSS turns design tokens and directives such as `@space` and `@fontsize` into responsive CSS. The native compiler uses Rust, JSON5 configuration and Lightning CSS for browser transforms. Its executable and Config Studio need no Node or PostCSS.
 
-::: info Native preview
-These guides describe the experimental native compiler in this checkout. It is not yet a published replacement for the JavaScript npm package. Existing PostCSS projects should start with [migration](./lint-and-migration), or use the [legacy setup](./legacy-postcss).
+::: info Native beta
+The first native npm release is being prepared as `0.1.0-beta.0`. Install commands below require that release to be published. Existing PostCSS projects should start with [migration](./lint-and-migration), or use the [legacy setup](./legacy-postcss).
 :::
 
 ## Install the native executable
+
+With Node 22.12+ or Node 24+, once the beta is published:
+
+```sh
+pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0
+pnpm exec europa --version
+```
+
+Use `pnpm exec europa` for the examples below. npm users can run `npm install --save-dev --save-exact @brandocms/europacss-cli@0.1.0-beta.0`, then `npm exec -- europa --version`.
+
+Prebuilt binaries cover macOS arm64/x64, Linux arm64/x64 (glibc and musl), and Windows x64. Keep optional dependencies enabled. Installation needs no Rust, Git access or lifecycle scripts. For Docker, install inside the Node image so the package manager selects Linux binaries; do not copy a host `node_modules` directory. Node 22 and 24 are release-test targets. The optional Vite adapter installs its compiler dependency automatically; see [Vite](./vite).
+
+### Build from source
 
 From a checkout containing `Cargo.toml` and `crates/europacss`, with the stable Rust toolchain installed:
 

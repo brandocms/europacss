@@ -1,7 +1,6 @@
 {
   "name": "@brandocms/vite-plugin-europacss",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.0-beta.0",
   "type": "module",
   "description": "Vite adapter for the standalone EuropaCSS compiler",
   "exports": {
@@ -15,16 +14,26 @@
     "index.d.ts",
     "targets.js",
     "samsung-engines.js",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": "^22.12.0 || >=24.0.0"
   },
   "peerDependencies": {
     "vite": "^6.4.3 || ^8.3.0"
+  },
+  "dependencies": {
+    "@brandocms/europacss-cli": "0.1.0-beta.0"
+  },
+  "publishConfig": { "access": "public", "tag": "beta" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandocms/europacss.git",
+    "directory": "packages/vite"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

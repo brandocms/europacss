@@ -1,0 +1,5 @@
+{
+  "url": "https://raw.githubusercontent.com/parcel-bundler/lightningcss/c7fc5a10120b1a98c603855dd319a6747e6b9409/LICENSE",
+  "sha256": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
+  "note": "Upstream repository license; missing from the published crate archive."
+}

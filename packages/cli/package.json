@@ -1,0 +1,43 @@
+{
+  "name": "@brandocms/europacss-cli",
+  "version": "0.1.0-beta.0",
+  "description": "The native EuropaCSS compiler and migration tools",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandocms/europacss.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://brandocms.github.io/europacss/",
+  "bin": {
+    "europa": "bin/europa.cjs"
+  },
+  "main": "index.cjs",
+  "types": "index.d.cts",
+  "exports": {
+    ".": {
+      "types": "./index.d.cts",
+      "default": "./index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin/",
+    "index.cjs",
+    "index.d.cts",
+    "platform.cjs",
+    "platforms.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.12.0 || >=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.cjs"
+  }
+}

@@ -36,15 +36,24 @@ python3 scripts/package-rust.py
 
 Python is packaging tooling only. The script builds for the host, writes an archive and checksum under `dist/native/`, then extracts it and smoke-tests the included example with an empty `PATH`. Archives include the executable, examples, a manifest and dependency/license records.
 
-The native CI workflow defines Linux, macOS and Windows jobs. It uploads preview artifacts; it does not publish the native CLI or Vite adapter. Public distribution still needs a supported-platform policy, completed upstream notices and signing/notarization decisions.
+The native CI workflow checks Linux, macOS and Windows. The native npm release workflow builds seven platform packages, tests clean npm/pnpm consumer installations on Node 22 and 24, and publishes tested tarballs for `native-v*` tags. See `RELEASE.md` in the repository for first-publication setup and the exact platform matrix. Archives and npm binaries include dependency notices; builds are unsigned and not notarized.
+
+Pack the CLI wrapper, adapter and a host binary for installation tests:
+
+```sh
+python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.0-aarch64-apple-darwin.tar.gz
+node scripts/test-npm.mjs --manager npm
+```
+
+Replace the archive path with the one printed by `package-rust.py`. The smoke test starts a read-only loopback registry for these tarballs and installs ordinary dependencies from npm. `--manager pnpm` uses globally installed pnpm 10.32.1; `EUROPA_PNPM_CLI` can point to a local `pnpm.cjs` instead. A source-workspace install deliberately omits platform dependencies; the packer generates the exact dependency map when making release tarballs.
 
 ## Optional Vite adapter tests
 
-With Node 22 and npm available:
+With Node 22 or 24 and npm available:
 
 ```sh
 cargo build --locked -p europacss
-cd packages/vite
+cd packages
 npm ci
 npm test
 ```

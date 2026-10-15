@@ -2,21 +2,19 @@
 
 The optional adapter runs the native `europa` executable before Vite's CSS pipeline. It provides builds, HMR, dependency watching and source maps without native Node bindings. Vite still needs Node; the standalone compiler and Studio do not.
 
-The adapter is a private, local package in this checkout, tested with Vite 6.4.3 and 8.3.0. There is no published native-adapter npm installation yet.
+The native adapter supports Vite 6.4.3 and 8.3.0+ on Node 22.12+ and Node 24+. The first npm release is being prepared as `0.1.0-beta.0`.
 
-Local directory dependencies and `npm pack` work with the private preview. If
-using yalc, run `yalc publish --private` from `packages/vite`, then add it in the
-consumer. Keep the local adapter and executable on the same revision.
+## Install the packages
 
-## Install from your checkout
-
-Build or install the native compiler using [getting started](./getting-started). Then, from your Vite application's directory:
+Once the beta is published, from your application's directory:
 
 ```sh
-npm install --save-dev /absolute/path/to/europacss/packages/vite
+pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.0 @brandocms/europacss-cli@0.1.0-beta.0
 ```
 
-Use the actual path to your native-compiler checkout. This records a local package dependency; that checkout must also be available wherever you build the app. The adapter accepts Node >=20.19; its integration tests use Node 22.
+The adapter installs an exact compiler dependency and resolves its executable directly. Adding the CLI as a direct dependency also exposes `pnpm exec europa` for migration commands. No global executable or Rust toolchain is required. Keep optional dependencies enabled so npm/pnpm installs the matching platform binary. Installation works with scripts disabled.
+
+In Docker, install inside `node:22` or `node:24` with the committed lockfile, then run `pnpm build`. The release matrix tests both images, plus their Alpine variants. Native binaries are build dependencies and need not be copied into the application's runtime image.
 
 ## Configure Vite
 
@@ -29,7 +27,6 @@ import europa from '@brandocms/vite-plugin-europacss';
 export default defineConfig({
   plugins: [
     europa({
-      binary: 'europa', // Executable on PATH, or an explicit path.
       config: './europa.json5',
       targets: ['defaults'],
       // Compile this entry; Rust follows its local CSS imports.
@@ -58,7 +55,7 @@ The empty inline `css.postcss` configuration prevents Vite from loading an old P
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `binary` | `'europa'` | Executable on `PATH`, or a path resolved from Vite's root. |
+| `binary` | Packaged compiler | Optional override: executable on `PATH`, or a path resolved from Vite's root. |
 | `config` | `'europa.json5'` | Config path relative to Vite's root; `false` uses built-in defaults. |
 | `include` | All physical `.css` modules | Function receiving an absolute filename; return `true` to compile it. |
 | `targets` | `['defaults']` | Shared CSS browser policy for Europa and Vite. |
@@ -75,11 +72,11 @@ This policy controls **CSS only**. Keep JavaScript support in `build.target` and
 
 Vite accepts fewer browser families than native Lightning CSS. The adapter maps modern Android and Samsung Internet to their Chromium versions, merges the oldest required engine versions, and rounds patch versions down to the corresponding major/minor floor for both passes. Stock Android Browser and unknown Samsung releases fail explicitly rather than being silently dropped. Samsung mappings are checked into the adapter; updating them does not require a JavaScript Browserslist database. The standalone CLI continues to use its own `--targets` policy directly.
 
-Update the executable and local adapter together when updating this preview. The adapter requires `europa bridge targets`; an older executable must be rebuilt/reinstalled.
+The adapter and packaged compiler versions are pinned together. For compiler development, set `binary` to an explicit build path; that executable must support `europa bridge targets`.
 
 ## Imports, reloads and errors
 
-The Rust bundler resolves exact relative CSS imports before Vite sees the result. For imports that are not local files, the adapter asks Vite to resolve package exports and aliases, then supplies the resulting absolute paths to Rust. Imports such as `@import "tippy.js/dist/tippy.css" layer(vendor);` stay inside the same native compilation, retaining qualifiers, asset rebasing, dependency tracking, and source maps. Globs and virtual Vue/Svelte styles are not supported. The standalone CLI has no Vite resolver and still requires exact local paths. `?raw` and `?url` imports are left to Vite.
+The Rust bundler resolves exact relative CSS imports before Vite sees the result. For imports that are not local files, the adapter asks Vite to resolve package exports and aliases, then supplies the resulting absolute paths to Rust. Imports such as `@import "tippy.js/dist/tippy.css" layer(vendor);` stay inside the same native compilation, retaining qualifiers, asset rebasing, dependency tracking, and source maps. The standalone CLI also resolves package imports through ancestor `node_modules` directories and package `exports`/`style` fields; Vite-specific aliases require the adapter. Globs and virtual Vue/Svelte styles are not supported. `?raw` and `?url` imports are left to Vite.
 
 Changes to a used JSON5 config or local CSS dependency update the affected CSS through HMR. Creating or deleting files uses a full reload to recover missing inputs. Compiler diagnostics retain their originating file, line and column. Source maps locate individual declarations and Europa directives when their origin is unambiguous. A shorthand combined from several authored declarations keeps the containing rule's location. Rules that Lightning CSS does not map, such as keyframe steps, remain unmapped. Unreliable backend columns after non-ASCII text on the same generated line are also left unmapped rather than pointing at an unrelated rule.
 
@@ -100,6 +97,6 @@ Chrome recognizes the declaration inside this comment as a disabled property, so
 Use Vite's default CSS transformer with `css.devSourcemap: true`. A subsequent transformer such as `css.transformer: 'lightningcss'` can strip these comments and reduce source-map precision. The production setting `build.cssMinify: 'lightningcss'` is fine.
 
 
-Each CSS compilation launches one native process, with a 30-second timeout. It does not generate intermediate CSS files. If the executable cannot start, check `binary`, executable permissions and the `PATH` seen by Vite.
+Each CSS compilation launches one native process, with a 30-second timeout. It does not generate intermediate CSS files. If the packaged executable is missing, reinstall with optional dependencies enabled on the build platform. If using a `binary` override, check that path and its executable permissions.
 
 For existing sites, [convert and review the legacy source](./lint-and-migration) before switching the pipeline.

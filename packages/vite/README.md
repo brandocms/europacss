@@ -1,22 +1,20 @@
 # EuropaCSS native compiler adapter for Vite
 
-Experimental, local-only package. Tested with Vite 6.4.3 and 8.3.0. The compiler remains a
+Native beta package. Supports Vite 6.4.3 and 8.3.0+ on Node 22.12+ and Node 24+. The compiler remains a
 standalone Rust executable; this optional JavaScript adapter only connects it to
 Vite. There are no N-API bindings or JavaScript config evaluation.
 
-Build the binary with `cargo build --locked --release -p europacss`. In your application's
-`vite.config.js`, import this package's `index.js` by local path, or add this
-package as a local dependency. From your application's directory (replace the path):
+Install the matching adapter and CLI beta in your application:
 
 ```sh
-npm install --save-dev /absolute/path/to/europacss/packages/vite
+pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.0 @brandocms/europacss-cli@0.1.0-beta.0
 ```
 
-The preview intentionally remains `private: true` until native package
-publication is ready. For local yalc distribution run `yalc publish --private`
-from `packages/vite`, then `yalc add @brandocms/vite-plugin-europacss` in the
-consumer. Alternatively, `npm pack` creates an installable local tarball without
-publishing anything. Refresh the adapter and compiler together after changes.
+The adapter has an exact dependency on the CLI package. It resolves the native
+executable from that dependency without searching PATH. Installing the CLI
+directly also exposes `pnpm exec europa` for migration and other commands.
+Platform binaries come from npm optional dependencies, with no install scripts,
+Rust toolchain or separate binary downloads. Keep optional dependencies enabled.
 
 The [HTML docs source](../../docs/guide/vite.md) has the complete application workflow.
 
@@ -26,7 +24,6 @@ import europa from '@brandocms/vite-plugin-europacss';
 
 export default defineConfig({
   plugins: [europa({
-    binary: '/absolute/path/to/europacss/target/release/europa',
     config: './europa.json5',
     targets: ['defaults'], // One CSS policy for Europa and Vite.
     // Optional: only compile your own stylesheet entry points.
@@ -52,8 +49,8 @@ If other PostCSS plugins are still needed, retain those in your PostCSS config a
 omit the empty inline `css.postcss` setting. The adapter does not modify Vite's
 PostCSS settings. Vite itself may still use PostCSS internally.
 
-Options are documented in `index.d.ts`. The default executable is `europa` on
-PATH; the default config is `europa.json5` relative to Vite's root. Use
+Options are documented in `index.d.ts`. The default executable is the packaged
+compiler; the default config is `europa.json5` relative to Vite's root. Use
 `config: false` for Europa defaults. Browser target queries go in `targets`.
 
 The native executable resolves that CSS policy once at Vite startup. The adapter
@@ -66,8 +63,8 @@ the final minifier shown above; [Vite 8 includes it as a regular dependency](htt
 Modern Android and Samsung Internet targets map to Chromium; patch floors round
 down to major/minor in both passes. Unsupported stock Android and unknown Samsung
 releases fail explicitly. See the [target policy details](../../docs/guide/vite.md#one-css-browser-policy).
-Rebuild/reinstall the executable and refresh the local package together when
-updating the preview: the adapter requires `europa bridge targets`.
+For compiler development, `binary: '/absolute/path/to/europacss/target/release/europa'`
+overrides the packaged compiler. The executable must support `europa bridge targets`.
 
 CSS is compiled before Vite's CSS pipeline. Vite still handles CSS modules,
 asset URLs, extraction, minification and style injection. Ordinary CSS imports
@@ -102,5 +99,7 @@ no generated CSS files. The `europa bridge` protocol accepts one JSON request on
 stdin and emits one versioned JSON response on stdout. Failed responses include
 attempted import paths, so a newly created missing dependency can recover a build.
 
-For local tests, run `cargo build -p europacss`, then `npm ci` and `npm test` in this
-directory using Node 22+. `EUROPA_BINARY` can select another compiled executable.
+For local tests, run `cargo build -p europacss`, then `npm ci` and `npm test` in
+the parent `packages/` workspace using Node 22 or 24. `EUROPA_BINARY` can select
+another compiled executable. Release tarballs are built with
+`python3 scripts/package-npm.py --shared` from the repository root.
