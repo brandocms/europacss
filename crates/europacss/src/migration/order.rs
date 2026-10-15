@@ -112,6 +112,7 @@ pub(super) fn scope_changes(
     raw: &[Node],
     ordered: &[Node],
     config: &Config<'_>,
+    assume_packing: bool,
     audit: &mut Audit<'_>,
     budget: usize,
 ) -> Result<(), Error> {
@@ -268,7 +269,9 @@ pub(super) fn scope_changes(
             let split_append = previous.generated
                 && !current.generated
                 && previous.boundaries != current.boundaries;
-            let authored_move = previous.selector != current.selector
+            // Without old packing, even the same selector can change winner
+            // when native all-last lifts authored media across a plain rule.
+            let authored_move = (previous.selector != current.selector || !assume_packing)
                 && previous.rank > current.rank
                 && !current.generated
                 && !current.declaration.conditions.is_empty();
@@ -316,6 +319,8 @@ pub(super) fn scope_changes(
             new_values.dedup();
             let reason = if split_append {
                 "separate layer/condition blocks interrupt legacy global responsive append order"
+            } else if previous.selector == current.selector {
+                "authored media moved after a later declaration for the same selector"
             } else {
                 "authored media moved after a different equal-specificity selector"
             };
@@ -660,7 +665,12 @@ fn packing_risk(previous: &[String], current: &[String]) -> bool {
     }
 }
 
-pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> Result<(), Error> {
+pub(super) fn walk(
+    nodes: &[Node],
+    origins: &Origins,
+    assume_packing: bool,
+    audit: &mut Audit<'_>,
+) -> Result<(), Error> {
     fn collect(nodes: &[Node], conditions: &mut Vec<String>, result: &mut Vec<Declaration>) {
         for node in nodes {
             if let Some(children) = &node.children {
@@ -689,6 +699,7 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
     fn inspect(
         nodes: &[Node],
         origins: &Origins,
+        assume_packing: bool,
         audit: &mut Audit<'_>,
         work: &mut usize,
     ) -> Result<(), Error> {
@@ -739,10 +750,12 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                         }
                         let append = appended(origins, previous)
                             && previous.conditions == current.conditions;
-                        let packed = packing_risk(&previous.conditions, &current.conditions);
+                        let packed = assume_packing
+                            && packing_risk(&previous.conditions, &current.conditions);
                         for old in &previous.values {
                             for new in &current.values {
-                                let regrouped = previous.conditions == current.conditions
+                                let regrouped = assume_packing
+                                    && previous.conditions == current.conditions
                                     && previous.conditions.iter().any(|c| c.starts_with("@media "))
                                     && origins.labels.contains_key(&previous.offset)
                                     && origins.labels.contains_key(&current.offset)
@@ -811,11 +824,11 @@ pub(super) fn walk(nodes: &[Node], origins: &Origins, audit: &mut Audit<'_>) -> 
                     }
                 }
             }
-            inspect(children, origins, audit, work)?;
+            inspect(children, origins, assume_packing, audit, work)?;
         }
         Ok(())
     }
-    inspect(nodes, origins, audit, &mut 0)
+    inspect(nodes, origins, assume_packing, audit, &mut 0)
 }
 
 /// Exact repeated selector paths can cross a conditional block boundary even

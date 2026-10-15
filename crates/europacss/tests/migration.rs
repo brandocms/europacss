@@ -8,6 +8,118 @@ fn analyze(source: &str) -> migration::Report {
 }
 
 #[test]
+fn media_packing_assumption_skips_only_packing_dependent_findings() {
+    for source in [
+        // Brando's plain/media/plain override sequence.
+        ".x{width:160px}@media (max-width:1000px){.x{width:136px}}.x{width:176px}",
+        ".x{@media (width >= 1024px){padding:20px}@media (width >= 740px){padding-block:0}}",
+    ] {
+        let mut cfg = config();
+        cfg["responsiveOrder"] = json!("generated-last");
+        let assumed = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(
+            assumed
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.message.contains("media packing")),
+            "{assumed:?}"
+        );
+        cfg["migration"] = json!({"mediaPacking":"none"});
+        let unpacked = migration::analyze(&request(source, cfg), LEGACY_VERSION).unwrap();
+        assert!(unpacked.analysis_complete);
+        assert!(unpacked.findings.is_empty(), "{unpacked:?}");
+        assert_eq!(
+            unpacked.assumptions.media_packing,
+            migration::MediaPacking::None
+        );
+        assert!(!unpacked
+            .checks
+            .iter()
+            .any(|check| check == "repeated-selector-media-order"
+                || check == "overlapping-width-media-order"));
+        assert_ne!(assumed.snapshot, unpacked.snapshot);
+    }
+    // Declaring no packing must still report actual all-last reordering, for
+    // different selectors and for repeated/nested declarations of one selector.
+    for source in [
+        "@media (width < 600px){.a{padding:8px}}.b{padding:16px}",
+        "@media (width < 600px){.a{padding:8px}}.a{padding:16px}",
+        ".a{@media (width < 600px){padding:8px}padding:16px}",
+    ] {
+        let mut cfg = config();
+        cfg["migration"] = json!({"mediaPacking":"none"});
+        let report = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.message.contains("authored media moved")),
+            "{report:?}"
+        );
+        cfg["responsiveOrder"] = json!("generated-last");
+        let report = migration::analyze(&request(source, cfg), LEGACY_VERSION).unwrap();
+        assert!(report.findings.is_empty(), "{report:?}");
+    }
+    // Scope splits and non-media append semantics are independent of packing.
+    let mut cfg = config();
+    cfg["migration"] = json!({"mediaPacking":"none"});
+    cfg["theme"]["typography"]["sizes"] =
+        json!({"body":{"__base__":{"line-height":"150%"},"*":"20px"}});
+    for (source, reason) in [
+        (
+            "@layer a{.x{@responsive desktop{color:red}}}@layer a{.y{color:blue}}",
+            "global responsive append",
+        ),
+        (
+            ".x{@fontsize body;line-height:normal}",
+            "legacy append order favored",
+        ),
+    ] {
+        let report = migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION).unwrap();
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|f| f.diagnostic.message.contains(reason)),
+            "{report:?}"
+        );
+    }
+}
+
+#[test]
+fn media_packing_configuration_is_validated_and_bound_to_reviews_without_changing_css() {
+    let source = "@media (width < 600px){.x{color:red}}.x{color:blue}";
+    let mut cfg = config();
+    cfg["responsiveOrder"] = json!("generated-last");
+    let req = request(source, cfg.clone());
+    let original = migration::analyze(&req, LEGACY_VERSION).unwrap();
+    let original_css = europacss::compile(&req).unwrap().css;
+    let review = serde_json::to_string(&original).unwrap();
+    cfg["migration"] = json!({"mediaPacking":"none"});
+    let req = request(source, cfg.clone());
+    let mut unpacked = migration::analyze(&req, LEGACY_VERSION).unwrap();
+    assert_eq!(original_css, europacss::compile(&req).unwrap().css);
+    assert!(migration::apply_acceptances(&mut unpacked, &review).is_err());
+    assert!(migration::reviewed_edits(&unpacked, &review).is_err());
+    for value in [
+        json!(null),
+        json!(false),
+        json!("auto"),
+        json!({"mediaPacking":true}),
+        json!({"mediaPacking":null}),
+        json!({"mediaPacking":"off"}),
+    ] {
+        cfg["migration"] = value;
+        assert_eq!(
+            migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION)
+                .unwrap_err()
+                .code,
+            "EU_MIGRATION_CONFIG"
+        );
+    }
+}
+
+#[test]
 fn has_specificity_uses_the_most_specific_argument_including_nested_lists() {
     for selector in [
         ".y .b:has(> .c)",

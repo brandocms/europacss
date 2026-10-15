@@ -122,6 +122,8 @@ pub struct Report {
     pub to: String,
     pub files: Vec<String>,
     pub checks: Vec<String>,
+    /// Assumptions about the source build, distinct from native output settings.
+    pub assumptions: AnalysisAssumptions,
     pub limitations: Vec<String>,
     /// Whether the listed checks ran without unsupported input or expansion limits.
     pub analysis_complete: bool,
@@ -129,6 +131,49 @@ pub struct Report {
     /// Exact analyzed contents for local review previews; never part of saved JSON.
     #[serde(skip)]
     pub sources: std::collections::BTreeMap<String, String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MediaPacking {
+    /// Conservatively check whether packing/sorting could change the old order.
+    #[default]
+    Assume,
+    /// The old build did not pack or sort its media rules.
+    None,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct AnalysisAssumptions {
+    pub media_packing: MediaPacking,
+}
+
+impl AnalysisAssumptions {
+    fn from_config(value: &serde_json::Value) -> Result<Self, Error> {
+        let migration = value.get("migration");
+        if migration.is_some_and(|v| !v.is_object()) {
+            return Err(Error::new(
+                "EU_MIGRATION_CONFIG",
+                "migration must be an object",
+                0,
+            ));
+        }
+        let media_packing = match migration.and_then(|v| v.get("mediaPacking")) {
+            None => MediaPacking::Assume,
+            Some(value) => match value.as_str() {
+                Some("assume") => MediaPacking::Assume,
+                Some("none") => MediaPacking::None,
+                _ => {
+                    return Err(Error::new(
+                        "EU_MIGRATION_CONFIG",
+                        "migration.mediaPacking must be 'assume' (default) or 'none'",
+                        0,
+                    ))
+                }
+            },
+        };
+        Ok(Self { media_packing })
+    }
 }
 
 fn version(from: &str) -> Result<(), Error> {
@@ -202,6 +247,8 @@ fn report(
             0,
         ));
     }
+    let assumptions = AnalysisAssumptions::from_config(&request.config)?;
+    let assume_packing = assumptions.media_packing == MediaPacking::Assume;
     let mut config = Config::new(&request.config)?;
     config.migration_warnings = Some(std::cell::RefCell::default());
     config.migration_beta6 = from == LEGACY_BETA6;
@@ -237,13 +284,22 @@ fn report(
     let origins = order::origins(&nodes, &config)?;
     match transform::for_migration(nodes, &config).and_then(|raw| {
         let ordered = crate::cascade::media_last(raw.clone(), config.value);
-        order::scope_changes(&raw, &ordered, &config, &mut audit, options.order_budget)?;
+        order::scope_changes(
+            &raw,
+            &ordered,
+            &config,
+            assume_packing,
+            &mut audit,
+            options.order_budget,
+        )?;
         crate::nesting::apply(ordered, config.value)
     }) {
         Ok(expanded) => {
             selectors::walk(&expanded, None, &mut audit)?;
-            order::walk(&expanded, &origins, &mut audit)?;
-            order::repeated_selectors(&expanded, &mut audit);
+            order::walk(&expanded, &origins, assume_packing, &mut audit)?;
+            if assume_packing {
+                order::repeated_selectors(&expanded, &mut audit);
+            }
         }
         Err(error) => {
             audit.complete = false;
@@ -315,22 +371,23 @@ fn report(
         from: from.into(),
         to: if request.config.get("nesting").and_then(|v| v.as_str()) == Some("expanded") { "rust-expanded-nesting" } else { "rust-native-nesting" }.into(),
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
-        checks: vec![
-            "suffix-syntax".into(),
-            "bundle-placement".into(),
-            "nesting-specificity".into(),
-            "nested-pseudo-elements".into(),
-            "repeated-nesting-combinators".into(),
-            "local-declaration-order".into(),
-            "repeated-selector-media-order".into(),
-            "overlapping-width-media-order".into(),
-            "cross-layer-block-responsive-order".into(),
-            "potential-cross-selector-authored-order".into(),
-            "resolved-sizing-corrections".into(),
-            "contiguous-breakpoint-boundaries".into(),
-            "signed-column-intent".into(),
-            match from { LEGACY_BETA6 => "beta6-feature-and-sizing-changes", LEGACY_BETA11 => "beta11-feature-and-sizing-changes", _ => "beta16-profile" }.into(),
-        ],
+        checks: [
+            "suffix-syntax",
+            "bundle-placement",
+            "nesting-specificity",
+            "nested-pseudo-elements",
+            "repeated-nesting-combinators",
+            "local-declaration-order",
+            "repeated-selector-media-order",
+            "overlapping-width-media-order",
+            "cross-layer-block-responsive-order",
+            "potential-cross-selector-authored-order",
+            "resolved-sizing-corrections",
+            "contiguous-breakpoint-boundaries",
+            "signed-column-intent",
+            match from { LEGACY_BETA6 => "beta6-feature-and-sizing-changes", LEGACY_BETA11 => "beta11-feature-and-sizing-changes", _ => "beta16-profile" },
+        ].into_iter().filter(|check| assume_packing || !matches!(*check, "repeated-selector-media-order" | "overlapping-width-media-order")).chain((!assume_packing).then_some("authored-media-source-order")).map(str::to_owned).collect(),
+        assumptions,
         analysis_complete: audit.complete,
         limitations: vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
@@ -338,6 +395,7 @@ fn report(
             "Cross-selector order findings identify potential conflicts at equal specificity; they do not prove that both selectors match an element. Arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical interactions outside padding, margin, and inset are not fully modeled".into(),
             "Other sizing differences (including calculation grouping) and backend/browser-target changes require separate review".into(),
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
+            if assume_packing { "Legacy media packing/sorting is assumed; source version alone does not identify the old build pipeline. Set migration.mediaPacking to 'none' only after verifying that pipeline's media order." } else { "Legacy media packing checks are disabled by migration.mediaPacking:'none'; this assumes the old build did not pack or sort media rules. Actual native reordering and non-media append checks remain enabled." }.into(),
         ],
         findings: audit.findings,
         sources: sources.files.iter().enumerate().map(|(i, file)| (file.name.clone(), sources.content(i).to_owned())).collect(),

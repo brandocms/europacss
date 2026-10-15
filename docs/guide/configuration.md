@@ -36,6 +36,15 @@ An application can override either option independently. Layers and conditional
 boundaries remain unchanged. See [cascade and layers](../reference/cascade)
 for ordering examples and the aggregate-import pattern for 0.x migrations.
 
+## Migration assumptions
+
+`migration.mediaPacking` accepts `'assume'` (default) or `'none'`. Set `'none'`
+only when the old build did not pack or sort its media queries. This skips
+packing-dependent migration warnings and inherits through `extends`. It does
+not affect compiled CSS or replace the `responsiveOrder` setting. See
+[declaring the old build's media packing](./lint-and-migration#declare-whether-the-old-build-packed-media)
+for report coverage and review behavior.
+
 ## Inherit a shared config
 
 Use a top-level `extends` path to inherit another JSON5 or JSON file:

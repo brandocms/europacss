@@ -51,7 +51,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             "--help" | "-h" => {
                 println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
                 println!("Browser review: europa migrate <entry.css> --from <version> [--config europa.json5] --studio [--port 0]\n");
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--budget N sets the cross-selector comparison limit (default 20000000, maximum 1000000000).\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--budget N sets the cross-selector comparison limit (default 20000000, maximum 1000000000).\nConfig migration.mediaPacking:'none' skips checks that assume old media packing (default: 'assume'); emitted CSS is unchanged.\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(ExitCode::SUCCESS);
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
@@ -169,6 +169,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?
         );
     } else {
+        ui.migration_assumptions(report.assumptions);
         let items = display::review_items(&report);
         if summary {
             let mut groups = std::collections::BTreeMap::<

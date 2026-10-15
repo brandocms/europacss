@@ -262,6 +262,11 @@ impl Ui {
             self.migration_fix(fix);
         }
     }
+    pub fn migration_assumptions(&self, assumptions: europacss::migration::AnalysisAssumptions) {
+        if !self.quiet && assumptions.media_packing == europacss::migration::MediaPacking::None {
+            eprintln!("\n  {}", self.dim("Media packing: none (configured old build; packing checks skipped, other order checks active)."));
+        }
+    }
     fn migration_fix(&self, fix: &Fix) {
         let action = if fix.kind == "syntax" {
             "--fix"

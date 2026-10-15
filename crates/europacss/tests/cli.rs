@@ -1264,6 +1264,62 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
 }
 
 #[test]
+fn migration_media_packing_config_is_inherited_and_keeps_reviews_scoped() {
+    let dir = Temp::new();
+    let source = ".x{width:160px}@media (max-width:1000px){.x{width:136px}}.x{width:176px}";
+    fs::write(dir.0.join("app.css"), source).unwrap();
+    fs::write(
+        dir.0.join("preset.json5"),
+        "{responsiveOrder:'generated-last',migration:{mediaPacking:'none'}}",
+    )
+    .unwrap();
+    fs::write(dir.0.join("europa.json5"), "{extends:'./preset.json5'}").unwrap();
+    let run = |extra: &[&str]| {
+        dir.command()
+            .args([
+                "migrate",
+                "app.css",
+                "--from",
+                "1.0.0-beta.6",
+                "--config",
+                "europa.json5",
+                "--color",
+                "never",
+            ])
+            .args(extra)
+            .output()
+            .unwrap()
+    };
+    let output = run(&["--json"]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["assumptions"]["media_packing"], "none");
+    assert_eq!(report["analysis_complete"], true);
+    assert!(report["findings"].as_array().unwrap().is_empty());
+    assert!(String::from_utf8_lossy(&run(&["--summary"]).stderr).contains("packing checks skipped"));
+    fs::write(dir.0.join("review.json"), report.to_string()).unwrap();
+    assert!(run(&["--accept", "review.json"]).status.success());
+    fs::write(
+        dir.0.join("europa.json5"),
+        "{extends:'./preset.json5',migration:{mediaPacking:'assume'}}",
+    )
+    .unwrap();
+    let output = run(&["--json"]);
+    assert!(!output.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["assumptions"]["media_packing"], "assume");
+    assert_eq!(report["findings"].as_array().unwrap().len(), 1);
+    let stale = run(&["--accept", "review.json"]);
+    assert!(!stale.status.success());
+    assert!(String::from_utf8_lossy(&stale.stderr).contains("stale"));
+    assert_eq!(fs::read_to_string(dir.0.join("app.css")).unwrap(), source);
+}
+
+#[test]
 fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
     let dir = Temp::new();
     fs::write(dir.0.join("old.cjs"), "module.exports={theme:{typography:{lineHeight:{mobile:1.3},\n  paddingDivider:8,sections:{nav:'12px'}}}};").unwrap();

@@ -144,9 +144,33 @@ it does not certify the initial replacement or subtract control differences.
 Priming keeps the same DOM, stylesheet position, and original-sheet restoration.
 DOM mutations during priming make the run incomplete. All measured stability and
 return-to-baseline checks still apply, including `discardedGeometry`. Comparing
-identical CSS still runs the complete measurement sequence. Rerun the affected
-state with `--before` and `--after` pointing to the same sheet to check whether
-priming resolves its replacement artefact, then compare the actual two builds.
+identical CSS still runs the complete measurement sequence.
+
+### Interpret identical-CSS controls separately
+
+An A/A control (`--before` and `--after` pointing to the same sheet) is a useful
+diagnostic, but it does not reliably predict whether priming settles an A/B
+comparison. The stylesheet pair can affect the layout history. A successful A/A
+control does not prove A/B will be stable, and an incomplete A/A control does not
+automatically invalidate a separately complete A/B run.
+
+Brando's open flatpickr calendar demonstrated this distinction: primed comparisons
+of the original and candidate sheets completed without differences in both
+directions, while primed identical-CSS controls still discarded a one-pixel
+`select` offset. Adding a trailing comment or a nonmatching rule, or increasing
+`--settle`, did not resolve those controls. The browser mechanism behind this
+pair-dependent behavior has not been established; text differences alone are not
+evidence that priming exercised the same layout path.
+
+For a replacement artefact, save A/A and B/B controls alongside the actual
+comparison. Run the actual pair in both directions with `--prime`, preparing the
+same page state for each run. Evaluate each report's `complete`, stability, and
+`discardedGeometry` evidence independently, and record failed controls as a
+coverage limitation. Only complete runs support a result for their measured
+post-priming state; they do not certify the initial replacement or every state.
+Keep incomplete controls marked incomplete. Do not subtract their geometry from
+the actual comparison, bypass the stability checks, or insert a styling
+perturbation and treat the resulting state as an identical-CSS control.
 
 Instability errors include an `evidence` object with the phase, changed-sample
 count, and up to five selectors with geometry and property values (up to ten

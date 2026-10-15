@@ -127,3 +127,8 @@ Round-3 coverage includes inherited `responsiveOrder: 'generated-last'`, authore
 versus directive media (including aliases and placeholders), `:has()` specificity,
 logical/physical edge overlaps, and original config-warning positions. Browser
 integration verifies media/touch emulation and cleanup on both success and errors.
+
+Migration-assumption coverage checks `migration.mediaPacking: 'none'` through
+inherited configs, selective removal of packing warnings, retained actual media
+reordering and non-media append findings, unchanged compiled CSS, invalid values,
+and rejection of reviews after changing the assumption.

@@ -207,6 +207,47 @@ cross-selector effects that source analysis can only identify as potential risks
 
 For CI, run the read-only check or replay a valid reviewed report before the production build. Never hide its nonzero status with `|| true`. Since reviews include canonical paths, a report saved in another checkout may need regeneration and review.
 
+## Declare whether the old build packed media
+
+The source version alone does not identify a project's complete PostCSS/build
+pipeline. By default, migration analysis conservatively assumes that the old
+build could pack or sort media queries. That can produce “legacy media packing
+can favor” warnings when the old build actually kept those queries in place.
+
+After checking the old compiled order, declare that assumption in the config:
+
+```json5
+{
+  responsiveOrder: 'generated-last',
+  migration: {
+    mediaPacking: 'none',
+  },
+}
+```
+
+`migration.mediaPacking` accepts `'assume'` (the default) or `'none'`. It inherits
+through `extends` and is used by both terminal migration and migration Studio.
+It affects analysis only; it does not change emitted CSS or configure an old
+PostCSS build. `responsiveOrder` independently controls the native output order.
+
+`'none'` skips warnings that depend on old media packing: local overlapping-query
+and equal-value regrouping checks, and repeated-selector packing checks. It keeps
+non-media append checks, layer/condition boundary checks, and actual native
+authored-media reordering checks. For example, `all-last` can still produce an
+order finding when authored media crosses a later plain rule, including when
+both declarations use the same selector. This setting does not accept findings.
+
+The JSON report records `assumptions.media_packing`, adjusts its `checks` list,
+and explains the selected assumption under `limitations`. Terminal output also
+identifies skipped packing checks. `analysis_complete: true` refers to the checks
+enabled for that configuration; browser comparison is still needed.
+
+The report remains version 14. Existing reviews for unchanged inputs/configuration
+remain valid under the default assumption. Changing `migration.mediaPacking`
+changes the config snapshot: regenerate and review the report before replaying
+acceptances or applying reviewed edits. Keep the old-build evidence supporting
+`'none'` with that review.
+
 ## Large reports and acceptance by code
 
 Cross-selector analysis indexes properties, importance, and original source rank;
