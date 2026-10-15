@@ -10,6 +10,8 @@ pub(crate) struct Source {
 pub(crate) struct Sources {
     pub text: String,
     pub files: Vec<Source>,
+    /// Resolver metadata participates in watches/reviews, not CSS parsing/maps.
+    pub metadata: std::collections::BTreeMap<std::path::PathBuf, String>,
 }
 
 impl Sources {

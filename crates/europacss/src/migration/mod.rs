@@ -6,6 +6,7 @@ pub(crate) mod legacy6;
 mod order;
 mod review;
 pub(crate) mod selectors;
+mod subject;
 
 pub use review::{apply_acceptances, can_accept, reviewed_edits};
 
@@ -22,7 +23,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 11;
+pub const REPORT_VERSION: u32 = 12;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -62,7 +63,7 @@ impl From<Error> for OrderSource {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct OrderConflict {
     pub earlier_source: OrderSource,
     pub earlier_label: String,
@@ -72,6 +73,14 @@ pub struct OrderConflict {
     pub later_conditions: Vec<String>,
     pub reason: String,
     pub selector_path: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct OrderGroup {
+    pub occurrences: usize,
+    pub properties: Vec<String>,
+    /// Up to five representative conflicts; the snapshot binds the full group.
+    pub examples: Vec<OrderConflict>,
 }
 
 #[derive(Debug, Serialize)]
@@ -87,6 +96,8 @@ pub struct Finding {
     pub fix: Option<Fix>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub order: Option<OrderConflict>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order_group: Option<OrderGroup>,
 }
 
 #[derive(Debug, Serialize)]
@@ -114,17 +125,44 @@ fn version(from: &str) -> Result<(), Error> {
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+pub struct AnalysisOptions {
+    /// Maximum eligible cross-selector candidate comparisons.
+    pub order_budget: usize,
+}
+impl Default for AnalysisOptions {
+    fn default() -> Self {
+        Self {
+            order_budget: 20_000_000,
+        }
+    }
+}
+
 pub fn analyze(request: &Request, from: &str) -> Result<Report, Error> {
+    analyze_with_options(request, from, AnalysisOptions::default())
+}
+pub fn analyze_with_options(
+    request: &Request,
+    from: &str,
+    options: AnalysisOptions,
+) -> Result<Report, Error> {
     version(from)?;
     let mut sources = Sources::default();
     sources.add(request.filename.clone(), &request.source);
     let nodes = parser::parse(&request.source).map_err(|e| sources.locate(e))?;
     imports::validate_external_order(&nodes).map_err(|e| sources.locate(e))?;
-    report(nodes, sources, request, from)
+    report(nodes, sources, request, from, options)
 }
 
 /// Analyze the entry and its local imports without changing any file.
 pub fn analyze_file(request: &Request, from: &str) -> Result<Report, Error> {
+    analyze_file_with_options(request, from, AnalysisOptions::default())
+}
+pub fn analyze_file_with_options(
+    request: &Request,
+    from: &str,
+    options: AnalysisOptions,
+) -> Result<Report, Error> {
     version(from)?;
     if !request.source.is_empty() {
         return Err(Error::new(
@@ -134,7 +172,7 @@ pub fn analyze_file(request: &Request, from: &str) -> Result<Report, Error> {
         ));
     }
     let loaded = imports::load(Path::new(&request.filename), None)?;
-    report(loaded.nodes, loaded.sources, request, from)
+    report(loaded.nodes, loaded.sources, request, from, options)
 }
 
 fn report(
@@ -142,7 +180,15 @@ fn report(
     sources: Sources,
     request: &Request,
     from: &str,
+    options: AnalysisOptions,
 ) -> Result<Report, Error> {
+    if options.order_budget == 0 || options.order_budget > 1_000_000_000 {
+        return Err(Error::new(
+            "EU_MIGRATION_BUDGET",
+            "Order budget must be between 1 and 1000000000",
+            0,
+        ));
+    }
     let mut config = Config::new(&request.config)?;
     config.migration_warnings = Some(std::cell::RefCell::default());
     config.migration_beta6 = from == LEGACY_BETA6;
@@ -178,7 +224,14 @@ fn report(
     let origins = order::origins(&nodes, &config)?;
     match transform::for_migration(nodes, &config).and_then(|raw| {
         let ordered = crate::cascade::media_last(raw.clone());
-        order::scope_changes(&raw, &ordered, &origins, &config, &mut audit)?;
+        order::scope_changes(
+            &raw,
+            &ordered,
+            &origins,
+            &config,
+            &mut audit,
+            options.order_budget,
+        )?;
         crate::nesting::apply(ordered, config.value)
     }) {
         Ok(expanded) => {
@@ -351,6 +404,7 @@ impl Audit<'_> {
             apply_fix: false,
             fix,
             order: None,
+            order_group: None,
         });
     }
     fn add_order(

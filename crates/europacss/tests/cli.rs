@@ -1262,3 +1262,31 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
         source.replace(".one", ".two")
     );
 }
+
+#[test]
+fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("old.cjs"), "module.exports={theme:{typography:{lineHeight:{mobile:1.3},paddingDivider:8,sections:{nav:'12px'}}}};").unwrap();
+    let output = dir
+        .command()
+        .args([
+            "migrate-config",
+            "old.cjs",
+            "-o",
+            "europa.json5",
+            "--color",
+            "never",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let text = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(text.matches("EU_CONFIG_MIGRATION").count(), 3);
+    assert!(fs::read_to_string(dir.0.join("europa.json5"))
+        .unwrap()
+        .contains("paddingDivider"));
+}

@@ -28,8 +28,8 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     if (server?.listening) await new Promise(resolve => server.close(resolve));
     await rm(directory, { recursive: true, force: true });
   });
-  const before = '.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}';
-  const after = '.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}';
+  const before = ':root{--palette:red}.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}';
+  const after = ':root{--palette:blue}.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}';
   await writeFile(path.join(directory, 'before.css'), before);
   await writeFile(path.join(directory, 'after.css'), after);
   server = createServer((request, response) => {
@@ -41,7 +41,7 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const page = `http://127.0.0.1:${server.address().port}/`;
-  chrome = spawn(browser, ['--headless=new', '--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${path.join(directory, 'profile')}`, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: 'ignore' });
+  chrome = spawn(browser, ['--headless=new', '--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${path.join(directory, 'profile')}`, '--no-first-run', '--use-mock-keychain', '--password-store=basic', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: 'ignore' });
   let port;
   const deadline = Date.now() + 10000;
   while (!port) {
@@ -70,6 +70,12 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     assert.ok(result.changes.some(c => c.label === 'div.marker::before' && c.presence?.after));
     assert.ok(!result.changes.some(c => c.label === 'div.untouched' && c.properties.color));
   }
+  assert.ok(changed.report.changedElements > changed.report.nonCustomChangedElements);
+  const filtered = await compare(page, 'after.css', ['--ignore-custom-properties']);
+  assert.equal(filtered.code, 1);
+  assert.equal(filtered.report.customProperties, 'ignored');
+  assert.equal(filtered.report.changedElements, filtered.report.nonCustomChangedElements);
+  assert.ok(filtered.report.results.every(r => r.changes.every(c => Object.keys(c.properties).every(key => !key.startsWith('--')))));
   const same = await compare(page, 'before.css');
   assert.equal(same.code, 0, JSON.stringify(same.report));
   assert.equal(same.report.changedElements, 0);

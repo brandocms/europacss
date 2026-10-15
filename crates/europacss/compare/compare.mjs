@@ -12,6 +12,7 @@ const HELP = `Usage: europa compare <url> --before old.css --after new.css --sty
   --wait-for <selector> Wait for application readiness (default body)
   --settle <ms>        Wait between stability samples (default 250)
   --tolerance <px>     Ignore smaller geometry differences (default 0.1)
+  --ignore-custom-properties  Omit computed custom properties from differences
   --json              Write the complete structured report to stdout
 
 Requires Node.js 22+ and Chromium started with remote debugging. Uses an existing
@@ -27,6 +28,7 @@ export function parseArgs(args) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') return { help: true };
+    if (arg === '--ignore-custom-properties') { options.ignoreCustomProperties = true; continue; }
     if (arg === '--json') { options.json = true; continue; }
     if (arg === '--viewport') {
       const match = /^(\d+)x(\d+)$/.exec(args[++i] ?? '');
@@ -54,10 +56,12 @@ export function parseArgs(args) {
   return options;
 }
 
-export function differences(before, after, tolerance = 0.1) {
+export function differences(before, after, tolerance = 0.1, ignoreCustomProperties = false) {
   const primary = snapshot => snapshot.elements.filter(element => !/::(?:before|after)$/.test(element.selector)).map(element => element.selector);
   if (before.mutations !== after.mutations || JSON.stringify(primary(before)) !== JSON.stringify(primary(after))) {
-    throw new Error('DOM changed during comparison; prepare a stable page state and rerun');
+    const error = new Error('DOM changed during comparison; prepare a stable page state and rerun');
+    error.evidence = { mutations: { before: before.mutations, after: after.mutations }, examples: after.mutationDetails ?? [] };
+    throw error;
   }
   const changes = [];
   const oldElements = new Map(before.elements.map(element => [element.selector, element]));
@@ -69,12 +73,37 @@ export function differences(before, after, tolerance = 0.1) {
     for (const key of Object.keys(old.box)) if (Math.abs(old.box[key] - next.box[key]) > tolerance) geometry[key] = { before: old.box[key], after: next.box[key] };
     const properties = {};
     for (const key of new Set([...Object.keys(old.style), ...Object.keys(next.style)])) {
+      if (ignoreCustomProperties && key.startsWith('--')) continue;
       if (old.style[key] !== next.style[key]) properties[key] = { before: old.style[key] ?? null, after: next.style[key] ?? null };
     }
     const presence = oldElements.has(selector) !== newElements.has(selector) ? { before: oldElements.has(selector), after: newElements.has(selector) } : null;
     if (presence || Object.keys(geometry).length || Object.keys(properties).length) changes.push({ selector, label: old.label ?? next.label, ...(presence ? { presence } : {}), geometry, properties });
   }
   return changes;
+}
+
+// Retain only geometry that reproduces when the baseline is loaded again.
+// Surface discarded samples so an empty diff is never presented as full evidence.
+export function reproducibleChanges(before, after, returned, tolerance, ignoreCustomProperties = false) {
+  const initial = differences(before, after, tolerance, ignoreCustomProperties);
+  const drift = differences(before, returned, tolerance, ignoreCustomProperties);
+  if (drift.some(change => change.presence || Object.keys(change.properties).length)) throw unstable('Baseline styles did not reproduce after the A/B/A swap', 'baseline-return', drift);
+  const unstableBoxes = new Map(drift.map(change => [change.selector, change.geometry]));
+  const discardedGeometry = [];
+  for (const change of initial) {
+    for (const property of Object.keys(change.geometry)) {
+      if (unstableBoxes.get(change.selector)?.[property]) {
+        discardedGeometry.push({ selector: change.selector, property, initial: change.geometry[property], returned: unstableBoxes.get(change.selector)[property].after });
+        delete change.geometry[property];
+      }
+    }
+  }
+  return { changes: initial.filter(change => change.presence || Object.keys(change.geometry).length || Object.keys(change.properties).length), discardedGeometry };
+}
+function unstable(message, stage, changes) {
+  const error = new Error(message);
+  error.evidence = { stage, changedElements: changes.length, examples: changes.slice(0, 5).map(change => ({ ...change, properties: Object.fromEntries(Object.entries(change.properties).slice(0, 10)) })) };
+  return error;
 }
 
 // Self-contained so exactly this code can be exercised through any browser harness.
@@ -88,8 +117,12 @@ export function installCapture(key, selector) {
   const freeze = document.createElement('style');
   freeze.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';
   document.head.append(freeze);
-  const state = { mutations: 0 };
-  const observer = new MutationObserver(records => { state.mutations += records.length; });
+  const state = { mutations: 0, mutationDetails: [] };
+  const observe = records => {
+    state.mutations += records.length;
+    for (const record of records) if (state.mutationDetails.length < 5) state.mutationDetails.push({ type: record.type, element: record.target.nodeType === 1 ? record.target.localName + (record.target.id ? '#' + record.target.id : '') : record.target.parentElement?.localName, attribute: record.attributeName });
+  };
+  const observer = new MutationObserver(observe);
   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
   const paths = new Map();
   const path = element => {
@@ -101,11 +134,11 @@ export function installCapture(key, selector) {
     return value;
   };
   state.snapshot = () => {
-    state.mutations += observer.takeRecords().length;
+    observe(observer.takeRecords());
     const records = [];
     let frames = 0, shadowRoots = 0, values = 0;
     for (const element of elements) {
-      if (!element.isConnected) throw new Error('DOM element was removed during comparison');
+      if (!element.isConnected) throw new Error(`DOM element was removed during comparison: ${path(element)} (${element.localName}${element.id ? '#' + element.id : ''})`);
       if (element.localName === 'iframe') frames++;
       if (element.shadowRoot) shadowRoots++;
       const label = `${element.localName}${element.id ? `#${element.id}` : ''}${element.getAttribute('class') ? `.${element.getAttribute('class').trim().replace(/\s+/g, '.')}` : ''}`;
@@ -122,7 +155,7 @@ export function installCapture(key, selector) {
           box: pseudo ? {} : { x: rect.x, y: rect.y, width: rect.width, height: rect.height } });
       }
     }
-    return { mutations: state.mutations, elements: records, coverage: { elements: elements.length, pseudoElements: records.length - elements.length, framesExcluded: frames, openShadowRootsExcluded: shadowRoots } };
+    return { mutations: state.mutations, mutationDetails: state.mutationDetails, elements: records, coverage: { elements: elements.length, pseudoElements: records.length - elements.length, framesExcluded: frames, openShadowRootsExcluded: shadowRoots } };
   };
   state.dispose = () => { observer.disconnect(); freeze.remove(); delete window[key]; };
   window[key] = state;
@@ -232,13 +265,23 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     const snapshot = () => evaluate(`window[${JSON.stringify(key)}].snapshot()`);
     const before = await snapshot();
     await settle();
-    if (differences(before, await snapshot(), options.tolerance).length) throw new Error('Baseline styles or geometry are unstable; wait for a stable state and rerun');
+    const baselineDrift = differences(before, await snapshot(), options.tolerance, options.ignoreCustomProperties);
+    if (baselineDrift.length) throw unstable('Baseline styles or geometry are unstable; wait for a stable state and rerun', 'baseline', baselineDrift);
     await send('CSS.setStyleSheetText', { styleSheetId, text: afterCSS });
     await settle();
     const after = await snapshot();
     await settle();
-    if (differences(after, await snapshot(), options.tolerance).length) throw new Error('Candidate styles or geometry are unstable; wait for a stable state and rerun');
-    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, changes: differences(before, after, options.tolerance) };
+    const candidateDrift = differences(after, await snapshot(), options.tolerance, options.ignoreCustomProperties);
+    if (candidateDrift.length) throw unstable('Candidate styles or geometry are unstable; wait for a stable state and rerun', 'candidate', candidateDrift);
+    await send('CSS.setStyleSheetText', { styleSheetId, text: beforeCSS });
+    await settle();
+    const returned = await snapshot();
+    await settle();
+    const returnDrift = differences(returned, await snapshot(), options.tolerance, options.ignoreCustomProperties);
+    if (returnDrift.length) throw unstable('Returned baseline styles or geometry are unstable', 'baseline-return', returnDrift);
+    const result = reproducibleChanges(before, after, returned, options.tolerance, options.ignoreCustomProperties);
+    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, ...result,
+      nonCustomChangedElements: result.changes.filter(change => change.presence || Object.keys(change.geometry).length || Object.keys(change.properties).some(name => !name.startsWith('--'))).length };
   } finally {
     const cleanup = [];
     if (original !== undefined) cleanup.push(send('CSS.setStyleSheetText', { styleSheetId, text: original }));
@@ -266,11 +309,13 @@ export async function main(args = process.argv.slice(2)) {
     const results = [];
     for (const viewport of options.target ? [null] : options.viewports) results.push(await comparePage(cdp, options, before, after, viewport));
     const changedElements = results.reduce((sum, result) => sum + result.changes.length, 0);
-    const report = { version: 1, complete: true, url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
-      limitations: ['Current page state and selected viewports only; no selector-performance measurement', 'Animations and transitions disabled during sampling', 'Main document subtree and ::before/::after computed styles; iframe and shadow-root contents and pseudo-element boxes excluded', 'Geometry uses a pixel tolerance; computed property strings are compared exactly'] };
+    const discardedGeometry = results.reduce((sum, result) => sum + result.discardedGeometry.length, 0);
+    const report = { version: 2, complete: discardedGeometry === 0, discardedGeometry, nonCustomChangedElements: results.reduce((sum, result) => sum + result.nonCustomChangedElements, 0), customProperties: options.ignoreCustomProperties ? 'ignored' : 'all', url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
+      sampling: 'A/B/A with two stability samples per phase; non-reproducing geometry excluded', limitations: ['Current page state and selected viewports only; no selector-performance measurement', 'Animations and transitions disabled during sampling', 'Main document subtree and ::before/::after computed styles; iframe and shadow-root contents and pseudo-element boxes excluded', 'Geometry uses a pixel tolerance; computed property strings are compared exactly'] };
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     else {
-      console.log(`${changedElements} changed element/pseudo-element samples across ${results.length} viewport(s).`);
+      console.log(`${changedElements} changed element/pseudo-element samples across ${results.length} viewport(s); ${report.nonCustomChangedElements} with non-custom changes.`);
+      if (discardedGeometry) console.error(`${discardedGeometry} geometry differences did not reproduce after A/B/A and were excluded; comparison is incomplete. See --json for evidence.`);
       for (const result of results) for (const change of result.changes) {
         console.log(`\n${result.viewport.width}x${result.viewport.height} ${change.label}\n  ${change.selector}`);
         if (change.presence) console.log(`  pseudo-element: ${change.presence.before ? 'present' : 'absent'} -> ${change.presence.after ? 'present' : 'absent'}`);
@@ -279,10 +324,10 @@ export async function main(args = process.argv.slice(2)) {
       }
       console.log('\nCoverage: main-document subtree, ::before/::after styles; excludes iframe/shadow contents and animation behavior. Use --json for structured evidence.');
     }
-    return changedElements ? 1 : 0;
+    return discardedGeometry ? 2 : changedElements ? 1 : 0;
   } catch (error) {
-    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 1, complete: false, error: error.message }) + '\n');
-    else console.error(`europa compare: ${error.message}`);
+    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 2, complete: false, error: error.message, ...(error.evidence ? { evidence: error.evidence } : {}) }) + '\n');
+    else { console.error(`europa compare: ${error.message}`); if (error.evidence) console.error(JSON.stringify(error.evidence, null, 2)); }
     return 2;
   } finally { cdp?.close(); }
 }

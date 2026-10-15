@@ -133,7 +133,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept r
 
 Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply` and `--accept` as separate stages.
 
-Analyzer version 11 includes layer-scope and potential cross-selector ordering checks, expanded nesting, and independent compiler diagnostics. See [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 10; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
+Analyzer version 12 groups potential cross-selector conflicts by selector pair and prunes provably disjoint subjects and width ranges. See [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 10; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
 
 ## Sources older than beta.6
 
@@ -206,3 +206,51 @@ same DOM, including computed properties and element boxes. It reports actual
 cross-selector effects that source analysis can only identify as potential risks.
 
 For CI, run the read-only check or replay a valid reviewed report before the production build. Never hide its nonzero status with `|| true`. Since reviews include canonical paths, a report saved in another checkout may need regeneration and review.
+
+## Large reports and acceptance by code
+
+Cross-selector analysis indexes properties, importance, and original source rank;
+rules whose relative order did not change do not consume its comparison budget.
+Its default is 20000000 eligible candidate pairs. Use `--budget 200000000` to
+raise this limit (maximum 1000000000). An exhausted analysis remains incomplete
+and cannot be accepted. Other selector-expansion and local-analysis limits still
+apply. Custom budgets currently apply to terminal migration, not `--studio`.
+
+Subject constraints prune different type selectors, IDs, `::before` versus
+`::after`, and incompatible exact attribute values. Conditions and functional
+pseudos that cannot be proven disjoint remain potential conflicts. Classes alone
+do not prove that selectors cannot share an element.
+
+Each cross-selector finding now represents one selector pair in a scope, across
+its properties and breakpoints. `order_group` contains the occurrence count,
+property names, and up to five representative examples. Its ordinary
+`accepted: true` decision reviews the entire group.
+
+After reviewing the full report and browser evidence, you can accept all findings
+of a semantic diagnostic code with a compact receipt. For example, from a fresh,
+complete `migration.json` report:
+
+```sh
+jq '{report_version, snapshot, from, to, analysis_complete,
+     accept_codes: ["EU_MIGRATION_ORDER"]}' migration.json > reviewed-order.json
+europa migrate css/app.css --from 1.0.0-beta.6 --config europa.json5 \
+  --accept reviewed-order.json --summary
+```
+
+This explicitly accepts every order finding for those exact inputs, including
+local-order findings. Other codes remain unresolved. The receipt stays bound to
+the analyzer revision and CSS/config/package metadata snapshot; it is not a
+persistent ignore rule. Syntax errors and incomplete analysis cannot be accepted.
+Compact receipts avoid the 16 MiB reviewed-input limit for large evidence reports.
+Keep the original full report alongside the browser evidence.
+
+## Converted typography settings
+
+`migrate-config` preserves `theme.typography.lineHeight`, `paddingDivider`, and
+`sections` (including `theme.extend` entries) as data, and prints
+`EU_CONFIG_MIGRATION` notices in JS, JSON, and JSON5 conversions. These settings
+do not reproduce old implicit CSS generation. Declare line-height and
+column-typography padding explicitly, and move used section sizes into
+`typography.sizes` or access their data explicitly. Inspect old compiled output
+before removing data. The library's `migrate_config_report` returns both the
+converted source and these notices.

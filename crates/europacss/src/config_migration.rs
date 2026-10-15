@@ -2,6 +2,31 @@
 //! No JavaScript is evaluated, and unsupported expressions fail before output.
 use crate::config_file::{json_to_json5, resolve_config, ConfigValue};
 
+pub struct MigrationOutput {
+    pub source: String,
+    pub warnings: Vec<String>,
+}
+
+/// Preserve token data while identifying old implicit behaviors that need CSS.
+pub fn migrate_config_report(source: &str, extension: &str) -> Result<MigrationOutput, String> {
+    let source = migrate_config(source, extension)?;
+    let value: serde_json::Value = json5::from_str(&source).map_err(|e| e.to_string())?;
+    let mut warnings = Vec::new();
+    for root in ["/theme/typography", "/theme/extend/typography"] {
+        for (key, guidance) in [
+            ("lineHeight", "No automatic global line-height is generated; declare it explicitly or include line-height in typography.sizes tokens"),
+            ("paddingDivider", "No automatic column-typography padding is generated; preserve that padding explicitly in CSS"),
+            ("sections", "Section data is not automatically applied; move used sizes into typography.sizes and update their uses, or access this data explicitly"),
+        ] {
+            let path = format!("{root}/{key}");
+            if value.pointer(&path).is_some() {
+                warnings.push(format!("{} is preserved as token data. {guidance}. Review the old compiled CSS before removing it.", path.trim_start_matches('/').replace('/', ".")));
+            }
+        }
+    }
+    Ok(MigrationOutput { source, warnings })
+}
+
 pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {
     if source.len() > 16 * 1024 * 1024 {
         return Err("Config migration input exceeds 16 MiB".into());

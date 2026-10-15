@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, differences, comparePage } from './compare.mjs';
+import { parseArgs, differences, comparePage, reproducibleChanges } from './compare.mjs';
 
 const args = ['http://localhost:4000/admin', '--before', 'old.css', '--after', 'new.css', '--stylesheet', '/assets/admin.css'];
 const element = (style = {}, box = { x: 0, y: 0, width: 100, height: 20 }, selector = 'html > body > div') => ({ selector, label: 'div.field', style, box });
@@ -62,10 +62,10 @@ function browser(snapshots, failure) {
 
 test('prepared-tab comparison restores CSS without navigation or resizing', async () => {
   const before = snapshot([element({ color: 'red' })]), after = snapshot([element({ color: 'blue' })]);
-  const cdp = browser([before, before, after, after]);
+  const cdp = browser([before, before, after, after, before, before]);
   const result = await comparePage(cdp, { ...parseArgs([...args, '--target', 'prepared']), settle: 0 }, 'before', 'after');
   assert.equal(result.changes.length, 1);
-  assert.deepEqual(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').map(c => c.params.text), ['before', 'after', 'original']);
+  assert.deepEqual(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').map(c => c.params.text), ['before', 'after', 'before', 'original']);
   assert.ok(!cdp.calls.some(c => ['Page.navigate', 'Target.closeTarget', 'Emulation.setDeviceMetricsOverride'].includes(c.method)));
   assert.ok(cdp.calls.some(c => c.method === 'Target.detachFromTarget'));
   assert.equal(cdp.listeners.size, 0);
@@ -74,9 +74,40 @@ test('prepared-tab comparison restores CSS without navigation or resizing', asyn
 test('failed and unstable comparisons restore the stylesheet and close only owned tabs', async () => {
   const before = snapshot([element({ color: 'red' })]);
   for (const failure of [true, false]) {
-    const cdp = browser([before, before, { ...before, mutations: 1 }, { ...before, mutations: 1 }], failure);
+    const cdp = browser([before, before, { ...before, mutations: 1 }, { ...before, mutations: 1 }, before, before], failure);
     await assert.rejects(comparePage(cdp, { ...parseArgs(args), settle: 0 }, 'before', 'after', { width: 600, height: 900 }), failure ? /candidate rejected/ : /DOM changed/);
     assert.equal(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').at(-1).params.text, 'original');
     assert.ok(cdp.calls.some(c => c.method === 'Target.closeTarget' && c.params.targetId === 'created'));
   }
+});
+
+test('custom properties can be ignored while real style and box differences remain', () => {
+  assert.equal(parseArgs([...args, '--ignore-custom-properties']).ignoreCustomProperties, true);
+  const before = snapshot([element({'--ink':'red',color:'red'})]);
+  const after = snapshot([element({'--ink':'blue',color:'blue'})]);
+  assert.deepEqual(Object.keys(differences(before, after, 0.1, true)[0].properties), ['color']);
+  assert.deepEqual(differences(before, snapshot([element({'--ink':'blue',color:'red'})]), 0.1, true), []);
+});
+
+test('A/B/A excludes non-reproducing geometry but retains reproducible CSS changes', () => {
+  const before = snapshot([element({color:'red'}, {x:0,y:259.47,width:100,height:20})]);
+  const after = snapshot([element({color:'blue'}, {x:0,y:258.47,width:120,height:20})]);
+  const returned = snapshot([element({color:'red'}, {x:0,y:258.47,width:100,height:20})]);
+  const result = reproducibleChanges(before, after, returned, 0.1);
+  assert.deepEqual(Object.keys(result.changes[0].geometry), ['width']);
+  assert.equal(result.changes[0].properties.color.after, 'blue');
+  assert.equal(result.discardedGeometry[0].property, 'y');
+  assert.throws(() => reproducibleChanges(before, after, after, 0.1), /did not reproduce/);
+});
+
+test('unstable errors identify the sample stage, selector, property and both values', async () => {
+  const before = snapshot([element({width:'70.79px'})]);
+  const changed = snapshot([element({width:'70.99px'})]);
+  const cdp = browser([before, changed]);
+  await assert.rejects(comparePage(cdp, {...parseArgs(args),settle:0}, 'before', 'after', {width:600,height:900}), error => {
+    assert.equal(error.evidence.stage, 'baseline');
+    assert.equal(error.evidence.examples[0].selector, 'html > body > div');
+    assert.deepEqual(error.evidence.examples[0].properties.width, {before:'70.79px',after:'70.99px'});
+    return true;
+  });
 });

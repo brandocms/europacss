@@ -10,6 +10,7 @@ pub struct Snapshot {
     target: PathBuf,
     length: u64,
     hash: blake3::Hash,
+    missing: bool,
 }
 
 impl Snapshot {
@@ -19,7 +20,14 @@ impl Snapshot {
             path,
             length: content.len() as u64,
             hash: blake3::hash(content),
+            missing: false,
         }
+    }
+
+    pub(crate) fn missing(path: PathBuf) -> Self {
+        let mut snapshot = Self::from_source(path, &[]);
+        snapshot.missing = true;
+        snapshot
     }
 
     pub(crate) fn at_path(mut self, path: PathBuf) -> Self {
@@ -35,6 +43,9 @@ impl Snapshot {
 
     /// Returns true for changed, replaced, retargeted, deleted, or unreadable inputs.
     pub fn changed(&self) -> bool {
+        if self.missing {
+            return fs::symlink_metadata(&self.path).is_ok();
+        }
         let check = || -> io::Result<bool> {
             let target = fs::canonicalize(&self.path)?;
             if target != self.target || fs::metadata(&target)?.len() != self.length {

@@ -16,10 +16,16 @@ Start your installed Chromium browser with a separate debugging profile. For
 example, on a system with `chromium` on PATH:
 
 ```sh
-chromium --remote-debugging-port=9222 --user-data-dir=/tmp/europa-compare-profile
+chromium --remote-debugging-port=9222 --user-data-dir=/tmp/europa-compare-profile \
+  --use-mock-keychain --password-store=basic
 ```
 
-Use the equivalent executable path for Chrome on your system. Open the running
+Use the equivalent executable path for Chrome on your system. The keychain flags
+avoid macOS's “Chromium Safe Storage” login prompt in this disposable testing
+profile; use it only for testing, not as your everyday password store.
+Keep only one live application session during comparison: another browser/tab
+can trigger presence updates or LiveView patches that remove measured elements.
+ Open the running
 application and log in if needed. The command's new tabs share this browser
 session. Save both **compiled** CSS builds locally; Europa source directives
 must already have been expanded. Relative assets in both snapshots must resolve
@@ -82,7 +88,25 @@ Exit codes are **0** for no detected differences, **1** for differences, and
 `complete: false`. A successful comparison means only the recorded page state
 and viewports were checked.
 
-The command waits for fonts and samples each build twice, separated by
+Reports use schema version 2. `--ignore-custom-properties` excludes computed
+`--*` properties from differences, avoiding inherited palette changes repeated
+on every descendant. Ordinary computed properties still reveal their visual
+effects. `nonCustomChangedElements` counts samples with geometry, pseudo-element
+presence, or ordinary property changes even when custom properties are included.
+
+The command measures **A, B, A**, with two stability samples per phase. Geometry
+that fails to reproduce on returning to A is excluded from `changes` and listed
+in `discardedGeometry` with the initial and returned measurements. Such a run is
+marked incomplete (exit 2), so excluded evidence cannot silently pass CI.
+Non-reproducing computed styles also make the run incomplete.
+
+Instability errors include an `evidence` object with the phase, changed-sample
+count, and up to five selectors with geometry and property values (up to ten
+properties each). Text output prints this evidence too. Removed-element errors
+identify the element. A narrower `--root` may exclude unrelated widgets, but
+also narrows what the comparison verifies.
+
+The command waits for fonts between samples, separated by
 `--settle` milliseconds (default 250). Changing DOM, computed styles, or geometry
 causes an incomplete result instead of a misleading diff. Pause live updates or
 prepare a stable fixture when necessary. Animations/transitions are disabled

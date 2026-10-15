@@ -5,6 +5,8 @@ use europacss::{migration, Request};
 use std::{fs, io::Write, path::Path, process::ExitCode};
 
 pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
+    let mut options = migration::AnalysisOptions::default();
+    let mut custom_budget = false;
     let mut input = None;
     let mut config_path = None;
     let mut from = None;
@@ -20,6 +22,14 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--budget" | "--order-budget" => {
+                options.order_budget = args
+                    .next()
+                    .ok_or("--budget requires a comparison count")?
+                    .parse()
+                    .map_err(|_| "--budget expects a positive integer")?;
+                custom_budget = true;
+            }
             "--from" => from = Some(args.next().ok_or("--from needs a source version")?),
             "--config" => config_path = Some(args.next().ok_or("--config needs a path")?),
             "--accept" => {
@@ -41,7 +51,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             "--help" | "-h" => {
                 println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
                 println!("Browser review: europa migrate <entry.css> --from <version> [--config europa.json5] --studio [--port 0]\n");
-                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
+                println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix syntax edits; appearance choices remain unresolved.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--budget N sets the cross-selector comparison limit (default 20000000, maximum 1000000000).\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(ExitCode::SUCCESS);
             }
             _ if arg.starts_with('-') => return Err(format!("Unknown migration option: {arg}")),
@@ -75,6 +85,12 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
     let input = input.ok_or("migrate requires an entry stylesheet")?;
     let from = from.ok_or("migrate requires --from: the installed version does not prove which semantics these files were authored against")?;
     if studio {
+        if custom_budget {
+            return Err(
+                "Custom --budget is currently supported by terminal migration; omit --studio"
+                    .into(),
+            );
+        }
         if fix || apply_fixes.is_some() || accept.is_some() || json || summary || details || check {
             return Err(
                 "Use --studio on its own; review, save, and apply decisions in the browser".into(),
@@ -101,7 +117,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
         config,
         ..Request::default()
     };
-    let mut report = migration::analyze_file(&request, &from)
+    let mut report = migration::analyze_file_with_options(&request, &from, options)
         .map_err(|e| ui.diagnostic(&e, &input, None, false))?;
     let mut changed = 0;
     if fix || apply_fixes.is_some() {
@@ -135,7 +151,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             changed += 1;
         }
         if changed > 0 {
-            report = migration::analyze_file(&request, &from)
+            report = migration::analyze_file_with_options(&request, &from, options)
                 .map_err(|e| ui.diagnostic(&e, &input, None, false))?;
         }
     }

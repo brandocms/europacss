@@ -15,7 +15,7 @@ From this directory:
 
 On Windows use `europa.exe`. To compile your project, provide its entry stylesheet,
 JSON5 configuration, and output path. The output directory must already exist.
-The compiler resolves local imports; it does not install dependencies or evaluate JavaScript configurations.
+The compiler resolves local imports and CSS packages through ancestor node_modules directories, including exports/style entries; it does not install dependencies or evaluate JavaScript configurations. Package metadata participates in watches and migration review snapshots.
 
 Studio prints a local browser URL for live JSON5 typography, spacing, and grid
 previews. It can load project fonts from a sibling `css/includes/fonts.css` and
@@ -33,6 +33,7 @@ Before migrating an existing site, run:
 Review findings and compare rendered pages. `--fix` rewrites supported suffix
 selectors; it never chooses a different appearance for you. Versioned migration
 analysis supports beta.6, beta.11 and beta.16, is bounded, and does not prove complete visual equivalence.
+Analyzer version 12 groups cross-selector risks by selector pair and prunes provably disjoint subjects. `--budget N` adjusts its comparison limit. Large reviews can use snapshot-bound `accept_codes` receipts; see the migration guide before accepting a whole diagnostic code.
 
 The optional `europa compare` command compares computed styles and element boxes
 on the same rendered DOM. It requires Node.js 22+ and an installed Chromium browser

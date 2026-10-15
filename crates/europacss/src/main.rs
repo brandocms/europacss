@@ -43,14 +43,25 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
             .extension()
             .and_then(|s| s.to_str())
             .unwrap_or("");
-        let json5 =
-            europacss::migrate_config(&source, extension).map_err(|e| format!("{input}: {e}"))?;
+        let converted = europacss::migrate_config_report(&source, extension)
+            .map_err(|e| format!("{input}: {e}"))?;
+        for warning in &converted.warnings {
+            eprint!(
+                "{}",
+                ui.diagnostic(
+                    &europacss::Error::new("EU_CONFIG_MIGRATION", warning, 0),
+                    &input,
+                    Some(&source),
+                    true
+                )
+            );
+        }
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&output)
             .map_err(|e| format!("{output}: {e}"))?;
-        file.write_all(json5.as_bytes())
+        file.write_all(converted.source.as_bytes())
             .map_err(|e| e.to_string())?;
         ui.migrated(&output);
         return Ok(Vec::new());

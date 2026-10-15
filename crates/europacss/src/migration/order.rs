@@ -10,7 +10,7 @@ use lightningcss::{
     rules::CssRule,
     stylesheet::{ParserOptions, PrinterOptions, StyleSheet},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Default)]
 pub(super) struct Origins {
@@ -89,6 +89,7 @@ struct CascadeDeclaration {
     declaration: Declaration,
     selector: String,
     specificity: u32,
+    subject: super::subject::Subject,
     scopes: Vec<String>,
     boundaries: Vec<usize>,
     generated: bool,
@@ -113,6 +114,7 @@ pub(super) fn scope_changes(
     origins: &Origins,
     config: &Config<'_>,
     audit: &mut Audit<'_>,
+    budget: usize,
 ) -> Result<(), Error> {
     #[derive(Clone, Default)]
     struct Context {
@@ -208,6 +210,7 @@ pub(super) fn scope_changes(
                         },
                         selector: selector.clone(),
                         specificity,
+                        subject: super::subject::Subject::parse(selector),
                         scopes: ctx.scopes.clone(),
                         boundaries: ctx.boundaries.clone(),
                         generated: ctx.generated,
@@ -233,24 +236,40 @@ pub(super) fn scope_changes(
             .and_then(|ranks| ranks.pop_front())
             .unwrap_or(item.rank);
     }
-    let mut histories: HashMap<(Vec<String>, u32), DeclarationIndex> = HashMap::new();
+    // Only generated rules can be displaced by a later layer block. For
+    // authored media, only preceding output rules with a *later input rank*
+    // can have crossed it. Index both categories before comparing properties.
+    let mut generated: HashMap<(Vec<String>, u32), DeclarationIndex> = HashMap::new();
+    let mut ranked: HashMap<(Vec<String>, u32), RankedIndex> = HashMap::new();
+    let mut groups: HashMap<(Vec<String>, String, String, bool), usize> = HashMap::new();
     let mut work = 0usize;
     for (index, current) in after.iter().enumerate() {
-        let history = histories
-            .entry((current.scopes.clone(), current.specificity))
-            .or_default();
-        let candidates = history.candidates(&current.declaration);
-        history.insert(index, &current.declaration);
+        let domain = (current.scopes.clone(), current.specificity);
+        let mut candidates = Vec::new();
+        if !current.generated {
+            if let Some(history) = generated.get(&domain) {
+                candidates.extend(history.candidates(&current.declaration));
+            }
+            if !current.declaration.conditions.is_empty() {
+                if let Some(history) = ranked.get(&domain) {
+                    candidates.extend(history.candidates(&current.declaration, current.rank));
+                }
+            }
+        }
+        if current.generated {
+            generated
+                .entry(domain.clone())
+                .or_default()
+                .insert(index, &current.declaration);
+        }
+        ranked
+            .entry(domain)
+            .or_default()
+            .insert(index, current.rank, &current.declaration);
+        candidates.sort_unstable();
+        candidates.dedup();
         for candidate in candidates {
             let previous = &after[candidate];
-            work += 1;
-            if work > 1_000_000 {
-                audit.incomplete(
-                    &Node::leaf("", current.declaration.offset),
-                    "Cross-selector order analysis exceeded its comparison budget",
-                );
-                return Ok(());
-            }
             let split_append = previous.generated
                 && !current.generated
                 && previous.boundaries != current.boundaries;
@@ -258,34 +277,119 @@ pub(super) fn scope_changes(
                 && previous.rank > current.rank
                 && !current.generated
                 && !current.declaration.conditions.is_empty();
-            if !split_append && !authored_move {
+            if (!split_append && !authored_move)
+                || previous.subject.disjoint(&current.subject)
+                || conditions_disjoint(
+                    &previous.declaration.conditions,
+                    &current.declaration.conditions,
+                )
+            {
                 continue;
+            }
+            work += 1;
+            if work > budget {
+                audit.incomplete(&Node::leaf("", current.declaration.offset), &format!("Cross-selector order analysis exceeded its {budget}-comparison budget; rerun with --budget N to raise it"));
+                return Ok(());
             }
             let first = &previous.declaration;
             let second = &current.declaration;
+            let mut properties = Vec::new();
+            let mut old_values = Vec::new();
+            let mut new_values = Vec::new();
             for old in &first.values {
                 for new in &second.values {
-                    if !overlaps(&old.property, &new.property)
-                        || old.text == new.text
-                        || old.important != new.important
+                    if overlaps(&old.property, &new.property)
+                        && old.text != new.text
+                        && old.important == new.important
                     {
-                        continue;
+                        properties.push(new.property.clone());
+                        old_values.push(old.text.clone());
+                        new_values.push(new.text.clone());
                     }
-                    let source = audit.sources.locate(Error::new("", "", first.offset));
-                    let reason = if split_append {
-                        "separate layer/condition blocks interrupt legacy global responsive append order"
-                    } else {
-                        "authored media moved after a different equal-specificity selector"
-                    };
-                    audit.add_order(format!("Potential cascade change: {reason}. `{}` ({}) precedes `{}` ({}) in native output", previous.selector, old.text, current.selector, new.text), second.offset,
-                        if split_append { "For a legacy package, import one aggregate stylesheet with layer(name), and keep its component imports unlayered inside that file. Compare computed styles where both selectors match; do not merge distinct semantic layers or conditions." }
-                        else { "The selectors may match the same element. Compare computed styles at the affected viewport; source analysis cannot prove DOM overlap. Review authored media ordering against the old compiled stylesheet. No automatic appearance edit is made." },
-                        None, OrderConflict { earlier_source: source.into(), earlier_label: previous.selector.clone(), earlier: old.text.clone(), later: new.text.clone(), earlier_conditions: first.conditions.clone(), later_conditions: second.conditions.clone(), reason: reason.into(), selector_path: vec![previous.selector.clone(), current.selector.clone()] });
+                }
+            }
+            if properties.is_empty() {
+                continue;
+            }
+            properties.sort();
+            properties.dedup();
+            old_values.sort();
+            old_values.dedup();
+            new_values.sort();
+            new_values.dedup();
+            let reason = if split_append {
+                "separate layer/condition blocks interrupt legacy global responsive append order"
+            } else {
+                "authored media moved after a different equal-specificity selector"
+            };
+            let evidence = OrderConflict {
+                earlier_source: audit
+                    .sources
+                    .locate(Error::new("", "", first.offset))
+                    .into(),
+                earlier_label: previous.selector.clone(),
+                earlier: old_values.join("; "),
+                later: new_values.join("; "),
+                earlier_conditions: first.conditions.clone(),
+                later_conditions: second.conditions.clone(),
+                reason: reason.into(),
+                selector_path: vec![previous.selector.clone(), current.selector.clone()],
+            };
+            let key = (
+                current.scopes.clone(),
+                previous.selector.clone(),
+                current.selector.clone(),
+                split_append,
+            );
+            if let Some(&index) = groups.get(&key) {
+                let group = audit.findings[index].order_group.as_mut().unwrap();
+                group.occurrences += 1;
+                group.properties.extend(properties);
+                group.properties.sort();
+                group.properties.dedup();
+                if group.examples.len() < 5 {
+                    group.examples.push(evidence);
+                }
+            } else {
+                let index = audit.findings.len();
+                audit.add_order(format!("Potential cascade change: {reason}. `{}` precedes `{}` in native output (selector-pair group)", previous.selector, current.selector), second.offset,
+                    if split_append { "Import one aggregate stylesheet with layer(name), keeping its component imports unlayered. Review the selector-pair group using computed styles; do not merge distinct semantic layers or conditions." }
+                    else { "These selectors may match the same element. Review this selector-pair group across its properties and breakpoints with computed-style evidence. JSON includes occurrence counts and up to five examples; no automatic appearance edit is made." }, None, evidence.clone());
+                if audit.findings.len() > index {
+                    audit.findings[index].order_group = Some(super::OrderGroup {
+                        occurrences: 1,
+                        properties,
+                        examples: vec![evidence],
+                    });
+                    groups.insert(key, index);
                 }
             }
         }
     }
     Ok(())
+}
+
+fn conditions_disjoint(a: &[String], b: &[String]) -> bool {
+    fn ranges(conditions: &[String]) -> Option<Vec<crate::optimize::WidthRange>> {
+        let mut result = vec![crate::optimize::WidthRange::all()];
+        for condition in conditions {
+            let query = condition.strip_prefix("@media ")?;
+            let parts = crate::optimize::condition_width_ranges(query)?;
+            result = result
+                .iter()
+                .flat_map(|a| parts.iter().map(move |b| a.intersect(*b)))
+                .filter(|range| range.nonempty())
+                .collect();
+            if result.len() > 128 {
+                return None;
+            }
+        }
+        Some(result)
+    }
+    match (ranges(a), ranges(b)) {
+        (Some(a), Some(b)) => !a.iter().any(|a| b.iter().any(|b| a.overlaps(*b))),
+        _ => false,
+    }
 }
 
 fn values(text: &str) -> Option<Vec<Value>> {
@@ -388,6 +492,62 @@ impl DeclarationIndex {
         indices.sort_unstable();
         indices.dedup();
         indices
+    }
+}
+
+/// Index candidate properties by original source rank so unchanged-order rules
+/// are not visited. `all` and importance have the same semantics as DeclarationIndex.
+#[derive(Default)]
+struct RankedIndex {
+    properties: HashMap<(String, bool), BTreeMap<usize, Vec<usize>>>,
+    resettable: [BTreeMap<usize, Vec<usize>>; 2],
+}
+impl RankedIndex {
+    fn insert(&mut self, index: usize, rank: usize, declaration: &Declaration) {
+        for value in &declaration.values {
+            self.properties
+                .entry((value.property.clone(), value.important))
+                .or_default()
+                .entry(rank)
+                .or_default()
+                .push(index);
+            if resettable(&value.property) {
+                self.resettable[usize::from(value.important)]
+                    .entry(rank)
+                    .or_default()
+                    .push(index);
+            }
+        }
+    }
+    fn candidates(&self, declaration: &Declaration, rank: usize) -> Vec<usize> {
+        let mut result = Vec::new();
+        let mut append = |map: &BTreeMap<usize, Vec<usize>>| {
+            for (_, indices) in
+                map.range((std::ops::Bound::Excluded(rank), std::ops::Bound::Unbounded))
+            {
+                result.extend(indices);
+            }
+        };
+        for value in &declaration.values {
+            if value.property == "all" {
+                append(&self.resettable[usize::from(value.important)]);
+            } else {
+                if let Some(map) = self
+                    .properties
+                    .get(&(value.property.clone(), value.important))
+                {
+                    append(map);
+                }
+                if resettable(&value.property) {
+                    if let Some(map) = self.properties.get(&("all".into(), value.important)) {
+                        append(map);
+                    }
+                }
+            }
+        }
+        result.sort_unstable();
+        result.dedup();
+        result
     }
 }
 

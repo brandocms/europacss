@@ -137,8 +137,7 @@ Existing local files can be assigned a layer at import time:
 @import './app-overrides.css' layer(app);
 ```
 
-These are exact local paths. The Rust resolver does not resolve npm package
-imports or Vite aliases by itself; the Vite adapter can supply those resolutions. Avoid wrapping an already layered stylesheet a second
+These are exact local paths. The Rust resolver also resolves CSS packages through `node_modules`; the Vite adapter supplies aliases and its host-specific resolution. Avoid wrapping an already layered stylesheet a second
 time unless nested layers are intended.
 
 This is an integration convention, not automatic compiler wrapping. Brando's
@@ -176,4 +175,4 @@ fallback. Compare affected components at their breakpoints when updating.
 Legacy PostCSS migrations no longer need to reorder simple responsive/fallback
 pairs. Other differences remain: non-media declaration appending, overlapping
 query sorting, native selector specificity, and breakpoint boundaries. Migration
-reports use analyzer version 11; regenerate older saved reviews.
+reports use analyzer version 12; regenerate older saved reviews.

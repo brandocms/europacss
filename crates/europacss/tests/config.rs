@@ -221,3 +221,23 @@ fn migration_rejects_invalid_config_before_serializing() {
         assert!(json_to_json5(input).is_err(), "{input}");
     }
 }
+
+#[test]
+fn config_migration_reports_preserved_implicit_typography_settings_in_every_format() {
+    let value = json!({"theme":{"typography":{"lineHeight":{"mobile":1.3},"paddingDivider":8,"sections":{"nav":{"mobile":"12px"}}},"extend":{"typography":{"lineHeight":{"desktop":1.4}}},"colors":{"sections":"red"}}});
+    for extension in ["json", "json5", "js"] {
+        let source = if extension == "js" {
+            format!("module.exports = {value}")
+        } else {
+            value.to_string()
+        };
+        let report = europacss::migrate_config_report(&source, extension).unwrap();
+        assert_eq!(report.warnings.len(), 4);
+        assert!(report
+            .warnings
+            .iter()
+            .any(|w| w.contains("theme.extend.typography.lineHeight")));
+        let migrated: Value = json5::from_str(&report.source).unwrap();
+        assert_eq!(migrated, value);
+    }
+}

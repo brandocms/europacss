@@ -18,6 +18,10 @@ pub(super) fn snapshot(sources: &Sources, request: &Request, from: &str) -> Stri
         add(file.name.as_bytes());
         add(sources.content(index).as_bytes());
     }
+    for (path, content) in &sources.metadata {
+        add(path.to_string_lossy().as_bytes());
+        add(content.as_bytes());
+    }
     hash.finalize().to_hex().to_string()
 }
 
@@ -28,7 +32,10 @@ struct Review {
     from: String,
     to: String,
     analysis_complete: bool,
+    #[serde(default)]
     findings: Vec<Decision>,
+    #[serde(default)]
+    accept_codes: Vec<String>,
 }
 #[derive(Deserialize)]
 struct Decision {
@@ -79,6 +86,24 @@ pub fn apply_acceptances(report: &mut Report, source: &str) -> Result<(), Error>
             return Err(fail(format!("{} is not an acceptable semantic change; resolve this syntax or analysis diagnostic", decision.code)));
         }
         accepted.push(finding_index(&indices, decision)?);
+    }
+    for code in &review.accept_codes {
+        if !can_accept(code) {
+            return Err(fail(format!("{code} cannot be accepted by code")));
+        }
+        let matches: Vec<_> = report
+            .findings
+            .iter()
+            .enumerate()
+            .filter(|(_, f)| f.diagnostic.code == *code)
+            .map(|(i, _)| i)
+            .collect();
+        if matches.is_empty() {
+            return Err(fail(format!("No findings match accepted code {code}")));
+        }
+        // The validated analyzer/source/config snapshot binds a compact
+        // code-level receipt even when its findings array is omitted.
+        accepted.extend(matches);
     }
     for index in accepted {
         report.findings[index].accepted = true;
@@ -169,7 +194,7 @@ pub fn reviewed_edits(report: &Report, source: &str) -> Result<Vec<Edit>, Error>
     let fail = |message: &str| Error::new("EU_MIGRATION_REVIEW", message, 0);
     let review = parse_review(source)?;
     validate_review(report, &review)?;
-    if review.findings.iter().any(|f| f.accepted) {
+    if !review.accept_codes.is_empty() || review.findings.iter().any(|f| f.accepted) {
         return Err(fail(
             "Apply proposed fixes first, then accept semantic changes against a fresh report",
         ));

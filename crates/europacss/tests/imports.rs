@@ -536,3 +536,87 @@ fn declaration_maps_and_token_labels_keep_imported_directive_locations() {
             }));
     }
 }
+
+#[test]
+fn standalone_packages_resolve_exports_style_patterns_and_track_manifests() {
+    let p = Project::new();
+    p.write("app.css", "@import '@test/ui' layer(vendor); @import '@test/ui/themes/dark.css' layer(vendor); @import 'simple';");
+    p.write("node_modules/@test/ui/package.json", r#"{"exports":{".":{"style":"./base.css","default":"./not-css.js"},"./themes/*":"./styles/*","./private/*":null}}"#);
+    p.write(
+        "node_modules/@test/ui/base.css",
+        ".vendor{color:red;background:url(icon.svg)}",
+    );
+    p.write(
+        "node_modules/@test/ui/styles/dark.css",
+        ".dark{color:black}",
+    );
+    p.write(
+        "node_modules/simple/package.json",
+        r#"{"style":"main.css"}"#,
+    );
+    p.write("node_modules/simple/main.css", ".simple{color:blue}");
+    let output = p.compile().unwrap();
+    assert!(output.css.contains("@layer vendor"));
+    assert!(output.css.contains("node_modules/@test/ui/icon.svg"));
+    assert_eq!(output.dependencies.len(), 4);
+    assert!(output.watch.iter().all(|s| !s.changed()));
+    let before =
+        europacss::migration::analyze_file(&p.request(), europacss::migration::LEGACY_BETA6)
+            .unwrap();
+    p.write(
+        "node_modules/simple/package.json",
+        r#"{"style":"main.css","version":"2"}"#,
+    );
+    assert!(output.watch.iter().any(|s| s.changed()));
+    let after =
+        europacss::migration::analyze_file(&p.request(), europacss::migration::LEGACY_BETA6)
+            .unwrap();
+    assert_ne!(before.snapshot, after.snapshot);
+    p.write("node_modules/@test/ui/private/x.css", ".private{color:red}");
+    p.write("app.css", "@import '@test/ui/private/x.css';");
+    assert_eq!(p.compile().unwrap_err().code, "EU_IMPORT_PACKAGE");
+    p.write(
+        "node_modules/@test/ui/package.json",
+        r#"{"exports":{".":"../escape.css"}}"#,
+    );
+    p.write("app.css", "@import '@test/ui';");
+    assert_eq!(p.compile().unwrap_err().code, "EU_IMPORT_PACKAGE");
+}
+
+#[test]
+fn packages_resolve_from_importer_and_nearest_package_exports_are_authoritative() {
+    let p = Project::new();
+    p.write("app.css", "@import 'nested/entry.css';");
+    p.write("nested/entry.css", "@import 'pkg/file.css';");
+    p.write("node_modules/pkg/file.css", ".outer{color:red}");
+    p.write(
+        "nested/node_modules/pkg/package.json",
+        r#"{"exports":{"./file.css":"./chosen.css"}}"#,
+    );
+    p.write("nested/node_modules/pkg/chosen.css", ".inner{color:blue}");
+    let css = p.compile().unwrap().css;
+    assert!(css.contains(".inner"));
+    assert!(!css.contains(".outer"));
+    p.write(
+        "nested/node_modules/pkg/package.json",
+        r#"{"exports":{"./file.css":null}}"#,
+    );
+    assert_eq!(p.compile().unwrap_err().code, "EU_IMPORT_PACKAGE");
+}
+
+#[test]
+fn newly_created_package_manifest_invalidates_successful_import_watches() {
+    let p = Project::new();
+    p.write("app.css", "@import 'nested/entry.css';");
+    p.write("nested/entry.css", "@import 'pkg';");
+    p.write("node_modules/pkg/index.css", ".outer{color:red}");
+    let before = p.compile().unwrap();
+    assert!(before.watch.iter().all(|snapshot| !snapshot.changed()));
+    p.write(
+        "nested/node_modules/pkg/package.json",
+        r#"{"exports":[null,"./inner.css"]}"#,
+    );
+    p.write("nested/node_modules/pkg/inner.css", ".inner{color:blue}");
+    assert!(before.watch.iter().any(|snapshot| snapshot.changed()));
+    assert!(p.compile().unwrap().css.contains(".inner"));
+}

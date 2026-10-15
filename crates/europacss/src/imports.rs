@@ -95,6 +95,22 @@ pub(crate) fn load_resolved(
             watch.push(snapshots[&target].clone().at_path(path));
         }
     }
+    for (path, source) in &loader.sources.metadata {
+        watch.push(
+            Snapshot::from_source(
+                fs::canonicalize(path).unwrap_or_else(|_| path.clone()),
+                source.as_bytes(),
+            )
+            .at_path(path.clone()),
+        );
+    }
+    // A newly installed nearer package or newly created manifest can change
+    // resolution even when all previously selected CSS files stay identical.
+    for path in loader.watched.iter().collect::<BTreeSet<_>>() {
+        if !path.exists() {
+            watch.push(Snapshot::missing(path.clone()));
+        }
+    }
     Ok(Loaded {
         nodes,
         sources: loader.sources,
@@ -232,12 +248,23 @@ impl Loader<'_> {
                         ));
                     }
                     let filename = percent_decode(filename, node.offset)?;
-                    let logical_path = self
+                    let mut logical_path = self
                         .resolutions
                         .iter()
                         .find(|r| r.importer == path && r.specifier == import.url)
                         .map(|r| r.filename.clone())
-                        .unwrap_or_else(|| path.parent().unwrap().join(filename));
+                        .unwrap_or_else(|| path.parent().unwrap().join(&filename));
+                    if !logical_path.is_file() && self.pending.is_none() {
+                        if let Some(package) = crate::package_import::resolve(
+                            path,
+                            &filename,
+                            &mut self.sources.metadata,
+                            self.watched,
+                            node.offset,
+                        )? {
+                            logical_path = package;
+                        }
+                    }
                     self.watched.push(logical_path.clone());
                     if !logical_path.exists() {
                         if let Some(pending) = &mut self.pending {

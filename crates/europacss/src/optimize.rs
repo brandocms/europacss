@@ -156,6 +156,10 @@ pub(crate) fn width_query_ranges(query: &str) -> Option<WidthRanges> {
     parse_width_ranges(query, false)
 }
 
+pub(crate) fn condition_width_ranges(query: &str) -> Option<WidthRanges> {
+    parse_width_ranges(query, true)
+}
+
 fn parse_width_ranges(query: &str, allow_min_max: bool) -> Option<WidthRanges> {
     let mut ranges = Vec::new();
     let clauses = parser::split_top_level(query, ',').ok()?;
@@ -191,23 +195,29 @@ fn parse_width_ranges(query: &str, allow_min_max: bool) -> Option<WidthRanges> {
             } else {
                 inner
             };
-            let values = parser::arguments(inner).ok()?;
-            if values.len() != 3 || values[0] != "width" {
-                return None;
-            }
-            let number: f64 = values[2].strip_suffix("px")?.parse().ok()?;
+            // CSS permits `width>=480px`; whitespace is not a token boundary.
+            let comparison = inner.trim().strip_prefix("width")?.trim_start();
+            let operator = [">=", "<=", ">", "<"]
+                .into_iter()
+                .find(|op| comparison.starts_with(op))?;
+            let number: f64 = comparison[operator.len()..]
+                .trim()
+                .strip_suffix("px")?
+                .trim()
+                .parse()
+                .ok()?;
             if !number.is_finite() || number < 0.0 {
                 return None;
             }
             let mut bound = WidthRange::all();
-            match values[1] {
+            match operator {
                 ">=" | ">" => {
                     bound.low = number;
-                    bound.low_closed = values[1] == ">=";
+                    bound.low_closed = operator == ">=";
                 }
                 "<=" | "<" => {
                     bound.high = number;
-                    bound.high_closed = values[1] == "<=";
+                    bound.high_closed = operator == "<=";
                 }
                 _ => return None,
             }

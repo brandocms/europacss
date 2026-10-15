@@ -50,7 +50,15 @@ Watch mode builds immediately, then polls source/config contents every 250 ms. I
 }
 ```
 
-Local imports need exact file paths, including extensions. CSS imports can carry media, `supports()` and layer conditions. Relative asset URLs are rebased for the output CSS location; assets are not copied. Package imports, Vite aliases and globs are not resolved by the native bundler. Remote and root-relative imports remain browser imports where CSS ordering permits them; the compiler does not fetch them.
+Local imports need exact file paths, including extensions. CSS imports can carry media, `supports()` and layer conditions. Relative asset URLs are rebased for the output CSS location; assets are not copied. Bare CSS imports are resolved from the importing file through ancestor
+`node_modules` directories, including scoped packages. Package `exports` takes
+precedence (exact subpaths, patterns, and `style`/`browser`/`import`/`default`
+conditions in declaration order); private/unexported paths fail. Without
+`exports`, a bare package uses `style` or `index.css`, and package subpaths use
+exact files. The CLI never evaluates JavaScript package entry points. Package
+manifests participate in watches and migration review snapshots.
+Vite aliases and custom resolver conditions still belong to the Vite adapter;
+they are not inferred by the CLI. Globs are unsupported. Remote and root-relative imports remain browser imports where CSS ordering permits them; the compiler does not fetch them.
 
 ## Standard input and output
 

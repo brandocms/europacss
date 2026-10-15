@@ -1151,3 +1151,87 @@ fn gap_correction_is_reviewable_once_per_used_boundary_in_each_legacy_profile() 
             .any(|f| f.diagnostic.code == "EU_MIGRATION_BREAKPOINT"));
     }
 }
+
+#[test]
+fn unchanged_order_does_not_consume_cross_selector_budget() {
+    let mut source = String::new();
+    for i in 0..1100 {
+        source.push_str(&format!(".a{i}{{padding:0}}"));
+    }
+    for i in 0..1100 {
+        source.push_str(&format!("@media(width < 600px){{.b{i}{{padding:1px}}}}"));
+    }
+    let report = migration::analyze_with_options(
+        &request(&source, config()),
+        migration::LEGACY_BETA6,
+        migration::AnalysisOptions { order_budget: 1 },
+    )
+    .unwrap();
+    assert!(report.analysis_complete, "{report:?}");
+    assert!(!report.findings.iter().any(|f| f.order_group.is_some()));
+}
+
+#[test]
+fn cross_selector_subject_constraints_prune_only_proven_disjoint_pairs() {
+    for (a, b, disjoint) in [
+        (".a::before", ".b::after", true),
+        ("input.a", "select.b", true),
+        ("#one.a", "#two.b", true),
+        ("[data-mode=one].a", "[data-mode=two].b", true),
+        ("[type=text].a", "[type=TEXT i].b", false),
+        ("div .a", "span .b", false),
+        (".a:has(input)", ".b:has(select)", false),
+        (".a:is(input,select)", ".b:is(select,button)", false),
+        (".a::before", ".b::before", false),
+    ] {
+        let source = format!("@media(width < 600px){{{a}{{padding:1px}}}}{b}{{padding:2px}}");
+        let report = analyze(&source);
+        let groups: Vec<_> = report
+            .findings
+            .iter()
+            .filter_map(|f| f.order_group.as_ref())
+            .collect();
+        assert_eq!(groups.is_empty(), disjoint, "{a} / {b}: {report:?}");
+        if !disjoint {
+            assert_eq!(groups.len(), 1);
+            assert_eq!(groups[0].properties.len(), 4);
+        }
+    }
+}
+
+#[test]
+fn cross_selector_groups_can_be_accepted_with_a_compact_snapshot_bound_receipt() {
+    let req = request(
+        "@media(width < 600px){.a{padding:1px;margin:2px}} .b{padding:2px;margin:3px}",
+        config(),
+    );
+    let mut report = migration::analyze(&req, migration::LEGACY_BETA6).unwrap();
+    assert_eq!(
+        report
+            .findings
+            .iter()
+            .filter(|f| f.order_group.is_some())
+            .count(),
+        1
+    );
+    let receipt = json!({"report_version":report.report_version,"snapshot":report.snapshot,"from":report.from,"to":report.to,"analysis_complete":true,"accept_codes":["EU_MIGRATION_ORDER"]});
+    migration::apply_acceptances(&mut report, &receipt.to_string()).unwrap();
+    assert!(report
+        .findings
+        .iter()
+        .filter(|f| f.diagnostic.code == "EU_MIGRATION_ORDER")
+        .all(|f| f.accepted));
+    let mut bad = receipt.clone();
+    bad["snapshot"] = json!("stale");
+    assert!(migration::apply_acceptances(&mut report, &bad.to_string()).is_err());
+    bad = receipt.clone();
+    bad["accept_codes"] = json!(["EU_MIGRATION_INCOMPLETE"]);
+    assert!(migration::apply_acceptances(&mut report, &bad.to_string()).is_err());
+    let limited = migration::analyze_with_options(
+        &req,
+        migration::LEGACY_BETA6,
+        migration::AnalysisOptions { order_budget: 1 },
+    )
+    .unwrap();
+    assert!(!limited.analysis_complete);
+}

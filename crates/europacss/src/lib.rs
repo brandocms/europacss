@@ -9,6 +9,7 @@ mod imports;
 pub mod migration;
 mod nesting;
 mod optimize;
+mod package_import;
 pub mod parser;
 mod provenance;
 mod size;
@@ -20,7 +21,7 @@ pub mod watch;
 pub use config_file::{
     json_to_json5, load_config, load_config_tracked, resolve_config, LoadedConfig,
 };
-pub use config_migration::migrate_config;
+pub use config_migration::{migrate_config, migrate_config_report, MigrationOutput};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

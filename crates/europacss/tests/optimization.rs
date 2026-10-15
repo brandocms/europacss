@@ -193,3 +193,10 @@ fn open_endpoints_allow_disjoint_packing_but_closed_endpoints_still_overlap() {
         config(),
     );
 }
+
+#[test]
+fn all_width_compaction_understands_compact_css_comparison_tokens() {
+    let output = compile(&request(".fallback{margin-left:22px}@media(width<480px),(width>=480px) and (width<768px),(width>=768px) and (width<1024px),(width>=1024px) and (width<1200px),(width>=1200px) and (width<1440px),(width>=1440px) and (width<1920px),(width>=1920px){.responsive{margin-left:1vw}}", config())).unwrap();
+    assert!(!output.css.contains("@media"), "{}", output.css);
+    assert!(output.css.find("22px").unwrap() < output.css.find("1vw").unwrap());
+}

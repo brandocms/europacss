@@ -98,7 +98,7 @@ The live-site comparison added repeated-selector media-order, overlapping-width,
 and equal-value grouping cases to [migration.rs](migration.rs). Media-last now
 preserves simple responsive/fallback pairs without warnings. Overlapping-query
 warnings remain conservative review prompts, not a complete cascade simulator.
-Report version 11 requires older acceptance files to be regenerated and reviewed.
+Report version 12 requires older acceptance files to be regenerated and reviewed.
 See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
 for the original and manually migrated site observations.
 
