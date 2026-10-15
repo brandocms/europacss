@@ -78,7 +78,9 @@ module.exports = {
         xl: 1.6
       },
 
-      /* paddingDivider is used to set column-typography right padding. Lower values = more padding */
+      /* Deprecated: @column-typography was removed in 0.2.0.
+         Retained for explicit token references; new configs should omit it.
+         Column sizing and numeric spacing use columns.gutters. */
       paddingDivider: 6,
 
       /* main font sizing map */

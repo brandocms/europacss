@@ -246,11 +246,21 @@ Keep the original full report alongside the browser evidence.
 
 ## Converted typography settings
 
-`migrate-config` preserves `theme.typography.lineHeight`, `paddingDivider`, and
-`sections` (including `theme.extend` entries) as data, and prints
-`EU_CONFIG_MIGRATION` notices in JS, JSON, and JSON5 conversions. These settings
-do not reproduce old implicit CSS generation. Declare line-height and
-column-typography padding explicitly, and move used section sizes into
-`typography.sizes` or access their data explicitly. Inspect old compiled output
-before removing data. The library's `migrate_config_report` returns both the
-converted source and these notices.
+`migrate-config` preserves typography data, including `theme.extend` entries.
+`lineHeight` remains the default multiplier for `vertical-rhythm()` when its
+second argument is omitted. Section declaration maps remain supported through
+`@unpack theme.typography.sections.NAME;`; they do not need to move into
+`typography.sizes`. Neither setting produces a conversion warning.
+
+`paddingDivider` is deprecated and preserved for compatibility. Its original
+consumer, `@column-typography`,
+was removed in EuropaCSS 0.2.0, so it already had no built-in padding effect in
+0.13.1. This is not a behavior removed by the Rust compiler. The converter emits
+an `EU_CONFIG_MIGRATION` deprecation notice explaining that history in JS, JSON,
+and JSON5 conversions. Remove the setting if it is unused. Explicit references
+such as `theme(typography.paddingDivider)` remain supported, and the existing
+default value is retained for compatibility. The library's
+`migrate_config_report` returns both the converted source and these notices.
+
+Column gutters are separate: `theme.columns.gutters` still supplies the gutter
+used by `@column` sizing and numeric spacing such as `@space gap 1;`.

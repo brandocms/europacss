@@ -175,6 +175,12 @@ Referenced in CSS via `@space margin-y xl;`, `@space padding block;`, etc.
 
 ## Typography
 
+`typography.paddingDivider` is deprecated. Its consumer, `@column-typography`,
+was removed in 0.2.0. Existing values and explicit token references remain
+supported for compatibility; new configs should omit it. Use `columns.gutters`
+to configure the gutter shared by `@column` and numeric spacing such as
+`@space gap 1;`. See the [migration notes](./lint-and-migration#converted-typography-settings).
+
 ### Base
 
 ```json5

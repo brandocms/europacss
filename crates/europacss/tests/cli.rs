@@ -1285,7 +1285,11 @@ fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
         String::from_utf8_lossy(&output.stderr)
     );
     let text = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(text.matches("EU_CONFIG_MIGRATION").count(), 3);
+    assert_eq!(text.matches("EU_CONFIG_MIGRATION").count(), 1);
+    assert!(text.contains("paddingDivider is deprecated"), "{text}");
+    assert!(text.contains("removed in EuropaCSS 0.2.0"), "{text}");
+    assert!(!text.contains("theme.typography.lineHeight"), "{text}");
+    assert!(!text.contains("theme.typography.sections"), "{text}");
     assert!(fs::read_to_string(dir.0.join("europa.json5"))
         .unwrap()
         .contains("paddingDivider"));

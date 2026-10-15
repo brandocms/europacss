@@ -223,8 +223,8 @@ fn migration_rejects_invalid_config_before_serializing() {
 }
 
 #[test]
-fn config_migration_reports_preserved_implicit_typography_settings_in_every_format() {
-    let value = json!({"theme":{"typography":{"lineHeight":{"mobile":1.3},"paddingDivider":8,"sections":{"nav":{"mobile":"12px"}}},"extend":{"typography":{"lineHeight":{"desktop":1.4}}},"colors":{"sections":"red"}}});
+fn config_migration_only_deprecates_the_unused_padding_setting_in_every_format() {
+    let value = json!({"theme":{"typography":{"lineHeight":{"mobile":1.3},"paddingDivider":8,"sections":{"nav":{"mobile":"12px"}}},"extend":{"typography":{"lineHeight":{"desktop":1.4},"paddingDivider":10}},"colors":{"sections":"red"}}});
     for extension in ["json", "json5", "js"] {
         let source = if extension == "js" {
             format!("module.exports = {value}")
@@ -232,12 +232,52 @@ fn config_migration_reports_preserved_implicit_typography_settings_in_every_form
             value.to_string()
         };
         let report = europacss::migrate_config_report(&source, extension).unwrap();
-        assert_eq!(report.warnings.len(), 4);
+        assert_eq!(report.warnings.len(), 2);
         assert!(report
             .warnings
             .iter()
-            .any(|w| w.contains("theme.extend.typography.lineHeight")));
+            .any(|w| w.starts_with("theme.extend.typography.paddingDivider")));
+        assert!(report.warnings.iter().all(|w| {
+            w.contains("paddingDivider is deprecated and preserved for compatibility")
+                && w.contains("removed in EuropaCSS 0.2.0")
+                && w.contains("no automatic padding effect in 0.13.1")
+                && w.contains("theme.columns.gutters")
+                && !w.contains("lineHeight")
+                && !w.contains("sections")
+        }));
         let migrated: Value = json5::from_str(&report.source).unwrap();
         assert_eq!(migrated, value);
     }
+}
+
+#[test]
+fn converted_typography_keeps_rhythm_sections_and_explicit_padding_references() {
+    let report = europacss::migrate_config_report(
+        "module.exports = {theme:{breakpoints:{mobile:'0'},typography:{lineHeight:{mobile:1.5},paddingDivider:8,sizes:{body:{mobile:'20px'}},sections:{nav:{mobile:{'font-size':'18px','line-height':1.2}}}}}}",
+        "js",
+    )
+    .unwrap();
+    let config = resolve_config(json5::from_str(&report.source).unwrap()).unwrap();
+    let request = europacss::Request {
+        source: ".rhythm {@space margin-top vertical-rhythm(theme.typography.sizes.body) mobile;} .nav {@unpack theme.typography.sections.nav;} .padding {padding-right:calc(100% / theme(typography.paddingDivider));}".into(),
+        filename: "typography.css".into(),
+        config,
+        minify: true,
+        debug_tokens: false,
+        source_map: false,
+        browsers: vec!["chrome 100".into()],
+    };
+    let actual = europacss::compile(&request).unwrap();
+    let mut expected = request;
+    // Common declarations precede the responsive rules, even when their
+    // all-width media wrappers are subsequently removed.
+    expected.source = ".padding {padding-right:12.5%} .rhythm {margin-top:30px} .nav {font-size:18px;line-height:1.2}".into();
+    assert_eq!(actual.css, europacss::compile(&expected).unwrap().css);
+
+    let supported = europacss::migrate_config_report(
+        "{theme:{typography:{lineHeight:{mobile:1.5},sections:{nav:{mobile:{'font-size':'18px'}}}}}}",
+        "json5",
+    )
+    .unwrap();
+    assert!(supported.warnings.is_empty());
 }
