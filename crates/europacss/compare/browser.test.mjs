@@ -7,6 +7,7 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { connect } from './compare.mjs';
 
 const execute = promisify(execFile);
 const browser = process.env.EUROPA_COMPARE_BROWSER;
@@ -28,8 +29,8 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     if (server?.listening) await new Promise(resolve => server.close(resolve));
     await rm(directory, { recursive: true, force: true });
   });
-  const before = ':root{--palette:red}.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}';
-  const after = ':root{--palette:blue}.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}';
+  const before = ':root{--palette:red}.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}.motion,.touch{color:black}';
+  const after = ':root{--palette:blue}.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}.motion,.touch{color:black}@media(prefers-reduced-motion:reduce){.motion{color:purple}}@media(pointer:coarse) and (hover:none){.touch{color:purple}}';
   await writeFile(path.join(directory, 'before.css'), before);
   await writeFile(path.join(directory, 'after.css'), after);
   server = createServer((request, response) => {
@@ -37,7 +38,7 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
       response.setHeader('Content-Type', 'text/css'); response.end(before); return;
     }
     response.setHeader('Content-Type', 'text/html');
-    response.end(`<!doctype html><html><head><link rel="stylesheet" href="/style.css"><style>.untouched{color:green!important}</style></head><body><main id="app"><div class="a"><div class="b">Field</div></div><div class="marker">Marker</div><div class="untouched">Other sheet</div></main>${request.url.includes('unstable') ? '<script>setInterval(()=>document.body.dataset.tick=String(Date.now()),10)</script>' : ''}</body></html>`);
+    response.end(`<!doctype html><html><head><link rel="stylesheet" href="/style.css"><style>.untouched{color:green!important}</style></head><body><main id="app"><div class="a"><div class="b">Field</div></div><div class="marker">Marker</div><div class="untouched">Other sheet</div><div class="motion">Motion</div><div class="touch">Touch</div></main>${request.url.includes('unstable') ? '<script>setInterval(()=>document.body.dataset.tick=String(Date.now()),10)</script>' : ''}</body></html>`);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const page = `http://127.0.0.1:${server.address().port}/`;
@@ -88,6 +89,36 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
   assert.equal(primedSame.code, 0, JSON.stringify(primedSame.report));
   assert.equal(primedSame.report.priming, 'A/B/A');
   assert.equal(primedSame.report.changedElements, 0);
+  const emulated = await compare(page, 'after.css', ['--emulate', 'prefers-reduced-motion=reduce', '--touch']);
+  assert.equal(emulated.code, 1, JSON.stringify(emulated.report));
+  assert.equal(emulated.report.emulation.touch, true);
+  assert.ok(emulated.report.results[0].emulation.mediaFeatures.every(f => f.matches));
+  for (const label of ['div.motion', 'div.touch']) assert.ok(emulated.report.results[0].changes.some(c => c.label === label && c.properties.color?.after === 'rgb(128, 0, 128)'));
+
+  // Temporary emulation returns to browser defaults after success or failure.
+  // Existing external emulation is left alone when neither flag is requested.
+  const control = await connect(`http://127.0.0.1:${port}`);
+  try {
+    const {targetId} = await control.send('Target.createTarget', {url:page});
+    const {sessionId} = await control.send('Target.attachToTarget', {targetId,flatten:true});
+    const send = (method,params) => control.send(method,params,sessionId);
+    await send('Runtime.enable');
+    const state = async () => (await send('Runtime.evaluate', {expression:"({ready:document.readyState === 'complete',reduce:matchMedia('(prefers-reduced-motion:reduce)').matches,touch:navigator.maxTouchPoints})",returnByValue:true})).result.value;
+    for (let i=0; i<100 && !(await state()).ready; i++) await new Promise(resolve=>setTimeout(resolve,20));
+    await send('Emulation.setEmulatedMedia', {features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    const externallyEmulated = await compare(page, 'before.css', ['--target',targetId]);
+    assert.equal(externallyEmulated.code, 0, JSON.stringify(externallyEmulated.report));
+    assert.equal((await state()).reduce, true);
+    await send('Emulation.setEmulatedMedia', {features:[]});
+    const initial = await state();
+    assert.equal(initial.touch, 0);
+    for (const feature of ['prefers-reduced-motion=reduce', 'made-up-feature=invalid']) {
+      const prepared = await compare(page, 'after.css', ['--target',targetId,'--emulate',feature,'--touch']);
+      assert.equal(prepared.code, feature.startsWith('made-up') ? 2 : 1, JSON.stringify(prepared.report));
+      assert.deepEqual(await state(),initial);
+    }
+    await control.send('Target.closeTarget', {targetId});
+  } finally { control.close(); }
   const unstable = await compare(page + '?unstable', 'after.css');
   assert.equal(unstable.code, 2, JSON.stringify(unstable.report));
   assert.equal(unstable.report.complete, false);

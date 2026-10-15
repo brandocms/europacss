@@ -23,7 +23,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 13;
+pub const REPORT_VERSION: u32 = 14;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -236,15 +236,8 @@ fn report(
     }
     let origins = order::origins(&nodes, &config)?;
     match transform::for_migration(nodes, &config).and_then(|raw| {
-        let ordered = crate::cascade::media_last(raw.clone());
-        order::scope_changes(
-            &raw,
-            &ordered,
-            &origins,
-            &config,
-            &mut audit,
-            options.order_budget,
-        )?;
+        let ordered = crate::cascade::media_last(raw.clone(), config.value);
+        order::scope_changes(&raw, &ordered, &config, &mut audit, options.order_budget)?;
         crate::nesting::apply(ordered, config.value)
     }) {
         Ok(expanded) => {
@@ -342,7 +335,7 @@ fn report(
         limitations: vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
-            "Cross-selector order findings identify potential conflicts at equal specificity; they do not prove that both selectors match an element. Arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical property interactions are not fully modeled".into(),
+            "Cross-selector order findings identify potential conflicts at equal specificity; they do not prove that both selectors match an element. Arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical interactions outside padding, margin, and inset are not fully modeled".into(),
             "Other sizing differences (including calculation grouping) and backend/browser-target changes require separate review".into(),
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
         ],

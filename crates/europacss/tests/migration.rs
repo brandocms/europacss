@@ -8,6 +8,94 @@ fn analyze(source: &str) -> migration::Report {
 }
 
 #[test]
+fn has_specificity_uses_the_most_specific_argument_including_nested_lists() {
+    for selector in [
+        ".y .b:has(> .c)",
+        ".y .b:has(.c)",
+        ".y .b:has(.c .d)",
+        ".y .b:has(> #c, .d)",
+        ".y .b:is(:has(.c), :where(#d))",
+        ".y .b:not(:has(.c))",
+    ] {
+        let report = analyze(&format!(
+            "@media(max-width:600px){{.x .b{{flex-basis:100%}}}}{selector}{{flex-basis:130px}}"
+        ));
+        assert!(
+            !report.findings.iter().any(|f| f.order_group.is_some()),
+            "{selector}: {report:?}"
+        );
+    }
+    for selector in [
+        ".y .b:has(:where(.c))",
+        ".y .b:where(:has(#c))",
+        ".b:has(.c)",
+    ] {
+        let report = analyze(&format!(
+            "@media(max-width:600px){{.x .b{{flex-basis:100%}}}}{selector}{{flex-basis:130px}}"
+        ));
+        assert!(
+            report.findings.iter().any(|f| f.order_group.is_some()),
+            "{selector}: {report:?}"
+        );
+    }
+}
+
+#[test]
+fn mixed_logical_physical_edges_are_potential_conflicts_in_both_directions() {
+    for (a, b) in [
+        ("padding:16px 8px", "padding-block:12px"),
+        ("margin:16px", "margin-inline:12px"),
+        ("inset:16px", "inset-block:12px"),
+        ("padding-inline-start:16px", "padding-bottom:12px"),
+    ] {
+        for (a, b) in [(a, b), (b, a)] {
+            let report = analyze(&format!(
+                "@media(max-width:600px){{.a .x{{{a}}}}}.b .x{{{b}}}"
+            ));
+            assert!(
+                report.findings.iter().any(|f| f.order_group.is_some()),
+                "{a} / {b}: {report:?}"
+            );
+            let report = analyze(&format!(
+                ".x{{@media (width < 600px){{{a}}}@media (width < 500px){{{b}}}}}"
+            ));
+            assert!(
+                report
+                    .findings
+                    .iter()
+                    .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"),
+                "local: {a} / {b}: {report:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn generated_last_removes_authored_move_findings_without_hiding_scope_splits() {
+    let source = "@media(max-width:600px){.a .x{padding:16px}}.b .x{padding-block:12px}";
+    let mut cfg = config();
+    cfg["responsiveOrder"] = json!("generated-last");
+    let report =
+        migration::analyze(&request(source, cfg.clone()), migration::LEGACY_BETA6).unwrap();
+    assert!(report.analysis_complete);
+    assert!(
+        !report
+            .findings
+            .iter()
+            .any(|f| f.diagnostic.code == "EU_MIGRATION_ORDER"),
+        "{report:?}"
+    );
+    let report = migration::analyze(&request("@layer ui{.a .x{@responsive desktop{padding:16px}}}@layer ui{.b .x{padding-block:12px}}", cfg), migration::LEGACY_BETA6).unwrap();
+    assert!(
+        report.findings.iter().any(|f| f
+            .order
+            .as_ref()
+            .is_some_and(|o| o.reason.contains("global responsive append"))),
+        "{report:?}"
+    );
+}
+
+#[test]
 fn migration_collects_independent_hard_errors_and_keyframe_guidance() {
     let source = ".a{@row 2;color:red} .b{@row 3/wrap} .c{@keyframes spin{to{opacity:1}}} .d{@extend %missing} .e{@fontsize missing}";
     let report = analyze(source);

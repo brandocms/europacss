@@ -52,6 +52,54 @@ fn check(source: &str, expected: &str) {
 }
 
 #[test]
+fn generated_last_preserves_authored_media_and_appends_only_directive_media() {
+    let source = "@media(max-width:600px){.a .x{padding:16px}} .a .y{@space margin-top 1 desktop} .b .x{padding:12px} .b .y{margin-top:0}";
+    let expected = "@media(max-width:600px){.a .x{padding:16px}} .b .x{padding:12px} .b .y{margin-top:0} @media(width >= 1024px){.a .y{margin-top:20px}}";
+    for nesting in ["native", "expanded"] {
+        let mut cfg = config();
+        cfg["nesting"] = json!(nesting);
+        cfg["responsiveOrder"] = json!("generated-last");
+        cfg["theme"]["columns"]["gutters"] = json!({"desktop":"20px"});
+        let req = request(source, cfg);
+        assert_eq!(
+            plain_css(&compile(&req).unwrap().css, &req),
+            plain_css(expected, &req)
+        );
+    }
+}
+
+#[test]
+fn generated_last_handles_nested_authored_media_aliases_templates_and_boundaries() {
+    let cases = [
+        (".a{@media(max-width:600px){color:red}color:blue}", ".a{@media(max-width:600px){color:red}color:blue}"),
+        (".a{@responsive desktop{color:red}color:blue}.b{color:green}", ".a{color:blue}.b{color:green}.a{@media(width >= 1024px){color:red}}"),
+        (".a{@mq desktop{color:red}color:blue}.b{color:green}", ".a{color:blue}.b{color:green}.a{@media(width >= 1024px){color:red}}"),
+        ("%p{@media(max-width:600px){color:red}@responsive desktop{color:green}} .a{@extend %p;color:blue}.b{color:black}", ".a{@media(max-width:600px){color:red}color:blue}.b{color:black}.a{@media(width >= 1024px){color:green}}"),
+        ("@layer a{.x{@responsive desktop{color:red}}} @layer a{.y{color:blue}}", "@layer a{.x{@media(width >= 1024px){color:red}}} @layer a{.y{color:blue}}"),
+        ("@supports(display:grid){.a{@responsive desktop{color:red}}.b{color:blue}}.c{color:green}", "@supports(display:grid){.b{color:blue}.a{@media(width >= 1024px){color:red}}}.c{color:green}"),
+        ("@media(max-width:600px){.a{@responsive desktop{color:red}}.b{color:blue}}.c{color:green}", "@media(max-width:600px){.b{color:blue}.a{@media(width >= 1024px){color:red}}}.c{color:green}"),
+    ];
+    for (source, expected) in cases {
+        let mut cfg = config();
+        cfg["responsiveOrder"] = json!("generated-last");
+        let req = request(source, cfg);
+        assert_eq!(
+            plain_css(&compile(&req).unwrap().css, &req),
+            plain_css(expected, &req),
+            "{source}"
+        );
+    }
+    for value in [json!("legacy"), json!(false), json!(null)] {
+        let mut cfg = config();
+        cfg["responsiveOrder"] = value;
+        assert_eq!(
+            compile(&request(".a{color:red}", cfg)).unwrap_err().code,
+            "EU_CONFIG"
+        );
+    }
+}
+
+#[test]
 fn responsive_typography_follows_the_common_fallback_in_either_authored_order() {
     for source in [
         ".title{@fontsize xl $lg;font-size:24px}",

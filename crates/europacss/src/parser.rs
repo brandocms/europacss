@@ -9,6 +9,8 @@ pub struct Node {
     pub offset: usize,
     /// Debug provenance for generated declarations; never part of CSS semantics.
     pub origin_name: Option<String>,
+    /// True only for a media wrapper emitted by an Europa directive.
+    pub generated_media: bool,
 }
 
 impl Node {
@@ -18,6 +20,7 @@ impl Node {
             children: None,
             offset,
             origin_name: None,
+            generated_media: false,
         }
     }
     pub fn block(text: impl Into<String>, children: Vec<Node>, offset: usize) -> Self {
@@ -26,6 +29,17 @@ impl Node {
             children: Some(children),
             offset,
             origin_name: None,
+            generated_media: false,
+        }
+    }
+    pub(crate) fn generated_media_block(
+        text: impl Into<String>,
+        children: Vec<Node>,
+        offset: usize,
+    ) -> Self {
+        Self {
+            generated_media: true,
+            ..Self::block(text, children, offset)
         }
     }
     pub fn at_rule(&self) -> Option<(&str, &str)> {

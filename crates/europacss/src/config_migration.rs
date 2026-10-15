@@ -5,10 +5,13 @@ use crate::config_file::{json_to_json5, resolve_config, ConfigValue};
 pub struct MigrationOutput {
     pub source: String,
     pub warnings: Vec<String>,
+    /// Located against the original input, before wrapper/callback conversion.
+    pub diagnostics: Vec<crate::Error>,
 }
 
 /// Preserve token data while identifying deprecated settings.
 pub fn migrate_config_report(source: &str, extension: &str) -> Result<MigrationOutput, String> {
+    let original = source;
     let source = migrate_config(source, extension)?;
     let value: serde_json::Value = json5::from_str(&source).map_err(|e| e.to_string())?;
     let mut warnings = Vec::new();
@@ -18,7 +21,56 @@ pub fn migrate_config_report(source: &str, extension: &str) -> Result<MigrationO
             warnings.push(format!("{} is deprecated and preserved for compatibility. Its built-in consumer, @column-typography, was removed in EuropaCSS 0.2.0; it already had no automatic padding effect in 0.13.1. Remove it if unused; explicit token references remain supported. Column widths and numeric spacing such as @space gap 1 use theme.columns.gutters.", path.trim_start_matches('/').replace('/', ".")));
         }
     }
-    Ok(MigrationOutput { source, warnings })
+    let positions = key_positions(original)?;
+    let diagnostics = warnings
+        .iter()
+        .map(|message| {
+            let path = message.split_whitespace().next().unwrap();
+            crate::Error::new(
+                "EU_CONFIG_MIGRATION",
+                message,
+                *positions.get(path).unwrap_or(&0),
+            )
+            .locate(original)
+        })
+        .collect();
+    Ok(MigrationOutput {
+        source,
+        warnings,
+        diagnostics,
+    })
+}
+
+fn key_positions(source: &str) -> Result<std::collections::HashMap<String, usize>, String> {
+    let tokens = tokens(source)?;
+    let mut stack = Vec::<String>::new();
+    let mut pending = None;
+    let mut positions = std::collections::HashMap::new();
+    for (index, &(start, end)) in tokens.iter().enumerate() {
+        match &source[start..end] {
+            "{" | "[" => stack.push(pending.take().unwrap_or_default()),
+            "}" | "]" => {
+                stack.pop();
+                pending = None;
+            }
+            "," => pending = None,
+            ":" if index > 0 => {
+                let (a, b) = tokens[index - 1];
+                let text = &source[a..b];
+                let key = if text.starts_with(['\'', '"']) {
+                    json5::from_str::<String>(text).map_err(|e| e.to_string())?
+                } else {
+                    text.to_string()
+                };
+                let mut path = stack.iter().skip(1).cloned().collect::<Vec<_>>();
+                path.push(key.clone());
+                positions.insert(path.join("."), a);
+                pending = Some(key);
+            }
+            _ => {}
+        }
+    }
+    Ok(positions)
 }
 
 pub fn migrate_config(source: &str, extension: &str) -> Result<String, String> {

@@ -42,6 +42,16 @@ pub fn scalar(value: &Value) -> Option<String> {
 impl<'a> Config<'a> {
     pub fn new(value: &'a Value) -> Result<Self, Error> {
         if value
+            .get("responsiveOrder")
+            .is_some_and(|v| !matches!(v.as_str(), Some("all-last" | "generated-last")))
+        {
+            return Err(Error::new(
+                "EU_CONFIG",
+                "responsiveOrder must be 'all-last' (default) or 'generated-last'",
+                0,
+            ));
+        }
+        if value
             .get("nesting")
             .is_some_and(|v| !matches!(v.as_str(), Some("native" | "expanded")))
         {

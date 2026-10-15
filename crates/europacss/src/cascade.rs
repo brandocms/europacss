@@ -5,8 +5,10 @@
 //! Media queries retain their relative order; this is not a breakpoint sort.
 use crate::parser::Node;
 
-pub(crate) fn media_last(nodes: Vec<Node>) -> Vec<Node> {
-    partition(nodes).joined()
+pub(crate) fn media_last(nodes: Vec<Node>, config: &serde_json::Value) -> Vec<Node> {
+    let generated_only =
+        config.get("responsiveOrder").and_then(|v| v.as_str()) == Some("generated-last");
+    partition(nodes, generated_only).joined()
 }
 
 #[derive(Default)]
@@ -31,7 +33,7 @@ impl Partition {
     }
 }
 
-fn partition(nodes: Vec<Node>) -> Partition {
+fn partition(nodes: Vec<Node>, generated_only: bool) -> Partition {
     let mut result = Partition::default();
     for mut node in nodes {
         let name = node.at_rule().map(|(name, _)| name.to_ascii_lowercase());
@@ -39,12 +41,14 @@ fn partition(nodes: Vec<Node>) -> Partition {
             Some("media" | "supports" | "container" | "scope" | "starting-style" | "layer")
                 if node.children.is_some() =>
             {
-                let children = partition(node.children.take().unwrap());
+                let children = partition(node.children.take().unwrap(), generated_only);
                 let boundary = children.boundary || name.as_deref() == Some("layer");
                 node.children = Some(children.joined());
                 if boundary {
                     result.barrier(node);
-                } else if name.as_deref() == Some("media") {
+                } else if name.as_deref() == Some("media")
+                    && (!generated_only || node.generated_media)
+                {
                     result.responsive.push(node);
                 } else {
                     // Order inside the group, but never lift its media outside it.
@@ -62,7 +66,7 @@ fn partition(nodes: Vec<Node>) -> Partition {
                 result.barrier(node);
             }
             None if node.children.is_some() => {
-                let children = partition(node.children.take().unwrap());
+                let children = partition(node.children.take().unwrap(), generated_only);
                 if children.boundary {
                     node.children = Some(children.joined());
                     result.barrier(node);

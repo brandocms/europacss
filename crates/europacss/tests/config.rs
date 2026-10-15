@@ -281,3 +281,17 @@ fn converted_typography_keeps_rhythm_sections_and_explicit_padding_references() 
     .unwrap();
     assert!(supported.warnings.is_empty());
 }
+
+#[test]
+fn config_deprecation_locations_reference_original_keys_not_comments_or_strings() {
+    for source in [
+        "// paddingDivider\nmodule.exports = {theme:{typography: () => ({\n  'paddingDivider':8\n}), extend:{typography:{\n  paddingDivider:10\n}}}};",
+        "/* paddingDivider */\n{theme:{typography:{\n  'paddingDivider':8\n}, extend:{typography:{\n  paddingDivider:10\n}}}}",
+    ] {
+        let report = europacss::migrate_config_report(source, if source.contains("module.exports") {"js"} else {"json5"}).unwrap();
+        assert_eq!(report.diagnostics.len(), 2);
+        assert_eq!((report.diagnostics[0].line, report.diagnostics[0].column), (3,3));
+        assert_eq!((report.diagnostics[1].line, report.diagnostics[1].column), (5,3));
+        assert!(report.diagnostics.iter().all(|d| source[d.offset..].starts_with(['\'', 'p'])));
+    }
+}

@@ -73,6 +73,39 @@ tab; omit `--viewport`. The original stylesheet is restored after success or
 failure. If the browser disconnects or the command is interrupted before
 restoration, reload the tab.
 
+## Emulate media features
+
+Repeat `--emulate` for discrete media features and use `--touch` for coarse
+pointer/no-hover input:
+
+```sh
+europa compare http://localhost:4000/admin/settings \
+  --target PAGE_TARGET_ID \
+  --before snapshots/admin-old.css --after public/admin.css \
+  --stylesheet /assets/admin.css --root '#brando-main' \
+  --emulate prefers-reduced-motion=reduce --touch --prime --json
+```
+
+Both sheets are measured under the same emulation. Requested features are checked
+with `matchMedia`; unsupported or unapplied values fail instead of silently
+comparing the wrong state. `--emulate` accepts `name=value` pairs (for example
+`prefers-color-scheme=dark`), with no duplicate names. Do not combine `--touch`
+with explicit pointer/hover overrides. Touch emulation is verified to produce
+`pointer: coarse` and `hover: none`; it does not resize the viewport.
+
+Reports record the requested `emulation` even on errors; completed viewport
+results also include the verified media features. Emulation is applied before
+navigation in new-tab mode, or before readiness/sampling in prepared-tab mode.
+Application changes triggered by media features must settle before measurement.
+
+These flags replace existing overrides for their emulation domain and reset it
+to **browser defaults** after success or failure (`cleanup: "browser-defaults"`
+in the report). CDP cannot read and restore another client's override settings.
+Reapply external media/touch overrides afterward if needed. With neither flag,
+comparison leaves external emulation alone. Animation suppression still applies:
+reduced-motion emulation tests styles/layout under that condition, not animation
+playback.
+
 ## Read the evidence
 
 The report includes per-viewport coverage, element selectors, changed properties,
@@ -88,7 +121,7 @@ Exit codes are **0** for no detected differences, **1** for differences, and
 `complete: false`. A successful comparison means only the recorded page state
 and viewports were checked.
 
-Reports use schema version 3. `--ignore-custom-properties` excludes computed
+Reports use schema version 4. `--ignore-custom-properties` excludes computed
 `--*` properties from differences, avoiding inherited palette changes repeated
 on every descendant. Ordinary computed properties still reveal their visual
 effects. `nonCustomChangedElements` counts samples with geometry, pseudo-element

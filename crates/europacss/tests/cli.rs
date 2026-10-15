@@ -1266,7 +1266,7 @@ fn migration_groups_source_conflicts_keeps_full_evidence_and_labels_reviewed_fix
 #[test]
 fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
     let dir = Temp::new();
-    fs::write(dir.0.join("old.cjs"), "module.exports={theme:{typography:{lineHeight:{mobile:1.3},paddingDivider:8,sections:{nav:'12px'}}}};").unwrap();
+    fs::write(dir.0.join("old.cjs"), "module.exports={theme:{typography:{lineHeight:{mobile:1.3},\n  paddingDivider:8,sections:{nav:'12px'}}}};").unwrap();
     let output = dir
         .command()
         .args([
@@ -1287,6 +1287,7 @@ fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
     let text = String::from_utf8_lossy(&output.stderr);
     assert_eq!(text.matches("EU_CONFIG_MIGRATION").count(), 1);
     assert!(text.contains("paddingDivider is deprecated"), "{text}");
+    assert!(text.contains("old.cjs:2:3"), "{text}");
     assert!(text.contains("removed in EuropaCSS 0.2.0"), "{text}");
     assert!(!text.contains("theme.typography.lineHeight"), "{text}");
     assert!(!text.contains("theme.typography.sections"), "{text}");

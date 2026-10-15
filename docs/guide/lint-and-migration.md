@@ -221,6 +221,17 @@ Subject constraints prune different type selectors, IDs, `::before` versus
 pseudos that cannot be proven disjoint remain potential conflicts. Classes alone
 do not prove that selectors cannot share an element.
 
+Specificity includes the most specific argument of `:has()`, including relative
+selectors and nested functional pseudos; `:where()` still contributes zero.
+Logical and physical edges within `padding`, `margin`, and `inset` are treated as
+potentially overlapping. This is conservative across writing modes and directions;
+it does not assume `horizontal-tb`. Other logical property families are not fully
+modeled. The index uses these overlaps too, so mixed properties reach the checks.
+
+For a 0.x migration, consider [`responsiveOrder: 'generated-last'`](../reference/cascade#keep-authored-media-in-place).
+It preserves authored media order and eliminates findings caused solely by moving
+those rules. It does not accept findings or disable the other cascade checks.
+
 Each cross-selector finding now represents one selector pair in a scope, across
 its properties and breakpoints. `order_group` contains the occurrence count,
 property names, and up to five representative examples. Its ordinary
@@ -249,7 +260,7 @@ jq '[.findings[] | select(.order_group != null)] |
   migration.json > order-priorities.json
 ```
 
-Keep the full report for acceptance and browser evidence. Report version 13
+Keep the full report for acceptance and browser evidence. Report version 14
 requires older acceptance receipts to be regenerated and reviewed.
 
 After reviewing the full report and browser evidence, you can accept all findings
@@ -282,7 +293,8 @@ second argument is omitted. Section declaration maps remain supported through
 consumer, `@column-typography`,
 was removed in EuropaCSS 0.2.0, so it already had no built-in padding effect in
 0.13.1. This is not a behavior removed by the Rust compiler. The converter emits
-an `EU_CONFIG_MIGRATION` deprecation notice explaining that history in JS, JSON,
+an `EU_CONFIG_MIGRATION` deprecation notice at the original key’s line and column,
+explaining that history in JS, JSON,
 and JSON5 conversions. Remove the setting if it is unused. Explicit references
 such as `theme(typography.paddingDivider)` remain supported, and the existing
 default value is retained for compatibility. The library's

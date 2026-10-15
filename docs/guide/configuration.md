@@ -16,6 +16,26 @@ matching. It can be inherited and overridden like other config values. See
 [expanded selectors](../reference/nesting#expanded-selector-mode) for examples,
 limits, and differences from native CSS nesting.
 
+## Responsive ordering
+
+The top-level `responsiveOrder` option accepts `'all-last'` (default) or
+`'generated-last'`. The default places both authored and directive-generated
+media after common rules in each scope. With `'generated-last'`, authored
+`@media` stays at its source position; only Europa-generated media moves last.
+This includes `@responsive` and its `@mq` alias.
+
+```json5
+// Shared preset; applications extending it inherit both options.
+{
+  nesting: 'expanded',
+  responsiveOrder: 'generated-last',
+}
+```
+
+An application can override either option independently. Layers and conditional
+boundaries remain unchanged. See [cascade and layers](../reference/cascade)
+for ordering examples and the aggregate-import pattern for 0.x migrations.
+
 ## Inherit a shared config
 
 Use a top-level `extends` path to inherit another JSON5 or JSON file:

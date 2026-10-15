@@ -49,7 +49,10 @@ fn transform_mode(
     if migration {
         Ok(result)
     } else {
-        crate::nesting::apply(crate::cascade::media_last(result), config.value)
+        crate::nesting::apply(
+            crate::cascade::media_last(result, config.value),
+            config.value,
+        )
     }
 }
 
@@ -336,7 +339,7 @@ impl Compiler<'_, '_> {
                             ..ctx.clone()
                         };
                         let children = self.nodes(children, &child_ctx, depth + 1)?;
-                        result.push(Node::block(
+                        result.push(Node::generated_media_block(
                             format!("@media {media}"),
                             children,
                             node.offset,
@@ -561,7 +564,7 @@ impl Compiler<'_, '_> {
                     Err(e) if e.code == "EU_SIZE_CONTEXT" => {
                         for index in self.config.select(query, node.offset)? {
                             let value = sizes.css(&value, Some(index), false)?;
-                            result.push(Node::block(
+                            result.push(Node::generated_media_block(
                                 format!(
                                     "@media {}",
                                     self.config.media_indices(&[index], node.offset)
@@ -601,7 +604,7 @@ impl Compiler<'_, '_> {
                     })
                     .collect::<Result<Vec<_>, Error>>()?
             };
-            result.push(Node::block(
+            result.push(Node::generated_media_block(
                 format!("@media {}", self.config.media(query, node.offset)?),
                 children,
                 node.offset,
@@ -641,7 +644,7 @@ impl Compiler<'_, '_> {
                 "EU_RESPONSIVE",
                 "A directive inside @responsive cannot have its own breakpoint query",
             )),
-            Some(query) => Ok(vec![Node::block(
+            Some(query) => Ok(vec![Node::generated_media_block(
                 format!("@media {}", self.config.media(query, node.offset)?),
                 nodes,
                 node.offset,
@@ -1143,7 +1146,7 @@ impl Compiler<'_, '_> {
             if ctx.responsive.is_some() && indices.len() == 1 && !arrow {
                 result.extend(nodes);
             } else {
-                result.push(Node::block(
+                result.push(Node::generated_media_block(
                     format!(
                         "@media {}",
                         self.config.media_indices(&[*index], node.offset)

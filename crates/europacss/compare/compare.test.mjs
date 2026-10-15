@@ -24,6 +24,31 @@ test('computed-property changes and box tolerance remain separate', () => {
   assert.deepEqual(differences(before, structuredClone(before)), []);
 });
 
+test('emulation arguments reject ambiguous overrides and record repeated features', () => {
+  const options = parseArgs([...args, '--emulate', 'prefers-reduced-motion=reduce', '--emulate', 'prefers-color-scheme=dark', '--touch']);
+  assert.deepEqual(options.mediaFeatures, [{name:'prefers-reduced-motion',value:'reduce'}, {name:'prefers-color-scheme',value:'dark'}]);
+  assert.equal(options.touch, true);
+  for (const suffix of [
+    ['--emulate'], ['--emulate', 'prefers-reduced-motion'],
+    ['--emulate', 'prefers-reduced-motion=reduce', '--emulate', 'prefers-reduced-motion=no-preference'],
+    ['--touch', '--emulate', 'hover=hover'],
+  ]) assert.throws(() => parseArgs([...args, ...suffix]));
+});
+
+test('emulation is applied before sampling and cleared after success and failure', async () => {
+  const sample = snapshot([element()]);
+  for (const failure of [false, true]) {
+    const cdp = browser(Array(6).fill(sample), failure);
+    const options = {...parseArgs([...args, '--target', 'prepared', '--emulate', 'prefers-reduced-motion=reduce', '--touch']), settle:0};
+    const run = comparePage(cdp, options, 'before', 'after');
+    if (failure) await assert.rejects(run, /candidate rejected/);
+    else await run;
+    assert.deepEqual(cdp.calls.filter(c => c.method === 'Emulation.setEmulatedMedia').map(c => c.params.features), [options.mediaFeatures, []]);
+    assert.deepEqual(cdp.calls.filter(c => c.method === 'Emulation.setTouchEmulationEnabled').map(c => c.params.enabled), [true,false]);
+    assert.equal(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').at(-1).params.text,'original');
+  }
+});
+
 test('generated pseudo-elements are reported as appearance changes, not DOM mutations', () => {
   const before = snapshot([element()]);
   const after = snapshot([element(), element({ content: '"new"' }, {}, 'html > body > div::before')]);
@@ -52,6 +77,7 @@ function browser(snapshots, failure) {
         if (params.expression.includes('document.readyState')) value = true;
         if (params.expression.includes('.snapshot()')) value = snapshots.shift();
         if (params.expression.includes('.checkMutations()')) value = { mutations: 0 };
+        if (params.expression.includes('matches:matchMedia')) value = [];
         if (params.expression.includes('innerWidth')) value = { width: 600, height: 900, devicePixelRatio: 1 };
         return { result: { value } };
       }

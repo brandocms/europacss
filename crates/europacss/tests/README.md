@@ -98,7 +98,7 @@ The live-site comparison added repeated-selector media-order, overlapping-width,
 and equal-value grouping cases to [migration.rs](migration.rs). Media-last now
 preserves simple responsive/fallback pairs without warnings. Overlapping-query
 warnings remain conservative review prompts, not a complete cascade simulator.
-Report version 13 requires older acceptance files to be regenerated and reviewed.
+Report version 14 requires older acceptance files to be regenerated and reviewed.
 See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
 for the original and manually migrated site observations.
 
@@ -122,3 +122,8 @@ evaluation), comma-separated placeholder extension order, invalid lists and cycl
 ## Declaration source maps and font labels
 
 [source_maps.rs](source_maps.rs), [imports.rs](imports.rs), and Vite integration tests check declaration/directive locations, composed imported origins, token names, optional disabled-property comments, prefixes, responsive output, minification, UTF-16 authored columns, and production omission. Ambiguous merged declarations retain rule locations. Unmapped keyframe steps cannot inherit another selector's location. Lightning's printer can miscount generated columns after non-ASCII text on the same line; untrusted upstream points are discarded, while declarations within an earlier correctly mapped rule can still be refined.
+
+Round-3 coverage includes inherited `responsiveOrder: 'generated-last'`, authored
+versus directive media (including aliases and placeholders), `:has()` specificity,
+logical/physical edge overlaps, and original config-warning positions. Browser
+integration verifies media/touch emulation and cleanup on both success and errors.

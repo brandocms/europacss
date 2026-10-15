@@ -14,23 +14,35 @@ const HELP = `Usage: europa compare <url> --before old.css --after new.css --sty
   --tolerance <px>     Ignore smaller geometry differences (default 0.1)
   --ignore-custom-properties  Omit computed custom properties from differences
   --prime             Run an unmeasured A/B/A swap before the measured A/B/A
+  --emulate <name=value>  Emulate a CSS media feature; repeat for multiple features
+  --touch             Enable touch input (pointer: coarse, hover: none)
   --json              Write the complete structured report to stdout
 
 Requires Node.js 22+ and Chromium started with remote debugging. Uses an existing
 browser session; no browser is downloaded. The selected stylesheet is replaced
 in place and restored. Existing-tab mode does not navigate or resize the tab.
+Emulation flags replace existing overrides and reset to browser defaults on exit.
 Exit codes: 0 no differences, 1 differences, 2 error or unstable/incomplete run.
 `;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export function parseArgs(args) {
-  const options = { cdp: 'http://127.0.0.1:9222', root: 'html', waitFor: 'body', settle: 250, tolerance: 0.1, viewports: [] };
+  const options = { cdp: 'http://127.0.0.1:9222', root: 'html', waitFor: 'body', settle: 250, tolerance: 0.1, viewports: [], mediaFeatures: [] };
   const names = { '--before': 'before', '--after': 'after', '--stylesheet': 'stylesheet', '--cdp': 'cdp', '--root': 'root', '--wait-for': 'waitFor', '--target': 'target', '--settle': 'settle', '--tolerance': 'tolerance' };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') return { help: true };
     if (arg === '--ignore-custom-properties') { options.ignoreCustomProperties = true; continue; }
     if (arg === '--prime') { options.prime = true; continue; }
+    if (arg === '--touch') { options.touch = true; continue; }
+    if (arg === '--emulate') {
+      const match = /^([a-z][a-z-]*)=([a-z0-9][a-z0-9-]*)$/.exec(args[++i] ?? '');
+      if (!match) throw new Error('--emulate expects a media feature such as prefers-reduced-motion=reduce');
+      if (options.mediaFeatures.some(feature => feature.name === match[1])) throw new Error(`Duplicate emulated feature: ${match[1]}`);
+      options.mediaFeatures.push({ name: match[1], value: match[2] });
+      if (options.mediaFeatures.length > 20) throw new Error('At most 20 emulated media features');
+      continue;
+    }
     if (arg === '--json') { options.json = true; continue; }
     if (arg === '--viewport') {
       const match = /^(\d+)x(\d+)$/.exec(args[++i] ?? '');
@@ -55,6 +67,7 @@ export function parseArgs(args) {
   if (!Number.isFinite(options.tolerance) || options.tolerance < 0 || options.tolerance > 10) throw new Error('--tolerance must be between 0 and 10 CSS pixels');
   if (options.target && options.viewports.length) throw new Error('--target keeps the existing viewport; omit --viewport');
   if (!options.target && !options.viewports.length) options.viewports.push({ width: 1440, height: 900 });
+  if (options.touch && options.mediaFeatures.some(f => ['pointer', 'hover', 'any-pointer', 'any-hover'].includes(f.name))) throw new Error('Use --touch without pointer/hover --emulate overrides');
   return options;
 }
 
@@ -200,7 +213,7 @@ class CDP {
   close() { this.socket.close(); }
 }
 
-async function connect(endpoint) {
+export async function connect(endpoint) {
   if (typeof WebSocket !== 'function') throw new Error('europa compare requires Node.js 22+ (built-in WebSocket)');
   let url = endpoint;
   if (!/^wss?:/.test(url)) {
@@ -248,6 +261,8 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     await send('Runtime.enable');
     await send('DOM.enable');
     await send('CSS.enable');
+    if (options.mediaFeatures.length) await send('Emulation.setEmulatedMedia', { features: options.mediaFeatures });
+    if (options.touch) await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
     if (!options.target) {
       await send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: false });
       const navigation = await send('Page.navigate', { url: options.url });
@@ -260,6 +275,9 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     }
     const { frameTree } = await send('Page.getFrameTree');
     await settle();
+    const requestedFeatures = [...options.mediaFeatures, ...(options.touch ? [{name:'pointer',value:'coarse'}, {name:'hover',value:'none'}] : [])];
+    const effectiveFeatures = await evaluate(`(${JSON.stringify(requestedFeatures)}).map(feature => ({...feature, matches:matchMedia('(' + feature.name + ': ' + feature.value + ')').matches}))`);
+    if (effectiveFeatures.some(feature => !feature.matches)) throw new Error(`Chromium did not apply emulated features: ${effectiveFeatures.filter(f => !f.matches).map(f => `${f.name}=${f.value}`).join(', ')}`);
     const matching = [...sheets.values()].filter(sheet => sheet.sourceURL === options.stylesheet && sheet.frameId === frameTree.frame.id);
     if (matching.length !== 1) throw new Error(`--stylesheet must identify exactly one loaded main-frame sheet; matched ${matching.length}. Loaded URLs: ${[...sheets.values()].filter(s => s.frameId === frameTree.frame.id).map(s => s.sourceURL || '(inline)').join(', ')}`);
     styleSheetId = matching[0].styleSheetId;
@@ -303,17 +321,22 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
     const returnDrift = differences(returned, await snapshot(), options.tolerance, options.ignoreCustomProperties);
     if (returnDrift.length) throw unstable('Returned baseline styles or geometry are unstable', 'baseline-return', returnDrift);
     const result = reproducibleChanges(before, after, returned, options.tolerance, options.ignoreCustomProperties);
-    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, priming: options.prime ? 'A/B/A' : 'none', ...result,
+    return { viewport: await evaluate('({width:innerWidth,height:innerHeight,devicePixelRatio})'), coverage: before.coverage, priming: options.prime ? 'A/B/A' : 'none', emulation: { mediaFeatures: effectiveFeatures, touch: !!options.touch, cleanup: options.touch || options.mediaFeatures.length ? 'browser-defaults' : 'unchanged' }, ...result,
       nonCustomChangedElements: result.changes.filter(change => change.presence || Object.keys(change.geometry).length || Object.keys(change.properties).some(name => !name.startsWith('--'))).length };
   } finally {
     const cleanup = [];
     if (original !== undefined) cleanup.push(send('CSS.setStyleSheetText', { styleSheetId, text: original }));
     if (sessionId) cleanup.push(evaluate(`window[${JSON.stringify(key)}]?.dispose()`));
+    if (sessionId && options.mediaFeatures.length) cleanup.push(send('Emulation.setEmulatedMedia', { features: [] }));
+    if (sessionId && options.touch) cleanup.push(send('Emulation.setTouchEmulationEnabled', { enabled: false }));
     const results = await Promise.allSettled(cleanup);
-    if (sessionId) await cdp.send('Target.detachFromTarget', { sessionId }).catch(() => {});
+    // Detaching clears this session's emulation overrides. CDP exposes no getter
+    // for overrides owned by other sessions, so emulation flags explicitly reset
+    // to browser defaults rather than claiming to restore another client's state.
+    if (sessionId) results.push(...await Promise.allSettled([cdp.send('Target.detachFromTarget', { sessionId })]));
     if (targetId && !options.target) await cdp.send('Target.closeTarget', { targetId }).catch(() => {});
     cdp.listeners.delete(listener);
-    if (options.target && results.some(result => result.status === 'rejected')) throw new Error('Comparison cleanup failed; reload the prepared tab to restore its stylesheet');
+    if (options.target && results.some(result => result.status === 'rejected')) throw new Error('Comparison cleanup failed; reload the prepared tab and reset emulation');
   }
 }
 
@@ -333,12 +356,13 @@ export async function main(args = process.argv.slice(2)) {
     for (const viewport of options.target ? [null] : options.viewports) results.push(await comparePage(cdp, options, before, after, viewport));
     const changedElements = results.reduce((sum, result) => sum + result.changes.length, 0);
     const discardedGeometry = results.reduce((sum, result) => sum + result.discardedGeometry.length, 0);
-    const report = { version: 3, complete: discardedGeometry === 0, discardedGeometry, priming: options.prime ? 'A/B/A' : 'none', nonCustomChangedElements: results.reduce((sum, result) => sum + result.nonCustomChangedElements, 0), customProperties: options.ignoreCustomProperties ? 'ignored' : 'all', url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
+    const report = { version: 4, complete: discardedGeometry === 0, discardedGeometry, priming: options.prime ? 'A/B/A' : 'none', emulation: {mediaFeatures: options.mediaFeatures, touch: !!options.touch, cleanup: options.touch || options.mediaFeatures.length ? 'browser-defaults' : 'unchanged'}, nonCustomChangedElements: results.reduce((sum, result) => sum + result.nonCustomChangedElements, 0), customProperties: options.ignoreCustomProperties ? 'ignored' : 'all', url: options.url, stylesheet: options.stylesheet, root: options.root, browser, before: options.before, after: options.after, sha256: { before: createHash('sha256').update(before).digest('hex'), after: createHash('sha256').update(after).digest('hex') }, tolerance: options.tolerance, changedElements, results,
       sampling: 'A/B/A with two stability samples per phase; non-reproducing geometry excluded', limitations: ['Current page state and selected viewports only; no selector-performance measurement', 'Animations and transitions disabled during sampling', 'Main document subtree and ::before/::after computed styles; iframe and shadow-root contents and pseudo-element boxes excluded', 'Geometry uses a pixel tolerance; computed property strings are compared exactly'] };
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     else {
       console.log(`${changedElements} changed element/pseudo-element samples across ${results.length} viewport(s); ${report.nonCustomChangedElements} with non-custom changes.`);
       if (options.prime) console.log('Priming: one unmeasured A/B/A swap before each measured comparison.');
+      if (options.mediaFeatures.length || options.touch) console.log(`Emulation: ${options.mediaFeatures.map(f => `${f.name}=${f.value}`).concat(options.touch ? ['touch (pointer:coarse, hover:none)'] : []).join(', ')}`);
       if (discardedGeometry) console.error(`${discardedGeometry} geometry differences did not reproduce after A/B/A and were excluded; comparison is incomplete. See --json for evidence.`);
       for (const result of results) for (const change of result.changes) {
         console.log(`\n${result.viewport.width}x${result.viewport.height} ${change.label}\n  ${change.selector}`);
@@ -350,7 +374,7 @@ export async function main(args = process.argv.slice(2)) {
     }
     return discardedGeometry ? 2 : changedElements ? 1 : 0;
   } catch (error) {
-    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 3, complete: false, priming: options?.prime ? 'A/B/A' : 'none', error: error.message, ...(error.evidence ? { evidence: error.evidence } : {}) }) + '\n');
+    if (options?.json || args.includes('--json')) process.stdout.write(JSON.stringify({ version: 4, complete: false, priming: options?.prime ? 'A/B/A' : 'none', emulation: {mediaFeatures: options?.mediaFeatures ?? [], touch: !!options?.touch, cleanup: options?.touch || options?.mediaFeatures.length ? 'browser-defaults' : 'unchanged'}, error: error.message, ...(error.evidence ? { evidence: error.evidence } : {}) }) + '\n');
     else { console.error(`europa compare: ${error.message}`); if (error.evidence) console.error(JSON.stringify(error.evidence, null, 2)); }
     return 2;
   } finally { cdp?.close(); }

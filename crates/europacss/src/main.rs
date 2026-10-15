@@ -45,16 +45,8 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
             .unwrap_or("");
         let converted = europacss::migrate_config_report(&source, extension)
             .map_err(|e| format!("{input}: {e}"))?;
-        for warning in &converted.warnings {
-            eprint!(
-                "{}",
-                ui.diagnostic(
-                    &europacss::Error::new("EU_CONFIG_MIGRATION", warning, 0),
-                    &input,
-                    Some(&source),
-                    true
-                )
-            );
+        for warning in &converted.diagnostics {
+            eprint!("{}", ui.diagnostic(warning, &input, Some(&source), true));
         }
         let mut file = fs::OpenOptions::new()
             .write(true)

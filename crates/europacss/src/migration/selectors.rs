@@ -5,6 +5,7 @@ use crate::{
 };
 use lightningcss::{
     rules::CssRule,
+    selector::{Component, Selector},
     stylesheet::{ParserOptions, StyleSheet},
 };
 
@@ -30,7 +31,56 @@ pub(super) fn specificity(selector: &str) -> Option<(u32, bool)> {
         return None;
     }
     let selector = &style.selectors.0[0];
-    Some((selector.specificity(), selector.has_pseudo_element()))
+    Some((
+        selector_specificity(selector),
+        selector.has_pseudo_element(),
+    ))
+}
+
+// parcel_selectors 0.28 omits :has() from its cached specificity. Recompute
+// recursively so :has() also contributes inside :is(), :not(), and nth-of lists.
+fn selector_specificity(selector: &Selector<'_>) -> u32 {
+    fn maximum(list: &[Selector<'_>]) -> u32 {
+        list.iter().map(selector_specificity).max().unwrap_or(0)
+    }
+    let mut parts = [0u32; 3];
+    for component in selector.iter_raw_match_order() {
+        let value = match component {
+            Component::ID(_) => 1 << 20,
+            Component::Class(_)
+            | Component::AttributeInNoNamespace { .. }
+            | Component::AttributeInNoNamespaceExists { .. }
+            | Component::AttributeOther(_)
+            | Component::Root
+            | Component::Empty
+            | Component::Scope
+            | Component::Nth(_)
+            | Component::NonTSPseudoClass(_) => 1 << 10,
+            Component::LocalName(_) | Component::PseudoElement(_) | Component::Part(_) => 1,
+            Component::Is(list)
+            | Component::Negation(list)
+            | Component::Has(list)
+            | Component::Any(_, list) => maximum(list),
+            Component::NthOf(data) => {
+                parts[1] += 1;
+                maximum(data.selectors())
+            }
+            Component::Host(selector) => {
+                parts[1] += 1;
+                selector.as_ref().map(selector_specificity).unwrap_or(0)
+            }
+            Component::Slotted(selector) => {
+                parts[2] += 1;
+                selector_specificity(selector)
+            }
+            // :where(), combinators, namespaces, universal and unresolved &.
+            _ => 0,
+        };
+        parts[0] += value >> 20;
+        parts[1] += (value >> 10) & 1023;
+        parts[2] += value & 1023;
+    }
+    (parts[0].min(1023) << 20) | (parts[1].min(1023) << 10) | parts[2].min(1023)
 }
 
 fn tuple(value: u32) -> String {

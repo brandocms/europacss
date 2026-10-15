@@ -85,6 +85,19 @@ fn chains_merge_raw_data_before_defaults_extensions_and_references() {
 }
 
 #[test]
+fn responsive_order_is_inherited_and_can_be_overridden_by_the_consumer() {
+    let p = Project::new();
+    p.write("preset.json5", "{responsiveOrder:'generated-last'}");
+    p.write("europa.json5", "{extends:'./preset.json5'}");
+    assert_eq!(p.load().unwrap()["responsiveOrder"], "generated-last");
+    p.write(
+        "europa.json5",
+        "{extends:'./preset.json5',responsiveOrder:'all-last'}",
+    );
+    assert_eq!(p.load().unwrap()["responsiveOrder"], "all-last");
+}
+
+#[test]
 fn child_type_replacements_and_final_theme_extend_keep_existing_semantics() {
     let p = Project::new();
     // This reference is intentionally unresolved until the child supplies it.

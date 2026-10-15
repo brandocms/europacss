@@ -111,7 +111,6 @@ impl CascadeDeclaration {
 pub(super) fn scope_changes(
     raw: &[Node],
     ordered: &[Node],
-    origins: &Origins,
     config: &Config<'_>,
     audit: &mut Audit<'_>,
     budget: usize,
@@ -128,7 +127,6 @@ pub(super) fn scope_changes(
         nodes: &[Node],
         ctx: &Context,
         expanded: bool,
-        origins: &Origins,
         result: &mut Vec<CascadeDeclaration>,
     ) -> Result<(), Error> {
         for node in nodes {
@@ -144,10 +142,7 @@ pub(super) fn scope_changes(
                 match node.at_rule() {
                     Some(("media", _)) => {
                         child.media.push(node.text.clone());
-                        child.generated |= origins
-                            .labels
-                            .get(&node.offset)
-                            .is_some_and(|label| label != "@media");
+                        child.generated |= node.generated_media;
                     }
                     Some(("layer" | "supports" | "container" | "starting-style", params)) => {
                         child.scopes.push(if params.is_empty() {
@@ -186,7 +181,7 @@ pub(super) fn scope_changes(
                         }
                     }
                 }
-                collect(children, &child, expanded, origins, result)?;
+                collect(children, &child, expanded, result)?;
             } else if !ctx.selectors.is_empty()
                 && node.at_rule().is_none()
                 && !node.text.starts_with("/*")
@@ -224,8 +219,8 @@ pub(super) fn scope_changes(
     let expanded = config.value.get("nesting").and_then(|v| v.as_str()) == Some("expanded");
     let mut before = Vec::new();
     let mut after = Vec::new();
-    collect(raw, &Context::default(), expanded, origins, &mut before)?;
-    collect(ordered, &Context::default(), expanded, origins, &mut after)?;
+    collect(raw, &Context::default(), expanded, &mut before)?;
+    collect(ordered, &Context::default(), expanded, &mut after)?;
     let mut ranks: HashMap<CascadeKey, std::collections::VecDeque<usize>> = HashMap::new();
     for item in before {
         ranks.entry(item.key()).or_default().push_back(item.rank);
@@ -452,7 +447,79 @@ fn appended(origin: &Origins, declaration: &Declaration) -> bool {
 }
 
 fn overlaps(a: &str, b: &str) -> bool {
-    a == b || a == "all" && resettable(b) || b == "all" && resettable(a)
+    a == b
+        || a == "all" && resettable(b)
+        || b == "all" && resettable(a)
+        || edge_family(a).zip(edge_family(b)).is_some_and(
+            |((family_a, logical_a), (family_b, logical_b))| {
+                family_a == family_b && logical_a != logical_b
+            },
+        )
+}
+
+// Writing mode/direction are inherited runtime state. Conservatively overlap a
+// logical edge with every physical edge in its family, without equating two
+// distinct physical (or two distinct logical) longhands.
+const EDGE_FAMILIES: [(&[&str], &[&str]); 3] = [
+    (
+        &[
+            "padding-top",
+            "padding-right",
+            "padding-bottom",
+            "padding-left",
+        ],
+        &[
+            "padding-block-start",
+            "padding-block-end",
+            "padding-inline-start",
+            "padding-inline-end",
+        ],
+    ),
+    (
+        &["margin-top", "margin-right", "margin-bottom", "margin-left"],
+        &[
+            "margin-block-start",
+            "margin-block-end",
+            "margin-inline-start",
+            "margin-inline-end",
+        ],
+    ),
+    (
+        &["top", "right", "bottom", "left"],
+        &[
+            "inset-block-start",
+            "inset-block-end",
+            "inset-inline-start",
+            "inset-inline-end",
+        ],
+    ),
+];
+
+fn edge_family(property: &str) -> Option<(usize, bool)> {
+    EDGE_FAMILIES
+        .iter()
+        .enumerate()
+        .find_map(|(index, (physical, logical))| {
+            if physical.contains(&property) {
+                Some((index, false))
+            } else if logical.contains(&property) {
+                Some((index, true))
+            } else {
+                None
+            }
+        })
+}
+
+fn overlapping_properties(property: &str) -> Vec<&str> {
+    let mut keys = vec![property];
+    if let Some((family, logical)) = edge_family(property) {
+        keys.extend(if logical {
+            EDGE_FAMILIES[family].0
+        } else {
+            EDGE_FAMILIES[family].1
+        });
+    }
+    keys
 }
 
 fn resettable(property: &str) -> bool {
@@ -485,11 +552,10 @@ impl DeclarationIndex {
             if value.property == "all" {
                 indices.extend(&self.resettable[usize::from(value.important)]);
             } else {
-                if let Some(found) = self
-                    .properties
-                    .get(&(value.property.clone(), value.important))
-                {
-                    indices.extend(found);
+                for property in overlapping_properties(&value.property) {
+                    if let Some(found) = self.properties.get(&(property.into(), value.important)) {
+                        indices.extend(found);
+                    }
                 }
                 if resettable(&value.property) {
                     if let Some(found) = self.properties.get(&("all".into(), value.important)) {
@@ -541,11 +607,10 @@ impl RankedIndex {
             if value.property == "all" {
                 append(&self.resettable[usize::from(value.important)]);
             } else {
-                if let Some(map) = self
-                    .properties
-                    .get(&(value.property.clone(), value.important))
-                {
-                    append(map);
+                for property in overlapping_properties(&value.property) {
+                    if let Some(map) = self.properties.get(&(property.into(), value.important)) {
+                        append(map);
+                    }
                 }
                 if resettable(&value.property) {
                     if let Some(map) = self.properties.get(&("all".into(), value.important)) {
@@ -892,6 +957,13 @@ mod tests {
             "unicode-bidi:normal",
             "all:revert",
             "padding-top:5px!important",
+            "padding-block:6px",
+            "padding-inline-end:7px!important",
+            "margin-inline:8px",
+            "margin-top:9px",
+            "inset:10px",
+            "inset-block:11px",
+            "left:12px",
             "all:initial!important",
         ];
         let declarations: Vec<_> = inputs
