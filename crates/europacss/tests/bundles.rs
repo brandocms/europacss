@@ -79,15 +79,7 @@ fn builtin_diagnostics_map_to_the_authored_directive() {
 }
 
 #[test]
-fn builtins_are_vendored_and_preserve_the_legacy_styles() {
-    assert_eq!(
-        include_str!("../assets/base.css"),
-        include_str!("../../../src/lib/plugins/css/base.css")
-    );
-    assert_eq!(
-        include_str!("../assets/arrows.css"),
-        include_str!("../../../src/lib/plugins/css/arrows.css")
-    );
+fn builtins_are_vendored() {
     assert!(include_str!("../assets/normalize.css").starts_with("/*! normalize.css v8.0.1"));
     assert!(include_str!("../assets/normalize.LICENSE.md")
         .contains("Nicolas Gallagher and Jonathan Neal"));

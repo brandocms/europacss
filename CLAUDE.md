@@ -24,13 +24,4 @@ See [development docs](docs/guide/development.md) and [release notes](RELEASE.md
 
 ## Legacy JavaScript implementation
 
-Root `package.json`, `src`, `lib` and `__tests__` remain the PostCSS migration reference:
-
-- Build: `yarn build` (transpiles `src` to `lib`)
-- Tests: `yarn test`
-- Coverage: `yarn coverage`
-- One suite: `yarn test __tests__/path/to/file.test.js`
-
-These commands do not build or lint Rust. No root lint script exists. Keep the established two-space indentation, camelCase functions, PascalCase classes and Jest CSS matchers when editing legacy code.
-
-Jest occasionally reports a circular-structure serialization error after an underlying assertion failure; inspect the earlier test output for the actual failure.
+The PostCSS implementation is no longer in this branch. Its last release is tag `1.0.0-beta.16`; `1.0.0-beta.6` and `1.0.0-beta.11` are the other versions `europa migrate` models. Read the old behavior with `git show 1.0.0-beta.16:<path>`, or check out the tag in a separate worktree to run its Jest suite (`yarn install --frozen-lockfile`, `yarn test`).

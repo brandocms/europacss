@@ -1,13 +1,15 @@
 # Releases and preview builds
 
-The repository contains two implementations: the experimental native compiler and the legacy JavaScript/PostCSS package. Their versions and build commands are separate.
+This repository builds the native compiler. The legacy JavaScript/PostCSS package `@brandocms/europacss` ended at `1.0.0-beta.16`; its source lives at that tag.
 
 ## Native npm beta
 
 The first native npm release, **0.1.0-beta.0**, was published on October 15,
-2026 from commit `89ce6c63e08465a991010b65bcda578ebbf8f8b4`. All nine published
+2026 from commit `53af5527d1eaa4a3bdf42f2e1a720a651ab2f0b2`. All nine published
 packages match the tarballs from the successful [cross-platform release run](https://github.com/brandocms/europacss/actions/runs/38767861670).
-The packages are public and available under the `beta` tag.
+The packages are public and available under the `beta` tag. That run shows an
+earlier SHA for the same commit: branch history was later rewritten to drop
+research notes, without changing packaged files.
 
 The CLI, adapter, Cargo executable and all platform packages share one version:
 
@@ -138,6 +140,4 @@ VitePress writes `docs/.vitepress/dist`, served under `/europacss/`. The [Pages 
 
 ## Legacy JavaScript package
 
-The root `package.json` identifies the PostCSS package. Its existing release process updates `CHANGELOG.md` and the root version, runs `yarn test` and `yarn build`, then commits the release. Historical tags use the version without a `v` prefix.
-
-The [npm workflow](.github/workflows/npmpublish.yml) publishes the root package for numeric version tags; `native-v*` tags are excluded. Creating/pushing a release tag is a publication action; it is separate from local commits and native preview builds. Do not also run a duplicate manual publish for a release handled by that workflow.
+The PostCSS package's source, `CHANGELOG.md` entries up to `1.0.0-beta.16` and npm workflow live at tag `1.0.0-beta.16`. Historical tags use the version without a `v` prefix. This branch no longer builds or publishes that package. A legacy patch release would start from a branch at that tag.

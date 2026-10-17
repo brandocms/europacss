@@ -28,7 +28,7 @@ loads reset undo history, and local edits preserve untouched line endings.
 UI checks (use an existing Playwright installation):
 
 ```sh
-node research/parser-feasibility/test-studio-editor.cjs /path/to/playwright/package.json http://127.0.0.1:PORT
+node tools/studio-tests/editor.cjs /path/to/playwright/package.json http://127.0.0.1:PORT
 ```
 
 Run from the repository root with `europa studio` serving the current binary.

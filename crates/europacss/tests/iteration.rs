@@ -3,7 +3,7 @@ use europacss::{compile, compile_frontend};
 use serde_json::json;
 use support::{assert_css, config, request};
 
-// Ported from __tests__/rules/substituteIterateAtRules.test.js.
+// Ported from __tests__/rules/substituteIterateAtRules.test.js at tag 1.0.0-beta.16.
 #[test]
 fn iterates_breakpoint_values_with_and_without_surrounding_declarations() {
     let mut cfg = config();

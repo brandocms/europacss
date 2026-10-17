@@ -2,7 +2,7 @@
 
 Work in feature families, implementing shared parsing and value handling before duplicating it across rules. Each port includes successful legacy cases, malformed input, interaction with nesting/responsive scopes, source order, and useful diagnostics. Test the frontend where structure or source locations matter, then compare compiled output against hand-written standard CSS through the same Lightning backend. The Rust tests never invoke Node or the old compiler.
 
-The original JS suite remains the behavior reference, with intentional native nesting and non-media source-order changes recorded separately. Common rules precede responsive rules across selectors within each scope; overlapping media retain relative order. Do not add global breakpoint sorting or duplicate-selector merging merely to match old serialized output.
+The original JS suite, available at tag `1.0.0-beta.16`, remains the behavior reference, with intentional native nesting and non-media source-order changes recorded separately. Common rules precede responsive rules across selectors within each scope; overlapping media retain relative order. Do not add global breakpoint sorting or duplicate-selector merging merely to match old serialized output.
 
 [cascade.rs](cascade.rs) checks media-last semantics, native selector contexts, layer precedence and conditional/registration boundaries against hand-written standard CSS passed directly to Lightning, bypassing Europa on the reference side. It covers both lowered and retained nesting. Source-map tests verify origins after reordering.
 
@@ -30,7 +30,7 @@ The retired cases concern removed implementation contracts: Rust consumes owned 
 
 ## First rule-by-rule batch
 
-| Legacy suite in `__tests__/rules/` | Rust coverage | Notes |
+| Legacy suite in `__tests__/rules/` (tag `1.0.0-beta.16`) | Rust coverage | Notes |
 | --- | --- | --- |
 | `substituteIterateAtRules.test.js` (6 cases) | [iteration.rs](iteration.rs), [parser.rs](parser.rs) | Responsive values, surrounding declarations, custom-property names, quoted keys, missing arguments/children. Adds nested-loop scope, arrays, dot/slash paths, repeated substitution, expansion limits, and malformed generated syntax. |
 | `substituteUnpackAtRules.test.js` (6 cases) | [unpack.rs](unpack.rs) | Property maps, both aliases, nesting, design-pixel conversion, missing arguments. Adds reference-width precedence, maximum conversion, arrays of CSS values, invalid config, source mapping, and later overrides. |
@@ -94,13 +94,11 @@ Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss 
 
 ## Render-driven edge cases
 
-The live-site comparison added repeated-selector media-order, overlapping-width,
-and equal-value grouping cases to [migration.rs](migration.rs). Media-last now
+[migration.rs](migration.rs) covers repeated-selector media order, overlapping
+widths and equal-value grouping. Media-last now
 preserves simple responsive/fallback pairs without warnings. Overlapping-query
 warnings remain conservative review prompts, not a complete cascade simulator.
 Report version 14 requires older acceptance files to be regenerated and reviewed.
-See the [rendered comparison](../../../research/parser-feasibility/rendered-comparison.md)
-for the original and manually migrated site observations.
 
 [spacing.rs](spacing.rs) also checks reusable `negate()` values, retained two-argument
 gap shorthand, negative column migration guidance, nonnumeric arguments, gutter
@@ -115,7 +113,7 @@ rejection, ignored untrusted replacement payloads, generated-body exclusions and
 CLI reanalysis with an empty PATH. Object line-height suffixes that the legacy
 unmodified-object path ignored now produce a resolved migration warning.
 
-The Site B audit adds zero-argument constant theme resolver conversion (without JS
+They also cover zero-argument constant theme resolver conversion (without JS
 evaluation), comma-separated placeholder extension order, invalid lists and cycles.
 
 

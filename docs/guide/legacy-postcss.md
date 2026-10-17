@@ -1,6 +1,6 @@
 # Legacy PostCSS setup
 
-This page describes the JavaScript implementation represented by `@brandocms/europacss` beta.16. The main guides describe the experimental native compiler. For an existing site's upgrade, follow [lint and migration](./lint-and-migration) before replacing the pipeline.
+This page describes the JavaScript implementation represented by `@brandocms/europacss` beta.16. Its source is at the `1.0.0-beta.16` tag in the repository. The main guides describe the experimental native compiler. For an existing site's upgrade, follow [lint and migration](./lint-and-migration) before replacing the pipeline.
 
 ## Installation and configuration
 

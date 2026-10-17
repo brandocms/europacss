@@ -1,6 +1,5 @@
 [workspace]
 members = ["crates/europacss"]
-exclude = ["research/parser-feasibility/scratch"]
 resolver = "2"
 
 [profile.release]

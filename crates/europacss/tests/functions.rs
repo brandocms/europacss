@@ -28,8 +28,8 @@ fn theme_arrays_fallbacks_and_nested_values_keep_css_components_intact() {
 
 #[test]
 fn all_legacy_easing_curves_and_aliases_are_available() {
-    // Read the reference table as text; tests do not execute JavaScript.
-    let reference = include_str!("../../../src/lib/plugins/evaluateEuropaFunctions.js");
+    // The table was copied from the legacy JavaScript at tag 1.0.0-beta.16.
+    let reference = include_str!("fixtures/legacy-easings.txt");
     let mut count = 0;
     for line in reference.lines().filter(|l| l.contains(": 'cubic-bezier(")) {
         let (key, value) = line.trim().split_once(": '").unwrap();

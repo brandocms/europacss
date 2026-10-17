@@ -1131,7 +1131,7 @@ fn signed_columns_warn_at_resolved_uses_and_allow_explicit_review() {
 
 #[test]
 fn repeated_nested_selector_media_overrides_keep_legacy_order_across_rule_nodes() {
-    // Real mobile news-card regression found by comparing rendered Site A.
+    // Real mobile news-card regression found by comparing a rendered site.
     for source in [
         ".news-card{@responsive mobile{.media{flex:0 0 105px}} .media{flex:0 0 auto}}",
         "@media (width < 740px){.news-card .media{flex:0 0 105px}} .news-card .media{flex:0 0 auto}",

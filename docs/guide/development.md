@@ -93,12 +93,13 @@ Commit the generated editor bundle and license/dependency notices with changes t
 
 ## Legacy JavaScript implementation
 
-The root `package.json`, `src/`, `lib/` and Jest suites still describe the legacy PostCSS implementation used for migration comparisons:
+The legacy PostCSS implementation and its Jest suites were removed from this branch. Tag `1.0.0-beta.16` holds the last release and remains the reference for migration comparisons:
 
 ```sh
+git worktree add ../europacss-legacy 1.0.0-beta.16
+cd ../europacss-legacy
 yarn install --frozen-lockfile
 yarn test
-yarn build
 ```
 
-Root `yarn build` transpiles legacy JavaScript. It does not build the Rust compiler or the HTML docs. No root `lint` script exists; Rust linting uses Clippy above.
+Tags `1.0.0-beta.6` and `1.0.0-beta.11` hold the other versions modeled by `europa migrate`. The Rust tests never read the legacy sources; the cases they need are frozen under `crates/europacss/tests/fixtures`.

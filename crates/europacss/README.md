@@ -13,7 +13,7 @@ cargo test --locked -p europacss
   --targets 'defaults' --source-map -o /tmp/europa-example.css
 ```
 
-The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitted, and supports `--minify`. Browser queries run in Rust using Lightning's Browserslist support. Nesting is lowered when the selected browsers require it and retained when every target supports it. This can reduce production bundles substantially; [measurements](../../research/parser-feasibility/bundle-optimization.md) cover two real projects. Browser support defaults are unchanged. The Rust Lightning dependency is pinned to `1.0.0-alpha.72`; it comes from the exact same source commit (`c6a0c3c`) as [GitHub/npm v1.33.0](https://github.com/parcel-bundler/lightningcss/blob/v1.33.0/Cargo.toml). Rust and npm use separate version numbers. Source maps compose through both compiler stages and include original source content. Diagnostics identify the source file, line, column, and a stable error code. Maps currently identify originating rules/directives, not every character of generated declarations.
+The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitted, and supports `--minify`. Browser queries run in Rust using Lightning's Browserslist support. Nesting is lowered when the selected browsers require it and retained when every target supports it. This can reduce production bundles substantially. Browser support defaults are unchanged. The Rust Lightning dependency is pinned to `1.0.0-alpha.72`; it comes from the exact same source commit (`c6a0c3c`) as [GitHub/npm v1.33.0](https://github.com/parcel-bundler/lightningcss/blob/v1.33.0/Cargo.toml). Rust and npm use separate version numbers. Source maps compose through both compiler stages and include original source content. Diagnostics identify the source file, line, column, and a stable error code. Maps currently identify originating rules/directives, not every character of generated declarations.
 
 
 The terminal output uses color automatically on interactive terminals. Errors and warnings show the originating file, a numbered source excerpt, and a caret, including imported files. Build summaries show elapsed time, CSS size, file count, and enabled output options. All diagnostics and summaries go to stderr, so stdout remains CSS only. `--quiet` hides successful build/conversion summaries; warnings and errors remain visible. Use `--color auto|always|never` to override detection. Auto mode respects `NO_COLOR` and `TERM=dumb`; `--help` follows stdout's terminal status separately.
@@ -25,12 +25,6 @@ The terminal output uses color automatically on interactive terminals. Errors an
 ```
 
 The numbers above illustrate the display, not benchmark results.
-
-[Measured CSS builds on Site A and Site B](../../research/parser-feasibility/native-benchmark.md)
-took 45.6 ms and 56.8 ms respectively on an M1 Max: about 18.5× faster than fresh
-legacy processes, or 9–11× faster than a warmed legacy process. These use matched
-sources, browser targets and external source maps; they are compiler timings,
-not full Vite/HMR measurements or a guarantee for other projects.
 
 ## Native preview archives
 
@@ -148,7 +142,7 @@ Click a preview to open **focused editing** for its authored scalar values, incl
 
 The zero-width mobile/iPhone breakpoint preset previews at 375px; manual viewport sizes remain adjustable.
 
-The **Accessibility** tab checks responsive text across breakpoint edges and intermediate widths, shows size graphs, and models how viewport-based text responds to page zoom. Choose the zoom runtime: CSS only, proportional `--ec-zoom` compensation, or Jupiter’s current Chrome DPR calculation. Results and exports identify that assumption; the table shows the multiplier used. It also checks specimen overflow at 320px, doubled text and user text-spacing overrides. Choose WCAG 2.2 AA/AAA contrast targets, foreground/background colors and a canvas for transparency; the chosen text token's size and weight determine its contrast threshold at each sampled width. Small-text and abrupt-jump limits are configurable design hints. Settings are remembered locally, source links reveal the relevant JSON5, and Export report downloads measurements with a config hash. These are token checks and a zoom model, not a site-wide conformance result; see the [method and limits](../../research/config-studio.md#accessibility-checks-implemented). Root font size follows compiled `typography.base`, with a 16px fallback.
+The **Accessibility** tab checks responsive text across breakpoint edges and intermediate widths, shows size graphs, and models how viewport-based text responds to page zoom. Choose the zoom runtime: CSS only, proportional `--ec-zoom` compensation, or Jupiter’s current Chrome DPR calculation. Results and exports identify that assumption; the table shows the multiplier used. It also checks specimen overflow at 320px, doubled text and user text-spacing overrides. Choose WCAG 2.2 AA/AAA contrast targets, foreground/background colors and a canvas for transparency; the chosen text token's size and weight determine its contrast threshold at each sampled width. Small-text and abrupt-jump limits are configurable design hints. Settings are remembered locally, source links reveal the relevant JSON5, and Export report downloads measurements with a config hash. These are token checks and a zoom model, not a site-wide conformance result; see [accessibility settings](../../docs/guide/studio.md#accessibility-settings). Root font size follows compiled `typography.base`, with a 16px fallback.
 
 Studio auto-detects `css/includes/fonts.css` and `public` beside the config. Other layouts use `--fonts` and `--public-dir`. It reads top-level `@font-face` rules and serves a fixed snapshot of their local WOFF/WOFF2/TTF/OTF files, preserving weights, styles, and Unicode ranges. Root-relative URLs map into the public directory; `/assets/fonts/...` can also map to `public/fonts/...`, as in the supplied Craft projects. Relative URLs resolve beside the font stylesheet and must remain inside that directory or the public directory. Remote URLs, stylesheet imports, and `local()` system-font substitutions are skipped. Font status reports loaded faces and failures; “Project fonts” lists faces and any skipped sources. Restart Studio to pick up changes to the on-disk config or font files.
 
@@ -163,7 +157,7 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check --
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
 ```
 
-The source version is required. The modeled profiles are exactly `1.0.0-beta.6`, `1.0.0-beta.11`, and `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The beta.6 profile adds warnings for verified older color, breakpoint, typography, lookup, and container behavior; see the [audit](../../research/parser-feasibility/migration-followup.md). The beta.11 profile covers changed lookup, responsive literal font sizes, and negate/breakout behavior; see the [Site C/Site D audit](../../research/parser-feasibility/craft-migration-audit.md). The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
+The source version is required. The modeled profiles are exactly `1.0.0-beta.6`, `1.0.0-beta.11`, and `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The beta.6 profile adds warnings for verified older color, breakpoint, typography, lookup, and container behavior. The beta.11 profile covers changed lookup, responsive literal font sizes, and negate/breakout behavior. The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
 
 Specificity checks expand legacy selector alternatives and compare them with native `:is()` parent semantics using Lightning's selector parser, including `:where()`, `:is()`, `:not()`, `:has()`, and `:nth-child(... of ...)`. Conditions containing only declarations do not trigger selector-list warnings. Iterators and placeholders are expanded with the real config. Limits or unsupported selector contexts produce an incomplete-analysis finding rather than a clean result.
 
@@ -200,14 +194,6 @@ Large reports retain every unique finding, including sizing/profile warnings; th
 A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
 
 ## Remaining work before migrating a site
-
-The [Site A comparison](../../research/parser-feasibility/rendered-comparison.md) now includes 20 rendered samples after deliberate migration edits. A second [Site B comparison](../../research/parser-feasibility/by-comparison.md) exercises older installed compiler output, missing tokens/placeholders, multiple placeholder extensions, and menu/list ordering. Both use temporary copies; these are sampled comparisons, not universal visual parity.
-
-Site B's follow-up [60-sample browser matrix](../../research/parser-feasibility/by-browser-comparison.md)
-covers Chromium, Firefox and WebKit, including breakpoint edges and interaction
-states. After explicit migration edits, it found no stable geometry difference
-of 0.1px or more; color/number serialization differences and a small Firefox
-control variation remain documented.
 
 All 86 old spacing and 52 font-size source cases now have native fixture assertions, with intentional semantic and backend differences recorded per case. Further audit of other feature families, browsers, breakpoint boundaries and interactive states remains useful. Public distribution still needs the other-platform CI runs, completed upstream notices and a supported platform policy. Detailed source maps and further output compaction are separate improvements.
 

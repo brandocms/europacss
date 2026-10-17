@@ -21,7 +21,7 @@ fn unpack_config() -> Value {
     cfg
 }
 
-// Ported from __tests__/rules/substituteUnpackAtRules.test.js.
+// Ported from __tests__/rules/substituteUnpackAtRules.test.js at tag 1.0.0-beta.16.
 const NAVIGATION: &str = "@media (width < 740px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 740px) and (width < 1024px) {font-size:17px;line-height:17px;letter-spacing:0.12rem} @media (width >= 1024px) {font-size:12px;line-height:12px;letter-spacing:0.12rem}";
 
 #[test]

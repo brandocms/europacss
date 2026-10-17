@@ -1,5 +1,5 @@
-//! Differences verified against tag 1.0.0-beta.11 (82f7867) and Site D's installed
-//! package: all 63 source/stub files match. Only expanded uses are checked.
+//! Differences verified against tag 1.0.0-beta.11 (82f7867) and an installed
+//! site package: all 63 source/stub files match. Only expanded uses are checked.
 use crate::{config::Config, parser::Node};
 use serde_json::Value;
 

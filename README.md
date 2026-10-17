@@ -2,7 +2,7 @@
 
 EuropaCSS turns design tokens and directives such as `@space`, `@fontsize` and `@responsive` into responsive CSS. The native compiler uses our Rust parser, JSON5 configuration and Lightning CSS for browser transforms. The executable and Config Studio need no Node, PostCSS or Node bindings.
 
-**The native compiler is a beta.** Its npm packages are `@brandocms/europacss-cli` and `@brandocms/vite-plugin-europacss`, versioned together. The first native release is `0.1.0-beta.0`; see [release status and publication](RELEASE.md). The root `@brandocms/europacss` npm package remains the JavaScript/PostCSS implementation used for migration comparisons.
+**The native compiler is a beta.** Its npm packages are `@brandocms/europacss-cli` and `@brandocms/vite-plugin-europacss`, versioned together. The first native release is `0.1.0-beta.0`; see [release status and publication](RELEASE.md). The older `@brandocms/europacss` npm package is the JavaScript/PostCSS implementation; its source is at tag `1.0.0-beta.16` and remains the reference for migration comparisons.
 
 ## Getting started
 
@@ -85,4 +85,4 @@ cargo clippy --locked -p europacss --all-targets -- -D warnings
 cargo test --locked -p europacss
 ```
 
-These commands need no Node. Root `yarn build` builds the legacy JavaScript package. See the [native implementation notes](crates/europacss/README.md) for library APIs and supported behavior, and [release notes](RELEASE.md) for native preview packaging.
+These commands need no Node. See the [native implementation notes](crates/europacss/README.md) for library APIs and supported behavior, and [release notes](RELEASE.md) for native preview packaging.
