@@ -36,11 +36,12 @@ notices. `--target <triple>` can package another installed Rust target; it still
 a suitable linker and a matching machine for the runtime smoke test.
 
 The [Rust CI workflow](../../.github/workflows/rust.yml) runs formatting, Clippy,
-tests, packaging, and the runtime smoke test on Linux, macOS, and Windows runners.
-It uploads preview artifacts only and does not publish npm packages or GitHub releases.
-The local macOS ARM64 preview has been verified; the other runners have not been run
-in this worktree. Public releases still need completed upstream notices, a supported
-platform policy, and signing/notarization decisions. See [binary notes](BINARY-README.md).
+tests, packaging, and the runtime smoke test on Linux, macOS, and Windows runners
+for each relevant push. It uploads preview artifacts only. The
+[native npm workflow](../../.github/workflows/native-release.yml) builds and tests
+all seven supported platforms; see [release notes](../../RELEASE.md) for the
+platform list and publication. Binaries are not yet signed or notarized. See
+[binary notes](BINARY-README.md).
 
 ## Watch mode
 
@@ -195,7 +196,7 @@ A clean report covers only the checks listed in its JSON. It does not prove unch
 
 ## Remaining work before migrating a site
 
-All 86 old spacing and 52 font-size source cases now have native fixture assertions, with intentional semantic and backend differences recorded per case. Further audit of other feature families, browsers, breakpoint boundaries and interactive states remains useful. Public distribution still needs the other-platform CI runs, completed upstream notices and a supported platform policy. Detailed source maps and further output compaction are separate improvements.
+All 86 old spacing and 52 font-size source cases now have native fixture assertions, with intentional semantic and backend differences recorded per case. Further audit of other feature families, browsers, breakpoint boundaries and interactive states remains useful. Detailed source maps and further output compaction are separate improvements.
 
 Nested responsive blocks retain their outer conditions; sizes are selected by the innermost query. Placeholders are root definitions and `@extend %one, %two` expands them in listed order at the use site. Arbitrary selector extensions remain unsupported. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
 

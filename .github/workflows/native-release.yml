@@ -1,12 +1,11 @@
 name: Native npm packages
 
+# The full platform matrix is a release gate: run it on release tags, or by
+# hand on a branch before tagging or after changing packaging. Ordinary
+# pushes run rust.yml.
 on:
   push:
-    branches: ['**']
     tags: ['native-v*']
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/native-release.yml', '.github/workflows/rust.yml']
-  pull_request:
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/native-release.yml', '.github/workflows/rust.yml']
   workflow_dispatch:
 
 permissions:

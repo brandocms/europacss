@@ -63,16 +63,22 @@ installation or a PATH lookup. Ordinary dependencies come from npm.
 
 ### CI and publication
 
-[Native npm packages](.github/workflows/native-release.yml) runs for relevant
-branch pushes, pull requests and manual dispatches. These runs build and test
-artifacts without publishing. It also runs the complete native/compiler and
-adapter checks from [rust.yml](.github/workflows/rust.yml).
+Relevant branch pushes run [rust.yml](.github/workflows/rust.yml): formatting,
+Clippy, tests and packaging on Linux, macOS and Windows, plus the Vite adapter
+matrix. The full [Native npm packages](.github/workflows/native-release.yml)
+matrix runs on `native-v*` tags and manual dispatches. It builds every platform,
+runs the consumer tests and repeats the `rust.yml` checks. Only tag runs publish.
+Dispatch it after changing packaging scripts:
+
+```sh
+gh workflow run native-release.yml --ref <branch>
+```
 
 1. Set the same version in Cargo and the CLI/adapter manifests, including the
    adapter's exact compiler dependency. Refresh Cargo.lock and the `packages/`
    npm workspace lockfile. The packer rejects inconsistent versions.
-2. Let all platform builds, Node 22/24 consumer tests and compiler/adapter checks
-   pass on the release commit. Review the `npm-*` and `archive-*` artifacts.
+2. Dispatch Native npm packages on the release commit and let all platform
+   builds, Node 22/24 consumer tests and compiler/adapter checks pass. Review the `npm-*` and `archive-*` artifacts.
 3. Configure npm publishing access to the `@brandocms` scope. For the first
    publication of new package names, publish the **tested tarballs** from an
    authenticated npm session (with any required 2FA).
