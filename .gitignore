@@ -6,3 +6,5 @@ yarn-error.log
 /target/
 /dist/native/
 /dist/npm/
+# Claude Code local settings: permission allowlists can hold secrets
+**/.claude/settings.local.json
