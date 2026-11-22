@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, differences, comparePage, reproducibleChanges } from './compare.mjs';
+import { compareBoxes, designNodes, parseArgs, differences, comparePage, reproducibleChanges } from './compare.mjs';
 
 const args = ['http://localhost:4000/admin', '--before', 'old.css', '--after', 'new.css', '--stylesheet', '/assets/admin.css'];
 const element = (style = {}, box = { x: 0, y: 0, width: 100, height: 20 }, selector = 'html > body > div') => ({ selector, label: 'div.field', style, box });
@@ -186,4 +186,20 @@ test('priming rejects DOM mutations and restores the prepared tab even when a sw
     assert.equal(cdp.calls.filter(c => c.method === 'CSS.setStyleSheetText').at(-1).params.text, 'original');
     assert.ok(!cdp.calls.some(c => ['Page.navigate', 'Target.closeTarget', 'Emulation.setDeviceMetricsOverride'].includes(c.method)));
   }
+});
+
+test('design boxes match text occurrences and image order at the configured threshold', () => {
+  const args = ['http://localhost','--frame','design.png','--width','400'];
+  assert.equal(parseArgs(args).threshold, 2);
+  assert.throws(() => parseArgs([...args,'--before','old.css']));
+  assert.throws(() => parseArgs(args.slice(0,-2)));
+  const box = {x:10,y:20,width:30,height:40};
+  const layout = designNodes([{type:'TEXT',name:'Title',box},{text:'  Title  ',box},{type:'image',name:'Image',box},{text:'Missing',box}]);
+  const measured = {left:10,top:22,width:30,height:40};
+  const page = [{selector:'.a',text:'Title',box:measured},{selector:'img',image:true,box:measured},{selector:'.b',text:'Title',box:{...measured,top:17}}];
+  const report = compareBoxes(layout,page,2);
+  assert.equal(report.changes.length,1);
+  assert.deepEqual(report.changes[0].offset,{top:-3});
+  assert.equal(report.changes[0].selector,'.b');
+  assert.deepEqual(report.unmatched,['Missing']);
 });

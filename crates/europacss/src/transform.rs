@@ -11,6 +11,7 @@ use std::collections::HashMap;
 #[derive(Clone, Default)]
 struct Context {
     style: bool,
+    bundled: bool,
     responsive: Option<String>,
     iteration: Option<(String, Option<String>)>,
 }
@@ -161,6 +162,18 @@ fn decl(prop: &str, value: &str, node: &Node, important: bool) -> Node {
     )
 }
 
+fn sized_decl(
+    prop: &str,
+    value: &str,
+    node: &Node,
+    important: bool,
+    label: &Option<String>,
+) -> Node {
+    let mut declaration = decl(prop, value, node, important);
+    declaration.origin_name = node.origin_name.clone().or_else(|| label.clone());
+    declaration
+}
+
 impl Compiler<'_, '_> {
     fn nodes(&mut self, nodes: Vec<Node>, ctx: &Context, depth: usize) -> Result<Vec<Node>, Error> {
         if !self.migration {
@@ -208,8 +221,19 @@ impl Compiler<'_, '_> {
             }
             if let Some((name, params)) = node.at_rule() {
                 let name = name.to_owned();
+                let authored_label = if self.config.debug_tokens && params.contains("theme(") {
+                    let args = arguments(params)?;
+                    let sizes = crate::size::Sizes {
+                        config: self.config,
+                        offset: node.offset,
+                    };
+                    crate::size::sizing_operand(&name, &args).and_then(|v| sizes.token_label(v))
+                } else {
+                    None
+                };
                 let params =
                     crate::value_functions::resolve(params, self.config.value, node.offset)?;
+                node.origin_name = authored_label;
                 let text = format!(
                     "@{name}{}",
                     if params.is_empty() {
@@ -268,7 +292,8 @@ impl Compiler<'_, '_> {
                             let mut nodes = crate::parser::parse(source)
                                 .map_err(|e| error(&node, &e.code, e.message))?;
                             origin(&mut nodes, node.offset);
-                            result.extend(self.nodes(nodes, ctx, depth + 1)?);
+                            let bundled = Context { bundled: true, ..ctx.clone() };
+                            result.extend(self.nodes(nodes, &bundled, depth + 1)?);
                         }
                     }
                     "iterate" => {
@@ -536,17 +561,48 @@ impl Compiler<'_, '_> {
             "gridGutter" => ("theme.columns.gutters", Some("--grid-gutter")),
             _ => (path, None),
         };
-        let values = lookup(self.config.value, path)
-            .and_then(Value::as_object)
-            .ok_or_else(|| {
-                error(
+        let entry = lookup(self.config.value, path);
+        if let (Some(property), Some(raw)) = (property, entry.and_then(scalar)) {
+            let sizes = crate::size::Sizes {
+                config: self.config,
+                offset: node.offset,
+            };
+            return self.size_rules(node, None, &Context::default(), |index| {
+                Ok(vec![decl(
+                    property,
+                    &sizes.css(&raw, index, false)?,
                     node,
-                    "EU_CONFIG",
-                    format!("@unpack requires a breakpoint object at `{path}`"),
-                )
-            })?;
+                    false,
+                )])
+            });
+        }
+        let values = entry.and_then(Value::as_object).ok_or_else(|| {
+            error(
+                node,
+                "EU_CONFIG",
+                format!("@unpack requires a breakpoint object at `{path}`"),
+            )
+        })?;
         let mut result = Vec::new();
-        for (query, value) in values {
+        let mut entries: Vec<_> = values.iter().collect();
+        if values.keys().any(|k| k.starts_with('$') || k == "*")
+            && values.keys().all(|key| {
+                key.starts_with('$')
+                    || key == "*"
+                    || self.config.breakpoints.iter().any(|(name, _)| key == name)
+            })
+        {
+            for key in values.keys().filter(|k| k.as_str() != "*") {
+                self.config.select(key, node.offset)?;
+            }
+            entries.clear();
+            for (index, (name, _)) in self.config.breakpoints.iter().enumerate() {
+                if let Some(value) = self.config.responsive_value(values, index, node.offset)? {
+                    entries.push((name, value));
+                }
+            }
+        }
+        for (query, value) in entries {
             let children = if let Some(property) = property {
                 let value = scalar(value).ok_or_else(|| {
                     error(
@@ -663,12 +719,56 @@ impl Compiler<'_, '_> {
         let important = name.ends_with('!');
         match name {
             "grid" => {
+                if args == ["subgrid"] {
+                    return Ok(vec![
+                        decl("display", "grid", node, false),
+                        decl("grid-template-columns", "subgrid", node, false),
+                    ]);
+                }
                 arity(node, args, 0, 0)?;
-                let mut nodes = vec![
-                    decl("display", "grid", node, false),
-                    decl("grid-template-columns", "repeat(12, 1fr)", node, false),
-                ];
-                nodes.extend(self.spacing(node, &["grid-column-gap", "1"], ctx, false)?);
+                let mut nodes = vec![decl("display", "grid", node, false)];
+                let sizes = crate::size::Sizes {
+                    config: self.config,
+                    offset: node.offset,
+                };
+                nodes.extend(self.size_rules(node, None, ctx, |index| {
+                    let count = match self.config.value.pointer("/theme/columns/count") {
+                        None => 12,
+                        Some(value) => scalar(sizes.at(value, index)?)
+                            .and_then(|v| v.parse::<u32>().ok())
+                            .filter(|n| *n > 0)
+                            .ok_or_else(|| {
+                                error(
+                                    node,
+                                    "EU_CONFIG",
+                                    "columns.count must be a positive integer",
+                                )
+                            })?,
+                    };
+                    if count != 12 && !ctx.bundled {
+                        self.config
+                            .migration_notice("EU_MIGRATION_GRID", node.offset, || {
+                                format!(
+                                    "@grid now uses columns.count ({count}) instead of 12 tracks"
+                                )
+                            });
+                    }
+                    Ok(vec![decl(
+                        "grid-template-columns",
+                        &format!("repeat({count}, minmax(0, 1fr))"),
+                        node,
+                        false,
+                    )])
+                })?);
+                nodes.extend(self.size_rules(node, None, ctx, |index| {
+                    let gutter = sizes.config_size("/theme/columns/gutters", index)?;
+                    let value = sizes.css(&gutter, index, false)?;
+                    let label = self
+                        .config
+                        .debug_tokens
+                        .then(|| "columns.gutters".to_owned());
+                    Ok(vec![sized_decl("column-gap", &value, node, false, &label)])
+                })?);
                 Ok(nodes)
             }
             "column" => {
@@ -684,6 +784,7 @@ impl Compiler<'_, '_> {
                     config: self.config,
                     offset: node.offset,
                 };
+                let label = sizes.token_label(args[0]);
                 self.size_rules(node, args.get(1).copied(), ctx, |index| {
                     let value = sizes.spacing(args[0], index)?;
                     let mut has_vw = false;
@@ -704,8 +805,8 @@ impl Compiler<'_, '_> {
                         decl("position", "relative", node, false),
                         decl("flex-grow", "0", node, false),
                         decl("flex-shrink", "0", node, false),
-                        decl("flex-basis", &value, node, false),
-                        decl("max-width", &max, node, false),
+                        sized_decl("flex-basis", &value, node, false, &label),
+                        sized_decl("max-width", &max, node, false, &label),
                     ])
                 })
             }
@@ -902,24 +1003,25 @@ impl Compiler<'_, '_> {
         }
         result.extend(self.size_rules(node, args.get(1).copied(), ctx, |index| {
             let value = token.map(|v| sizes.at(v, index)).transpose()?;
-            match value {
-                Some(value) => self.font_properties(
-                    node,
-                    value,
-                    index,
-                    multiplier,
-                    line_height.as_deref(),
-                    modified,
-                ),
-                None => self.font_properties(
-                    node,
-                    &Value::String(name.clone()),
-                    index,
-                    multiplier,
-                    line_height.as_deref(),
-                    modified,
-                ),
-            }
+            let literal = Value::String(name.clone());
+            let value = value.unwrap_or(&literal);
+            let properties = self.font_properties(
+                node,
+                value,
+                index,
+                multiplier,
+                line_height.as_deref(),
+                modified,
+            )?;
+            self.warn_line_height(
+                node,
+                &name,
+                value,
+                token.and_then(|v| v.get("__base__")),
+                index,
+                (multiplier, line_height.as_deref()),
+            )?;
+            Ok(properties)
         })?);
         if token.is_some() {
             fn annotate(nodes: &mut [Node], name: &str) {
@@ -950,10 +1052,18 @@ impl Compiler<'_, '_> {
                     || crate::size::dimension(key).is_some()
             });
         let (name, line) = if parts.len() > 1 && !modifier_only {
-            (
-                parts[..parts.len() - 1].join("/"),
-                Some(parts.last().unwrap().to_string()),
-            )
+            let last = parts.len() - 1;
+            let prefix = parts[..last].join("/");
+            // Existing slash-named tokens retain their ordinary line-height suffix.
+            let ratio = last >= 2
+                && self
+                    .config
+                    .get("/theme/typography/sizes", &prefix)
+                    .is_none()
+                && parts[last - 1].parse::<f64>().is_ok()
+                && parts[last].parse::<f64>().is_ok();
+            let split = if ratio { last - 1 } else { last };
+            (parts[..split].join("/"), Some(parts[split..].join("/")))
         } else {
             (value.to_string(), None)
         };
@@ -961,8 +1071,9 @@ impl Compiler<'_, '_> {
             return Err(error(node, "EU_SIZE", "Missing line height after /"));
         }
         if let Some((key, factor)) = name.strip_suffix(')').and_then(|s| s.rsplit_once('(')) {
-            if self.config.get("/theme/typography/sizes", key).is_some()
-                || crate::size::dimension(key).is_some()
+            if !(key == "scale-from" && factor.contains(','))
+                && (self.config.get("/theme/typography/sizes", key).is_some()
+                    || crate::size::dimension(key).is_some())
             {
                 let factor = factor
                     .parse::<f64>()
@@ -1020,15 +1131,20 @@ impl Compiler<'_, '_> {
             for (property, value) in properties {
                 let raw = css_value(value, property, node)?;
                 let value = if property == "font-size" {
+                    let length = sizes.font_length(&raw, index)?;
                     sizes.css(
-                        &crate::size::scale(&raw, multiplier, node.offset)?,
+                        &crate::size::scale(&length, multiplier, node.offset)?,
                         index,
                         true,
                     )?
+                } else if property == "line-height" && raw.contains('/') && !raw.contains('(') {
+                    self.line_height(node, &raw, index)?
                 } else if crate::size::dimension(&raw)
                     .is_some_and(|(_, unit)| matches!(unit, "vw" | "dpx"))
                 {
                     sizes.css(&raw, index, true)?
+                } else if raw.contains("scale-from(") {
+                    sizes.rewrite_size_functions(&raw, index, true, 0)?
                 } else {
                     raw
                 };
@@ -1054,25 +1170,30 @@ impl Compiler<'_, '_> {
             })?;
             let parts = crate::parser::split_top_level(&raw, '/')
                 .map_err(|e| error(node, "EU_SIZE", e.message))?;
-            if parts.len() > 2 {
+            if parts.len() > 3 {
                 return Err(error(
                     node,
                     "EU_SIZE",
                     "Font size values accept one line-height suffix",
                 ));
             }
-            let height = line_height.or_else(|| parts.get(1).copied());
-            if parts[0].ends_with("dpx") && height.is_some_and(|v| v.ends_with("vw")) {
+            let suffix = parts[1..].join("/");
+            let height = line_height.or((parts.len() > 1).then_some(suffix.as_str()));
+            let length = sizes.font_length(parts[0], index)?;
+            if length.ends_with("dpx") && height.is_some_and(|v| v.ends_with("vw")) {
                 return Err(error(
                     node,
                     "EU_SIZE",
                     "Do not mix dpx font sizes with vw line heights",
                 ));
             }
-            let raw = crate::size::scale(parts[0], multiplier, node.offset)?;
             result.push(decl(
                 "font-size",
-                &sizes.css(&raw, index, true)?,
+                &sizes.css(
+                    &crate::size::scale(&length, multiplier, node.offset)?,
+                    index,
+                    true,
+                )?,
                 node,
                 false,
             ));
@@ -1097,7 +1218,69 @@ impl Compiler<'_, '_> {
         Ok(result)
     }
 
+    fn warn_line_height(
+        &self,
+        node: &Node,
+        name: &str,
+        value: &Value,
+        base: Option<&Value>,
+        index: Option<usize>,
+        (multiplier, override_height): (f64, Option<&str>),
+    ) -> Result<(), Error> {
+        let property = |key: &str| {
+            value
+                .get(key)
+                .or_else(|| base.and_then(|b| b.get(key)))
+                .and_then(scalar)
+        };
+        let raw = scalar(value)
+            .or_else(|| property("font-size"))
+            .unwrap_or_default();
+        let parts = crate::parser::split_top_level(&raw, '/')?;
+        let configured = property("line-height");
+        let Some((height, "px")) = override_height
+            .or_else(|| parts.get(1).copied())
+            .or(configured.as_deref())
+            .and_then(crate::size::dimension)
+        else {
+            return Ok(());
+        };
+        let sizes = crate::size::Sizes {
+            config: self.config,
+            offset: node.offset,
+        };
+        if let Some(reference) = sizes.design_font_size(parts[0], index, multiplier) {
+            self.config.warn("EU_LINE_HEIGHT", node.offset, format!("Size `{name}` pairs a scaling font with a fixed {height}px line height. At a {reference}px design font size, use {}em to scale them together.", height/reference));
+        } else if multiplier != 1.0 {
+            self.config.warn("EU_LINE_HEIGHT", node.offset, format!("Size `{name}` has a multiplier and a fixed {height}px line height. Divide {height} by the design font size in pixels for the equivalent em line height."));
+        }
+        Ok(())
+    }
+
     fn line_height(&self, node: &Node, value: &str, index: Option<usize>) -> Result<String, Error> {
+        if let Some((height, size)) = value.split_once('/').filter(|_| !value.contains('(')) {
+            let height = height
+                .trim()
+                .parse::<f64>()
+                .ok()
+                .filter(|v| v.is_finite() && *v >= 0.0);
+            let size = size
+                .trim()
+                .parse::<f64>()
+                .ok()
+                .filter(|v| v.is_finite() && *v > 0.0);
+            return height
+                .zip(size)
+                .filter(|(h, s)| (h / s).is_finite())
+                .map(|(h, s)| format!("{}em", h / s))
+                .ok_or_else(|| {
+                    error(
+                        node,
+                        "EU_SIZE",
+                        "Expected a nonnegative line height divided by a positive font size",
+                    )
+                });
+        }
         if crate::size::dimension(value).is_some_and(|(n, unit)| n >= 0.0 && unit.is_empty()) {
             return Ok(value.into());
         }
@@ -1170,7 +1353,9 @@ impl Compiler<'_, '_> {
         ctx: &Context,
         important: bool,
     ) -> Result<Vec<Node>, Error> {
-        arity(node, args, 1, 3)?;
+        let cq = args.get(2) == Some(&"cq");
+        let query_index = if cq { 3 } else { 2 };
+        arity(node, args, 1, query_index + 1)?;
         let prop = args[0];
         if prop == "breakout" {
             arity(node, args, 1, 2)?;
@@ -1204,7 +1389,13 @@ impl Compiler<'_, '_> {
             }
             return self.size_rules(node, args.get(1).copied(), ctx, |index| {
                 let value = sizes.negate(inner, index)?;
-                Ok(vec![decl("margin-top", &value, node, important)])
+                Ok(vec![sized_decl(
+                    "margin-top",
+                    &value,
+                    node,
+                    important,
+                    &sizes.token_label(prop),
+                )])
             });
         }
         if prop == "container" {
@@ -1213,11 +1404,20 @@ impl Compiler<'_, '_> {
                 Ok(sizes
                     .container(index)?
                     .iter()
-                    .map(|(p, v)| decl(p, v, node, important))
+                    .map(|(p, v)| {
+                        let label = self.config.debug_tokens.then(|| {
+                            match *p {
+                                "max-width" => "container.maxWidth",
+                                _ => "container.padding",
+                            }
+                            .to_string()
+                        });
+                        sized_decl(p, v, node, important, &label)
+                    })
                     .collect())
             });
         }
-        arity(node, args, 2, 3)?;
+        arity(node, args, 2, query_index + 1)?;
         let props = match prop {
             "padding-x" => vec!["padding-left", "padding-right"],
             "padding-y" => vec!["padding-top", "padding-bottom"],
@@ -1232,19 +1432,30 @@ impl Compiler<'_, '_> {
         {
             return Err(error(node, "EU_ARGUMENTS", "Invalid CSS property"));
         }
-        self.size_rules(node, args.get(2).copied(), ctx, |index| {
-            let value = sizes.spacing(args[1], index)?;
+        let label = sizes
+            .token_label(args[1])
+            .map(|label| if cq { format!("{label} cq") } else { label });
+        self.size_rules(node, args.get(query_index).copied(), ctx, |index| {
+            let value = if cq {
+                let (numerator, denominator) = args[1]
+                    .split_once('/')
+                    .ok_or_else(|| error(node, "EU_SIZE", "cq requires a column fraction"))?;
+                sizes.fraction(numerator, denominator, index, 0, "cqi")?
+            } else {
+                sizes.spacing(args[1], index)?
+            };
             if matches!(prop, "translateX" | "translateY" | "translateZ" | "scale") {
-                Ok(vec![decl(
+                Ok(vec![sized_decl(
                     "transform",
                     &format!("{prop}({value})"),
                     node,
                     important,
+                    &label,
                 )])
             } else {
                 Ok(props
                     .iter()
-                    .map(|p| decl(p, &value, node, important))
+                    .map(|p| sized_decl(p, &value, node, important, &label))
                     .collect())
             }
         })

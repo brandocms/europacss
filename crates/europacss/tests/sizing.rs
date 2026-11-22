@@ -148,7 +148,7 @@ fn scoped_queries_and_custom_ranges_keep_responsive_sizes_inside_scope() {
 
 #[test]
 fn grid_and_column_rules_share_spacing_calculations() {
-    assert_css(".x {@responsive mobile {@grid; @column 3:1/4}}", ".x {@media (width < 740px) {display:grid;grid-template-columns:repeat(12,1fr);grid-column-gap:20px;position:relative;flex-grow:0;flex-shrink:0;flex-basis:calc(75% + 15px);max-width:calc(75% + 15px)}}", sizes_config());
+    assert_css(".x {@responsive mobile {@grid; @column 3:1/4}}", ".x {@media (width < 740px) {display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:20px;position:relative;flex-grow:0;flex-shrink:0;flex-basis:calc(75% + 15px);max-width:calc(75% + 15px)}}", sizes_config());
     let mut cfg = sizes_config();
     cfg["theme"]["columns"]["gutters"]["mobile"] = json!("2vw");
     assert_css(".x {@column 3/4 mobile}", ".x {@media (width < 740px) {position:relative;flex-grow:0;flex-shrink:0;flex-basis:calc(75% - 0.5vw);max-width:calc(75% - 0.502vw)}}", cfg);
@@ -371,6 +371,141 @@ fn column_and_offset_context_and_argument_errors_are_explicit() {
         assert!(
             compile(&request(source, sizes_config())).is_err(),
             "{source}"
+        );
+    }
+}
+
+#[test]
+fn responsive_collections_and_scale_from_apply_across_sizing_rules() {
+    let mut cfg = sizes_config();
+    cfg["theme"]["spacing"]["rows"] =
+        json!({"$sm":"scale-from(16, tablet)", "tablet":"24dpx", "*":"32dpx"});
+    cfg["theme"]["container"]["padding"] = json!({"$sm":"scale-from(16, tablet)","*":"32dpx"});
+    cfg["theme"]["columns"] = json!({"count":{"$sm":4,"$lg":11},"gutters":{"*":"16px"}});
+    cfg["theme"]["typography"]["sizes"] =
+        json!({"body":{"$sm":{"font-size":"scale-from(16, tablet)"},"*":"28dpx"}});
+    for (query, expected) in [
+        ("@space gap rows mobile", "gap:16px"),
+        ("@space gap rows tablet", "gap:calc(2.4vw * var(--ec-zoom))"),
+        (
+            "@space gap rows desktop",
+            "gap:calc(3.2vw * var(--ec-zoom))",
+        ),
+        ("@fontsize body mobile", "font-size:16px"),
+        (
+            "@space width container tablet",
+            "width:calc(1.6vw * var(--ec-zoom))",
+        ),
+    ] {
+        let output = compile_frontend(&request(&format!(".x{{{query}}}"), cfg.clone())).unwrap();
+        assert!(
+            output.css.replace(": ", ":").contains(expected),
+            "{}",
+            output.css
+        );
+    }
+    assert_css(".x{@responsive desktop{@grid}}", ".x{@media (width >= 1024px){display:grid;grid-template-columns:repeat(11,minmax(0,1fr));column-gap:16px}}",cfg.clone());
+    assert_css(
+        ".x{@grid subgrid}",
+        ".x{display:grid;grid-template-columns:subgrid}",
+        cfg.clone(),
+    );
+    cfg["theme"]["breakpointCollections"]["$also"] = json!("tablet");
+    cfg["theme"]["spacing"]["rows"]["$also"] = json!("20px");
+    let error = compile(&request(".x{@space gap rows}", cfg)).unwrap_err();
+    assert!(
+        error.message.contains("$sm")
+            && error.message.contains("$also")
+            && error.message.contains("tablet")
+    );
+}
+
+#[test]
+fn scale_from_matches_explicit_units_across_the_design_modes_and_cap() {
+    let mut cfg = sizes_config();
+    cfg["theme"]["breakpoints"] =
+        json!({"desktop_xl":"1920px","mobile":0,"tablet":"1024px","desktop_lg":"1440px"});
+    cfg["theme"]["breakpointCollections"] = json!({"$sm":"mobile","$lg":">=tablet"});
+    cfg["theme"]["container"]["maxWidth"] = json!({"*":"1920px"});
+    cfg["setMaxForVw"] = true.into();
+    cfg["dpxViewportSizes"] = json!({"$lg":1440, "desktop_xl":1600});
+    cfg["theme"]["spacing"]["projectRows"] =
+        json!({"$sm":"96px","$lg":"scale-from(149, desktop_lg)"});
+
+    let source = ".rows{@space gap projectRows}
+        .literal{@space gap scale-from(149, desktop_lg) $lg}
+        .hero{@space max-width 1228dpx tablet}
+        .footer{@space min-height 420dpx tablet}";
+    let expected =
+        ".rows{@space gap 96px mobile; @space gap 149px tablet; @space gap 149dpx >=desktop_lg}
+        .literal{@space gap 149px tablet; @space gap 149dpx >=desktop_lg}
+        .hero{@space max-width calc(85.27778vw * var(--ec-zoom)) tablet}
+        .footer{@space min-height calc(29.16667vw * var(--ec-zoom)) tablet}";
+    assert_css(source, expected, cfg);
+}
+
+#[test]
+fn scale_from_resolves_inside_calculations_and_responsive_blocks() {
+    let mut cfg = sizes_config();
+    cfg["dpxViewportSizes"] = json!({"tablet":800});
+    assert_css(
+        ".x{@responsive $sm {@space margin-top calc(10px + scale-from(-2.5, tablet))}}",
+        ".x{@responsive $sm {
+            @media (width < 740px) {margin-top:7.5px}
+            @media (width >= 740px) and (width < 1024px) {margin-top:calc(10px + calc(-0.3125vw * var(--ec-zoom)))}
+        }}",
+        cfg,
+    );
+}
+
+#[test]
+fn scale_from_rejects_invalid_arguments_and_reports_the_directive() {
+    for (args, diagnostic) in [
+        ("16", "number and a named breakpoint"),
+        ("16, tablet, desktop", "number and a named breakpoint"),
+        ("16px, tablet", "finite unitless number"),
+        ("NaN, tablet", "finite unitless number"),
+        ("1e400, tablet", "finite unitless number"),
+        ("16, missing", "named breakpoint, got `missing`"),
+        ("16, $sm", "named breakpoint, got `$sm`"),
+    ] {
+        let source = format!(".x {{\n @space gap scale-from({args}); }}");
+        let error = compile(&request(&source, sizes_config())).unwrap_err();
+        assert_eq!((error.code.as_str(), error.line), ("EU_SIZE", 2));
+        assert!(error.message.contains(diagnostic), "{error}");
+    }
+}
+
+#[test]
+fn removed_global_dpx_setting_reports_how_to_migrate() {
+    let mut cfg = sizes_config();
+    cfg["dpxScaleFrom"] = json!("tablet");
+    let error = compile(&request(".x{@space gap 40dpx}", cfg)).unwrap_err();
+    assert_eq!(error.code, "EU_CONFIG");
+    assert!(error.message.contains("dpxScaleFrom") && error.message.contains("scale-from("));
+}
+
+#[test]
+fn fractional_tracks_count_internal_gutters_and_support_container_units() {
+    let mut cfg = sizes_config();
+    cfg["theme"]["columns"]["gutters"] = json!("16px");
+    for (expr, fraction, extra, unit) in [
+        ("0.5/11", 0.5, 0.0, "%"),
+        ("1.5/11", 1.5, 1.0, "%"),
+        ("1/11", 1.0, 0.0, "%"),
+        ("6/11", 6.0, 5.0, "%"),
+        ("0.5:0.5/11 cq", 0.5, 0.5, "cqi"),
+        ("0.5:-0.5/11", 0.5, -0.5, "%"),
+    ] {
+        // For container width 1184, one column is (1184 - 10 * 16) / 11.
+        let expected = format!(
+            "calc((100{unit} - 160px) / 11 * {fraction} + {}px)",
+            extra * 16.0
+        );
+        assert_css(
+            &format!(".x{{@space translate {expr} desktop}}"),
+            &format!(".x{{@media (width >= 1024px){{translate:{expected}}}}}"),
+            cfg.clone(),
         );
     }
 }

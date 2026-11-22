@@ -98,7 +98,7 @@ Run `cargo test --locked -p europacss`; run `cargo clippy --locked -p europacss 
 widths and equal-value grouping. Media-last now
 preserves simple responsive/fallback pairs without warnings. Overlapping-query
 warnings remain conservative review prompts, not a complete cascade simulator.
-Report version 14 requires older acceptance files to be regenerated and reviewed.
+Report version 15 requires older acceptance files to be regenerated and reviewed.
 
 [spacing.rs](spacing.rs) also checks reusable `negate()` values, retained two-argument
 gap shorthand, negative column migration guidance, nonnumeric arguments, gutter

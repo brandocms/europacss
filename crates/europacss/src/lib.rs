@@ -36,7 +36,7 @@ pub struct Request {
     pub source_map: bool,
     #[serde(default)]
     pub minify: bool,
-    /// Opt-in font token comments for local debugging. Never emitted with minify.
+    /// Opt-in font and spacing token comments for local debugging. Never emitted with minify.
     #[serde(default)]
     pub debug_tokens: bool,
     /// Browserslist queries evaluated in Rust. Empty means the `defaults` query.
@@ -101,14 +101,24 @@ fn frontend(request: &Request, source_map: bool, optimize: bool) -> Result<Outpu
     (|| {
         let nodes = parser::parse(&request.source)?;
         imports::validate_external_order(&nodes)?;
-        let config = config::Config::new(&request.config)?;
+        let mut config = config::Config::new(&request.config)?;
+        config.debug_tokens = request.debug_tokens && !request.minify;
         let nodes = transform::transform(nodes, &config)?;
         let nodes = if optimize {
             optimize::media(nodes)
         } else {
             nodes
         };
-        Ok(emit::emit(&nodes, &single_source(request), source_map))
+        let sources = single_source(request);
+        let mut output = emit::emit(&nodes, &sources, source_map);
+        output.warnings = config
+            .warnings
+            .into_inner()
+            .items
+            .into_iter()
+            .map(|w| sources.locate(w))
+            .collect();
+        Ok(output)
     })()
     .map_err(|e: Error| e.locate(&request.source))
 }
@@ -147,11 +157,19 @@ pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Resu
 
 fn compile_loaded(request: &Request, loaded: imports::Loaded) -> Result<Output, Error> {
     let result = (|| {
-        let config = config::Config::new(&request.config)?;
+        let mut config = config::Config::new(&request.config)?;
+        config.debug_tokens = request.debug_tokens && !request.minify;
         let mut nodes = transform::transform(loaded.nodes, &config)?;
         imports::rebase(&mut nodes, &loaded.sources, &loaded.output_dir)?;
         let nodes = optimize::media(nodes);
-        let frontend = emit::emit(&nodes, &loaded.sources, true);
+        let mut frontend = emit::emit(&nodes, &loaded.sources, true);
+        frontend.warnings = config
+            .warnings
+            .into_inner()
+            .items
+            .into_iter()
+            .map(|w| loaded.sources.locate(w))
+            .collect();
         let mut result = backend::compile(request, frontend, &loaded.sources)?;
         result.dependencies = loaded
             .sources

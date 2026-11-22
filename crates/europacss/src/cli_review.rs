@@ -127,7 +127,7 @@ impl Session {
                 "line":first.line,"column":first.column,"code":first.code,"context":context,
                 "fixes":fixes,"comparisons":comparisons,
                 "fixable":group.findings.iter().filter(|f| f.fix.is_some()).count(),
-                "can_fix":!fixes.is_empty() && (report.analysis_complete || group.fixes().iter().all(|f| f.kind == "syntax")),
+                "can_fix":!fixes.is_empty() && (report.analysis_complete || group.fixes().iter().all(|f| f.automatic())),
                 "can_accept":report.analysis_complete && group.findings.iter().all(|f| migration::can_accept(&f.diagnostic.code)),
             })
         }).collect();
@@ -198,7 +198,7 @@ impl Session {
                     if fixes.is_empty() {
                         return Err("This item has no proposed edit; review it manually.".into());
                     }
-                    if !report.analysis_complete && fixes.iter().any(|f| f.kind != "syntax") {
+                    if !report.analysis_complete && fixes.iter().any(|f| !f.automatic()) {
                         return Err(
                             "Complete the analysis before applying appearance edits.".into()
                         );

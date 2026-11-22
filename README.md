@@ -2,18 +2,18 @@
 
 EuropaCSS turns design tokens and directives such as `@space`, `@fontsize` and `@responsive` into responsive CSS. The native compiler uses our Rust parser, JSON5 configuration and Lightning CSS for browser transforms. The executable and Config Studio need no Node, PostCSS or Node bindings.
 
-**The native compiler is a beta.** Its npm packages are `@brandocms/europacss-cli` and `@brandocms/vite-plugin-europacss`, versioned together. The first native release is `0.1.0-beta.0`; see [release status and publication](RELEASE.md). The older `@brandocms/europacss` npm package is the JavaScript/PostCSS implementation; its source is at tag `1.0.0-beta.16` and remains the reference for migration comparisons.
+**The native compiler is a beta.** Its npm packages are `@brandocms/europacss-cli` and `@brandocms/vite-plugin-europacss`, versioned together. The native beta is `0.1.0-beta.2`; see [release status and publication](RELEASE.md). The older `@brandocms/europacss` npm package is the JavaScript/PostCSS implementation; its source is at tag `1.0.0-beta.16` and remains the reference for migration comparisons.
 
 ## Getting started
 
 Install the prebuilt executable with Node 22.12+ or Node 24+:
 
 ```sh
-pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0
+pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.2
 pnpm exec europa --version
 ```
 
-The npm installation needs no Rust or install scripts. Optional dependencies select the binary for your platform. Use `pnpm exec europa` in place of `europa` in the examples below. For Vite, also install `@brandocms/vite-plugin-europacss@0.1.0-beta.0`; it finds its matching executable automatically.
+The npm installation needs no Rust or install scripts. Optional dependencies select the binary for your platform. Use `pnpm exec europa` in place of `europa` in the examples below. For Vite, also install `@brandocms/vite-plugin-europacss@0.1.0-beta.2`; it finds its matching executable automatically.
 
 To build from this checkout instead, with stable Rust installed:
 

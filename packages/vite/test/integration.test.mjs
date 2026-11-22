@@ -225,7 +225,7 @@ test('default and mobile policies resolve without JS target drift; invalid polic
 
 test('dev token labels survive Vite injection and production always omits them', async (t) => {
   const { config, write } = await fixture(t);
-  await write('nested/child.css', '.card {\n  @fontsize base;\n  opacity: .75;\n}');
+  await write('nested/child.css', '.card {\n  @fontsize base;\n  @space gap 1;\n  opacity: .75;\n}');
   config.plugins = [europa({ binary, debugTokens: true })];
   const server = await createServer({ ...config, server: { port: 0 } });
   t.after(() => server.close());
@@ -236,6 +236,7 @@ test('dev token labels survive Vite injection and production always omits them',
   const map = JSON.parse(Buffer.from(result.code.match(/sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/)[1], 'base64').toString());
   assert.ok(map.sources.some(source => source.endsWith('/nested/child.css')));
   assert.ok(map.names.includes('typography.sizes.base'));
+  assert.match(css, /--ec-space-token: "columns.gutters \* 1"/);
   // Decode the standard VLQ map at the injected CSS property's exact position.
   const prefix = css.slice(0, css.indexOf('font-size:'));
   const targetLine = prefix.split('\n').length - 1;
@@ -268,6 +269,6 @@ test('dev token labels survive Vite injection and production always omits them',
     const output = await build({ ...config, build: { write: false, cssMinify } });
     const css = output.output.find(asset => asset.fileName.endsWith('.css')).source;
     assert.match(css, /font-size/);
-    assert.doesNotMatch(css, /--ec-font-token/);
+    assert.doesNotMatch(css, /--ec-(font|space)-token/);
   }
 });

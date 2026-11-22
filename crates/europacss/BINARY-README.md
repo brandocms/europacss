@@ -33,7 +33,7 @@ Before migrating an existing site, run:
 Review findings and compare rendered pages. `--fix` rewrites supported suffix
 selectors; it never chooses a different appearance for you. Versioned migration
 analysis supports beta.6, beta.11 and beta.16, is bounded, and does not prove complete visual equivalence.
-Analyzer version 14 groups cross-selector risks by selector pair and prunes provably disjoint subjects. `--budget N` adjusts its comparison limit. `responsiveOrder: 'generated-last'` preserves authored media positions while appending directive media. `migration: { mediaPacking: 'none' }` disables speculative old-build media-packing checks when the old build did not pack media. Large reviews can use snapshot-bound receipts; see the migration guide before accepting a whole diagnostic code.
+Analyzer version 15 reports responsive grid counts and changed fractional spans. `--fix` preserves authored fractional widths with explicit gutter adjustments. The analyzer groups cross-selector risks by selector pair and prunes provably disjoint subjects. `--budget N` adjusts its comparison limit. `responsiveOrder: 'generated-last'` preserves authored media positions while appending directive media. `migration: { mediaPacking: 'none' }` disables speculative old-build media-packing checks when the old build did not pack media. Large reviews can use snapshot-bound receipts; see the migration guide before accepting a whole diagnostic code.
 
 The optional `europa compare` command compares computed styles and element boxes
 on the same rendered DOM. It requires Node.js 22+ and an installed Chromium browser

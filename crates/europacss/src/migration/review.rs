@@ -122,6 +122,8 @@ pub fn can_accept(code: &str) -> bool {
             | "EU_MIGRATION_SIZE"
             | "EU_MIGRATION_BREAKPOINT"
             | "EU_MIGRATION_COLUMN_SIGN"
+            | "EU_MIGRATION_GRID"
+            | "EU_MIGRATION_FRACTION"
             | "EU_MIGRATION_LEGACY6"
             | "EU_MIGRATION_LEGACY11"
     )

@@ -1352,3 +1352,64 @@ fn migrate_config_prints_semantic_notices_and_preserves_custom_data() {
         .unwrap()
         .contains("paddingDivider"));
 }
+
+#[test]
+fn migration_checks_grid_counts_and_preserves_fraction_widths_once_in_imports() {
+    let dir = Temp::new();
+    fs::write(dir.0.join("app.css"), "@import './grid.css';").unwrap();
+    let path = dir.0.join("grid.css");
+    let input = ".grid{@grid}.media{@column-offset 0.5/11;@space width calc(100% - var[1.5:0.5/11])}.part{@space translate 0.5/11 cq}";
+    fs::write(&path, input).unwrap();
+    fs::write(
+        dir.0.join("theme.json5"),
+        "{theme:{columns:{count:{'*':11},gutters:'16px'}}}",
+    )
+    .unwrap();
+    let migrate = |mode| {
+        let output = dir
+            .command()
+            .args([
+                "migrate",
+                "app.css",
+                "--config",
+                "theme.json5",
+                "--from",
+                "1.0.0-beta.16",
+                "--json",
+                mode,
+            ])
+            .output()
+            .unwrap();
+        serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap()
+    };
+    let check = migrate("--check");
+    let findings = check["findings"].as_array().unwrap();
+    assert!(findings.iter().any(|f| f["code"] == "EU_MIGRATION_GRID"));
+    assert_eq!(
+        findings
+            .iter()
+            .filter(|f| f["code"] == "EU_MIGRATION_FRACTION")
+            .count(),
+        2
+    );
+    assert_eq!(fs::read_to_string(&path).unwrap(), input);
+    let fixed = migrate("--fix");
+    assert_eq!(fixed["fixed_files"], 1);
+    let css = fs::read_to_string(&path).unwrap();
+    assert!(
+        css.contains("@column-offset 0.5:-0.5/11")
+            && css.contains("var[1.5:0/11]")
+            && css.contains("translate 0.5/11 cq")
+    );
+    assert_eq!(migrate("--fix")["fixed_files"], 0);
+    fs::write(
+        dir.0.join("theme.json5"),
+        "{theme:{columns:{count:12,gutters:'16px'}}}",
+    )
+    .unwrap();
+    assert!(migrate("--check")["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|f| f["code"] != "EU_MIGRATION_GRID" && f["code"] != "EU_MIGRATION_FRACTION"));
+}

@@ -1,5 +1,6 @@
 use super::{selectors, Audit, Edit, Fix};
 use crate::{
+    config::{Config, FractionChanges},
     emit,
     parser::{self, Node},
     Error,
@@ -204,6 +205,125 @@ pub(super) fn collect(
         for child in affected {
             audit.add("EU_MIGRATION_SUFFIX", format!("`{}` uses identifier suffix nesting, which native CSS does not support", child.text), child.offset,
                 if fix.is_some() { "A syntax-only autofix is available; review the explicit selectors before migrating the site." } else { "Flatten this subtree manually. Automatic fixes currently require one plain class/ID parent, suffix-only child selectors, and CSS declarations/conditions without Europa directives." }, fix.clone());
+        }
+    }
+    Ok(())
+}
+
+// Use the fractions actually resolved by the compiler. Only edit authored sizing
+// operands; a fraction supplied by a theme token or iteration needs a config edit.
+pub(super) fn fractional_columns(
+    resolved: &FractionChanges,
+    config: &Config<'_>,
+    audit: &mut Audit<'_>,
+) -> Result<(), Error> {
+    if resolved.is_empty() {
+        return Ok(());
+    }
+    for (index, file) in audit.sources.files.iter().enumerate() {
+        let source = audit.sources.content(index);
+        if resolved
+            .range(file.start..file.start + source.len())
+            .next()
+            .is_none()
+        {
+            continue;
+        }
+        let mut nodes = parser::parse(source)?;
+        while let Some(node) = nodes.pop() {
+            let offset = file.start + node.offset;
+            if let Some(children) = node.children {
+                nodes.extend(children);
+                continue;
+            }
+            let Some(changes) = resolved.get(&offset) else {
+                continue;
+            };
+            let (name, params) = node.at_rule().unwrap_or(("", ""));
+            let args = parser::arguments(params)?;
+            let operand = crate::size::sizing_operand(name, &args);
+            let mut touched = std::collections::BTreeSet::new();
+            let mut edits = Vec::new();
+            if let Some(operand) = operand {
+                let mut rewrite = |v: &str| {
+                    if let Some(replacement) = changes.get(v) {
+                        let marker = format!("/* europa-fraction: {v} */");
+                        if !params.contains(&marker)
+                            && config.get("/theme/spacing", v).is_none()
+                            && config.get("/theme/spacing", replacement).is_none()
+                        {
+                            let start =
+                                node.offset + (v.as_ptr() as usize - node.text.as_ptr() as usize);
+                            edits.push(Edit {
+                                filename: file.name.clone(),
+                                start,
+                                end: start + v.len(),
+                                expected: v.into(),
+                                replacement: replacement.clone(),
+                            });
+                            touched.insert(v.to_string());
+                        }
+                    }
+                };
+                rewrite(operand);
+                parser::rewrite_value(operand, &mut |name, args| {
+                    match (name, args) {
+                        ("var[]", Some(key)) => rewrite(key.trim()),
+                        ("negate", Some(values)) => {
+                            let args = parser::split_top_level(values, ',')?;
+                            for v in &args {
+                                rewrite(v);
+                            }
+                            if let Some(desired) = args.get(1).filter(|v| {
+                                config.get("/theme/spacing", v).is_none()
+                                    && !changes.contains_key(**v)
+                            }) {
+                                for op in ['+', '-'] {
+                                    let terms = parser::split_top_level(desired, op)?;
+                                    if terms.len() > 1 && terms.iter().all(|term| !term.is_empty())
+                                    {
+                                        for term in terms {
+                                            rewrite(term);
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                    Ok(None)
+                })?;
+            }
+            if !edits.is_empty() {
+                // The explicit negative gutter is itself valid legacy input. Record
+                // the converted value so a second --fix cannot subtract it again.
+                let markers: String = touched
+                    .iter()
+                    .map(|old| format!(" /* europa-fraction: {} */", changes[old]))
+                    .collect();
+                let end = node.offset + node.text.len();
+                edits.push(Edit {
+                    filename: file.name.clone(),
+                    start: end,
+                    end,
+                    expected: String::new(),
+                    replacement: markers,
+                });
+            }
+            let fix = (!edits.is_empty()).then(|| Fix {
+                kind: "fractional-columns".into(),
+                description: "Adjust explicit gutters to preserve the old width".into(),
+                edits,
+            });
+            for (old, new) in changes {
+                if params.contains(&format!("/* europa-fraction: {old} */")) {
+                    continue;
+                }
+                audit.add("EU_MIGRATION_FRACTION", format!("Fraction `{old}` now counts only the gutters between columns; `{new}` preserves its old width"), offset,
+                        if touched.contains(old) {"Use --fix to preserve this width, or accept the new fractional size."} else {"Update the originating size expression or theme token to preserve its old width."},
+                        if touched.contains(old) {fix.clone()} else {None});
+            }
         }
     }
     Ok(())

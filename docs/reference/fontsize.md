@@ -29,6 +29,8 @@ Append `/lineHeight` to override the line-height:
 @fontsize sm/1.5;
 ```
 
+A design line height of 22px on 16px type can be written as `'line-height': '22/16'` in a typography object, or as `@fontsize base/22/16`. Both emit `1.375em`. A fixed pixel line height paired with a scaling size or a size multiplier retains its pixel value and produces an `EU_LINE_HEIGHT` warning with the size name and suggested ratio.
+
 ## Multipliers
 
 Scale a size value with parentheses:
@@ -66,6 +68,8 @@ Linearly interpolate font-size between two values:
 ```
 
 `between()` is evaluated separately within each selected named breakpoint. Its legacy interpolation anchors are retained: the next breakpoint minus 1px, a 320px lower anchor for a zero breakpoint, and a 200px span for the last breakpoint. Media coverage itself uses `< next-breakpoint`, so there is no fractional-width coverage gap. Use `clamp()` for a formula you want to define directly.
+
+To keep a font at 18px below a named breakpoint and size it as `18dpx` from that breakpoint onward, use `@fontsize scale-from(18, desktop_lg);`. Typography tokens accept the same expression. See [design pixel scaling](./space#start-scaling-at-a-breakpoint).
 
 ## Breakpoint Constraints
 

@@ -23,7 +23,7 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
-pub const REPORT_VERSION: u32 = 14;
+pub const REPORT_VERSION: u32 = 15;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Edit {
@@ -38,9 +38,15 @@ pub struct Edit {
 #[derive(Clone, Debug, Serialize)]
 pub struct Fix {
     pub description: String,
-    /// Only syntax fixes may be selected by --fix. Appearance choices remain explicit.
+    /// Identifies syntax, fractional-column and reviewed appearance edits.
     pub kind: String,
     pub edits: Vec<Edit>,
+}
+
+impl Fix {
+    pub fn automatic(&self) -> bool {
+        matches!(self.kind.as_str(), "syntax" | "fractional-columns")
+    }
 }
 
 /// Structured evidence for presentation only. Finding identity and review
@@ -307,7 +313,14 @@ fn report(
                 "Resolve this compiler diagnostic and rerun migration; generated selectors have not been fully checked.", None);
         }
     }
-    for warning in config.migration_warnings.unwrap().into_inner().items {
+    let warnings = config.migration_warnings.take().unwrap().into_inner();
+    fixes::fractional_columns(&warnings.fractions, &config, &mut audit)?;
+    for warning in warnings.diagnostics.items {
+        if warning.code == "EU_MIGRATION_GRID" {
+            audit.add(&warning.code, warning.message, warning.offset,
+                "Review the configured column count. Use an explicit repeat(12, 1fr) template to retain the old tracks.", None);
+            continue;
+        }
         if !warning.code.starts_with("EU_MIGRATION_") {
             audit.complete = false;
             let help = match warning.code.as_str() {
@@ -351,7 +364,7 @@ fn report(
             continue;
         }
         audit.add(&warning.code, warning.message, warning.offset,
-            "Review the resolved sizes at the affected viewport widths. Accept the corrected formula intentionally, or replace the affected value with explicit CSS that preserves the old result. --fix never changes sizing formulas.", None);
+            "Review the resolved sizes at the affected viewport widths. Accept the corrected formula intentionally, or replace the affected value with explicit CSS that preserves the old result. This sizing change requires manual review.", None);
     }
     audit.findings.sort_by(|a, b| {
         (
@@ -373,6 +386,8 @@ fn report(
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
         checks: [
             "suffix-syntax",
+            "grid-column-count",
+            "fractional-columns",
             "bundle-placement",
             "nesting-specificity",
             "nested-pseudo-elements",

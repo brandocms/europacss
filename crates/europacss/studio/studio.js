@@ -10,6 +10,7 @@ const headings = {
   typography: ['Type, with intention.', 'Read the scale together. Look for a rhythm that holds at every width.'],
   spacing: ['Room to breathe.', 'See the distances your tokens create, from the smallest detail to a whole section.'],
   grid: ['A place for everything.', 'Inspect your container, column widths and gutter arithmetic at the actual viewport.'],
+  frame: ['Compare a design frame', 'Align the page and design at the configured design viewport.'],
   accessibility: ['Readable at every size.', 'Explore text scaling, contrast and the limits of your design tokens.'],
 };
 const accessibility = EuropaAccessibility.create({
@@ -70,7 +71,7 @@ function chooseTab(kind) {
 function syncFromEditor() {
   hoveredSpecimen = null; editingPath = editor.pathAtCursor();
   const kinds = new Set(matchingSpecimens().map(s => s.kind));
-  if(!['accessibility','context'].includes(tab) && kinds.size === 1 && !kinds.has(tab)) {chooseTab([...kinds][0]); render();}
+  if(!['accessibility','context','frame'].includes(tab) && kinds.size === 1 && !kinds.has(tab)) {chooseTab([...kinds][0]); render();}
   highlightEditingSource(); paintPreview();
 }
 function tracePreview(specimen, reveal) {
@@ -93,11 +94,19 @@ function linkPreview(node, specimen) {
 function render() {
   if (!latest || !frame.contentDocument?.body) return;
   const auditing=tab==='accessibility';
+  const comparing = tab === 'frame';
+  $('#design-frame').hidden = !comparing;
+  for (const selector of ['.viewport-controls','#breakpoints','.font-controls','.font-help']) $(selector).hidden=comparing;
   $('#accessibility').hidden=!auditing;
   $('#context-controls').hidden=tab!=='context';
-  for(const selector of ['.preview-shell','.preview-caption','.inspector','#notes','#fit']) $(selector).hidden=auditing;
+  for(const selector of ['.preview-shell','.preview-caption','.inspector','#notes','#fit']) $(selector).hidden=auditing || comparing;
   $('#heading').textContent = headings[tab][0]; $('#description').textContent = headings[tab][1];
   $('.specimen-controls').hidden = tab !== 'typography' && !auditing;
+  if (comparing) {
+    $('#count').textContent = latest.dpx_viewport_size + 'px';
+    EuropaFrame.layout(latest.dpx_viewport_size);
+    return;
+  }
   if(auditing) {$('#count').textContent='WCAG 2.2';return;}
   const doc = frame.contentDocument;
   doc.head.querySelectorAll('style:not(#project-fonts)').forEach(s => s.remove());

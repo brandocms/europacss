@@ -86,6 +86,22 @@ async function main() {
         },
       }`;
       await setEditor(page, dpxConfig); await page.locator('#compile').click(); await ready(page);
+      await page.locator('[data-tab="frame"]').click();
+      await page.route('http://frame.example.test/', route => route.fulfill({contentType:'text/html',body:'<h1>Project</h1>'}));
+      await page.locator('#frame-url').fill('http://frame.example.test/');
+      await page.locator('#frame-form button').click();
+      const framePage = page.frameLocator('#frame-page').locator('h1');
+      assert.equal(await framePage.textContent(), 'Project');
+      assert.equal(await framePage.evaluate(el => el.ownerDocument.defaultView.innerWidth), 1280);
+      const data = await page.evaluate(() => { const c=document.createElement('canvas'); c.width=640; c.height=200; return c.toDataURL().split(',')[1]; });
+      await page.locator('#frame-file').setInputFiles({name:'design.png', mimeType:'image/png', buffer:Buffer.from(data,'base64')});
+      await page.waitForFunction(() => !document.querySelector('#frame-image').hidden);
+      assert.equal(await page.locator('#frame-stage').evaluate(el => el.style.height),'400px');
+      await page.locator('#frame-opacity').fill('75');
+      await page.locator('#frame-difference').check();
+      assert.equal(await page.locator('#frame-image').evaluate(el => getComputedStyle(el).opacity),'0.75');
+      assert.equal(await page.locator('#frame-image').evaluate(el => getComputedStyle(el).mixBlendMode),'difference');
+      await page.locator('[data-tab="typography"]').click();
       for (const [width,body,heading] of [[1279,17,120],[1280,18,120],[1281,18.01406,120.09375],[1440,20.25,135]]) {
         await page.locator('#width').fill(String(width));
         await page.waitForFunction(width => document.querySelector('#preview').contentWindow.innerWidth === width, width);

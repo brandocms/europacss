@@ -25,6 +25,7 @@ pub struct Specimen {
 
 #[derive(Serialize)]
 pub struct Preview {
+    pub dpx_viewport_size: f64,
     pub breakpoints: Vec<(String, f64)>,
     pub specimens: Vec<Specimen>,
     pub css: String,
@@ -93,6 +94,12 @@ fn preview_in_context(source: &str, inheritance: &Inheritance) -> Result<Preview
     let config = inheritance.resolve(authored.clone())?;
     let checked = Config::new(&config).map_err(|e| e.to_string())?;
     let mut result = Preview {
+        dpx_viewport_size: config
+            .get("dpxViewportSize")
+            .and_then(crate::config::scalar)
+            .and_then(|n| n.parse::<f64>().ok())
+            .filter(|n| n.is_finite() && *n > 0.0)
+            .unwrap_or(1440.0),
         breakpoints: checked.breakpoints.clone(),
         specimens: Vec::new(),
         css: String::new(),
@@ -216,6 +223,7 @@ fn preview_in_context(source: &str, inheritance: &Inheritance) -> Result<Preview
             let is_token = !path.is_empty()
                 && (object.contains_key("*")
                     || object.contains_key("__base__")
+                    || object.keys().any(|key| key.starts_with('$'))
                     || bps.iter().any(|(bp, _)| object.contains_key(bp)));
             if !is_token {
                 for (key, value) in object {
