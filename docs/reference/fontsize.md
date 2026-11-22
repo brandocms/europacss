@@ -29,6 +29,8 @@ Append `/lineHeight` to override the line-height:
 @fontsize sm/1.5;
 ```
 
+A design line height of 22px on 16px type can be written as `'line-height': '22/16'` in a typography object, or as `@fontsize base/22/16`. Both emit `1.375em`. A fixed pixel line height paired with a scaling size or a size multiplier retains its pixel value and produces an `EU_LINE_HEIGHT` warning with the size name and suggested ratio.
+
 ## Multipliers
 
 Scale a size value with parentheses:

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/focused.js" defer></script><script src="/specimens.js" defer></script><script src="/studio.js" defer></script>
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/focused.js" defer></script><script src="/specimens.js" defer></script><script src="/frame.js" defer></script><script src="/studio.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -22,13 +22,27 @@
   <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
   <section class="workspace" aria-label="Configuration preview">
     <div class="workspace-heading"><div><span class="eyebrow">SEE YOUR SYSTEM</span><h2 id="heading">Type, with intention.</h2><p id="description">Read the scale together. Look for a rhythm that holds at every width.</p></div><div class="count" id="count"></div></div>
-    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="context" aria-pressed="false">In context</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button></nav>
+    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="context" aria-pressed="false">In context</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button><button data-tab="frame" aria-pressed="false">Design frame</button></nav>
     <div class="viewport-controls"><label for="width">Viewport <input id="width" type="number" min="280" max="2400" value="1200"> <span>px</span></label><input aria-label="Viewport width" id="slider" type="range" min="280" max="2400" value="1200"><button id="fit" aria-pressed="true">Fit view</button></div>
     <div id="breakpoints" class="breakpoints" aria-label="Breakpoint presets"></div>
     <div class="specimen-controls"><label for="specimen-text">Specimen</label><input id="specimen-text" value="A little space changes everything." maxlength="240"></div>
     <div class="font-controls"><label for="family">Font family</label><select id="family" aria-label="Preview font family"></select><span id="font-status" role="status">Checking project fonts…</span></div>
     <details class="font-help"><summary>Project fonts</summary><p id="font-info"></p></details>
     <div id="errors" role="alert" hidden></div>
+    <section id="design-frame" hidden aria-label="Design frame comparison">
+      <form id="frame-form">
+        <label>Page URL <input id="frame-url" type="url" placeholder="https://example.com" required></label>
+        <button type="submit">Load page</button>
+      </form>
+      <label>Design frame <input id="frame-file" type="file" accept="image/png"></label>
+      <label>Opacity <input id="frame-opacity" type="range" min="0" max="100" value="50"> <output id="frame-percent">50%</output></label>
+      <label><input id="frame-difference" type="checkbox"> Difference blend</label>
+      <p id="frame-status" role="status">Choose a PNG and load the page to compare.</p>
+      <div id="frame-view"><div id="frame-stage">
+        <iframe id="frame-page" title="Page at the design viewport" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer"></iframe>
+        <img id="frame-image" alt="Design frame overlay" hidden>
+      </div></div>
+    </section>
     <section id="accessibility" hidden aria-label="Accessibility checks">
       <p class="a11y-intro">Check the compiled tokens across widths, then test their use on your site. These are specimen checks and a zoom model, not a WCAG conformance report.</p>
       <details class="a11y-settings" open><summary>Check settings</summary>

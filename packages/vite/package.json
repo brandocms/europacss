@@ -1,6 +1,6 @@
 {
   "name": "@brandocms/vite-plugin-europacss",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "type": "module",
   "description": "Vite adapter for the standalone EuropaCSS compiler",
   "exports": {
@@ -27,7 +27,7 @@
     "vite": "^6.4.3 || ^8.3.0"
   },
   "dependencies": {
-    "@brandocms/europacss-cli": "0.1.0-beta.0"
+    "@brandocms/europacss-cli": "0.1.0-beta.1"
   },
   "publishConfig": { "access": "public", "tag": "beta" },
   "repository": {

@@ -189,3 +189,29 @@ and `::after` computed styles. It excludes iframe/shadow-root contents,
 pseudo-element boxes, animation behavior, and selector performance. Excluded
 iframes and open shadow roots are counted. The command stops above 10000 elements
 or 2000000 computed values; use a smaller root for large pages.
+
+## Compare a page with a design frame
+
+Start Chromium with CDP as described above. Export the design frame as a PNG, then run
+
+```sh
+europa compare http://localhost:4000/work --frame design.png --width 1440 \
+  --frame-json layout.json --output-dir comparison --json
+```
+
+The PNG and width are required. The command opens a new tab at the specified CSS width and captures the page from its top left to the scaled height of the design. Higher-resolution PNG exports are scaled to that width. The browser viewport height is the smaller of 900px and the scaled frame height.
+
+`overlay.png` blends the page and design at 50% opacity. `diff.png` marks changed pixels in red. The JSON report includes the number of changed pixels and bounding boxes around connected groups of changed 16px tiles. Font rendering and antialiasing count as pixel differences.
+
+With `--frame-json`, supply a Figma frame node, a single-node Figma API response, or a list of frame-relative boxes such as
+
+```json
+[
+  {"name":"Intro", "text":"Our work", "box":{"x":64,"y":137,"width":220,"height":48}},
+  {"name":"First photograph", "type":"image", "box":{"x":64,"y":399,"width":592,"height":400}}
+]
+```
+
+Figma absolute boxes are translated to the frame origin. Text matches by normalized content and occurrence. Images match in document order. Use `--root` to restrict matching to the page section represented in the design. Each reported box has signed page-minus-frame offsets in CSS pixels. The default threshold is 2px. Set `--threshold 0` to report every box difference. Unmatched design elements are listed separately and give exit status 2. Pixel or box differences give status 1, and a complete match gives status 0.
+
+Build the page with `--debug-tokens` to include spacing labels from matching rules on the element, enclosing layouts and preceding siblings. These labels identify candidate tokens to inspect when tracing a gap.

@@ -135,24 +135,20 @@ pub fn compile(request: &Request, frontend: Output, sources: &Sources) -> Result
     } else {
         None
     };
-    let warnings = warnings
-        .read()
-        .unwrap()
-        .iter()
-        .map(|e| {
-            diagnostic(
-                "EU_CSS_WARNING",
-                e.kind.to_string(),
-                e.loc.as_ref(),
-                &mut original_map,
-                sources,
-            )
-        })
-        .collect();
+    let mut diagnostics = frontend.warnings;
+    diagnostics.extend(warnings.read().unwrap().iter().map(|e| {
+        diagnostic(
+            "EU_CSS_WARNING",
+            e.kind.to_string(),
+            e.loc.as_ref(),
+            &mut original_map,
+            sources,
+        )
+    }));
     Ok(Output {
         css: printed.code,
         map,
-        warnings,
+        warnings: diagnostics,
         dependencies: Vec::new(),
         watch: Vec::new(),
     })

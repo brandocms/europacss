@@ -5,7 +5,7 @@ Node 22.12+ or Node 24+ for the npm launcher; the native executable itself needs
 neither Node nor Rust. Browser comparison additionally needs Chromium with CDP.
 
 ```sh
-pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.0
+pnpm add -D --save-exact @brandocms/europacss-cli@0.1.0-beta.1
 pnpm exec europa --version
 pnpm exec europa css/app.css --config europa.json5 -o public/app.css
 pnpm exec europa migrate css/app.css --from 1.0.0-beta.6 --config europa.json5

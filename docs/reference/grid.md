@@ -1,41 +1,22 @@
 # @grid
 
-Creates a CSS Grid with a 12-track template and the configured column gutter.
+`@grid` sets `display: grid`, takes its track count from `theme.columns.count`, and sets `column-gap` from `theme.columns.gutters`. Each track uses `minmax(0, 1fr)` so wide content can fit inside equal-width columns.
 
-## Syntax
-
-```css
-.container {
-  @grid;
+```json5
+columns: {
+  count: { $sm: 4, $lg: 11 },
+  gutters: { $sm: '12px', $lg: '16px' },
 }
 ```
 
-The current implementation emits `display: grid`, `grid-template-columns: repeat(12, 1fr)` and a responsive `grid-column-gap` from one gutter unit. Browser transforms may print that last property as `column-gap`. It does not set the row gap or use `theme.columns.count` to change the number of tracks.
-
-## Choose your own tracks
-
-Override the template after the directive:
-
 ```css
-.cards {
-  @grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  @space row-gap md;
-
-  @responsive xs {
-    grid-template-columns: 1fr;
-  }
+.page { @grid; }
+.media-row {
+  grid-column: 1 / -1;
+  @grid subgrid;
 }
 ```
 
-Alternatively, write the grid properties directly and use Europa only for the spacing:
+At a breakpoint in `$lg`, the page gets `repeat(11, minmax(0, 1fr))` and a 16px column gap. A missing count falls back to 12. The bundled theme supplies its own counts.
 
-```css
-.cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  @space gap 1; /* One configured gutter in both directions. */
-}
-```
-
-`@grid` takes no arguments. Put it inside `@responsive` to constrain its output. For flex-based fractions with gutter arithmetic, use [@column](./column).
+`@grid subgrid` sets `display: grid` and `grid-template-columns: subgrid`. The child shares its parent’s column tracks. Either directive can be used inside `@responsive`.

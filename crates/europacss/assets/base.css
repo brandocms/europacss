@@ -330,6 +330,7 @@ img[data-srcset] {
 */
 
 .dbg-grid {
+  @grid;
   @space container;
   display: none;
   user-select: none;
@@ -342,14 +343,7 @@ img[data-srcset] {
   right: 0;
   height: 100%;
 
-  @space grid-column-gap 1;
   grid-template-rows: 1fr;
-
-  @iterate theme.columns.count {
-    @responsive $key {
-      grid-template-columns: repeat($value, 1fr);
-    }
-  }
 
   &.visible {
     display: grid;

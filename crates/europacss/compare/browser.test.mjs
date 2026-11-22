@@ -31,7 +31,7 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     // Retry directory removal briefly without rerunning or weakening assertions.
     await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
-  const before = ':root{--palette:red}.a .b{margin-bottom:14.4px;color:red} .marker::before{content:none}.motion,.touch{color:black}';
+  const before = ':root{--palette:red}.a .b{margin-bottom:14.4px; /* --ec-space-token: "spacing.intro"; */ color:red} .marker::before{content:none}.motion,.touch{color:black}';
   const after = ':root{--palette:blue}.a .b{margin-bottom:20px;color:blue} .marker::before{content:"new"}.motion,.touch{color:black}@media(prefers-reduced-motion:reduce){.motion{color:purple}}@media(pointer:coarse) and (hover:none){.touch{color:purple}}';
   await writeFile(path.join(directory, 'before.css'), before);
   await writeFile(path.join(directory, 'after.css'), after);
@@ -113,6 +113,35 @@ test('CDP command compares real styles and geometry, preserves the cascade, and 
     await send('Runtime.enable');
     const state = async () => (await send('Runtime.evaluate', {expression:"({ready:document.readyState === 'complete',reduce:matchMedia('(prefers-reduced-motion:reduce)').matches,touch:navigator.maxTouchPoints})",returnByValue:true})).result.value;
     for (let i=0; i<100 && !(await state()).ready; i++) await new Promise(resolve=>setTimeout(resolve,20));
+    // Use an actual reference capture, then check both a perfect overlay and
+    // a known box offset relative to a Figma frame's absolute origin.
+    await send('Emulation.setDeviceMetricsOverride', {width:600,height:400,deviceScaleFactor:1,mobile:false});
+    const frame = path.join(directory, 'design.png');
+    const capture = await send('Page.captureScreenshot', {format:'png'});
+    await writeFile(frame, Buffer.from(capture.data, 'base64'));
+    const box = (await send('Runtime.evaluate', {expression:"document.querySelector('.b').getBoundingClientRect().toJSON()",returnByValue:true})).result.value;
+    const layout = path.join(directory, 'layout.json');
+    await writeFile(layout, JSON.stringify({document:{type:'FRAME',absoluteBoundingBox:{x:100,y:200,width:600,height:400},children:[
+      {type:'TEXT',name:'Field label',characters:'Field',absoluteBoundingBox:{x:box.x+100,y:box.y+178,width:box.width,height:box.height}}]}}));
+    const frameArgs = [page,'--frame',frame,'--width','600','--output-dir',directory,'--settle','10','--cdp',`http://127.0.0.1:${port}`,'--json'];
+    const runFrame = async (args) => {
+      try {
+        const result = await execute(binary || process.execPath, [...(binary ? ['compare'] : [cli]), ...args]);
+        return {code:0,report:JSON.parse(result.stdout)};
+      } catch (error) { return {code:error.code, report:JSON.parse(error.stdout)}; }
+    };
+    const equal = await runFrame(frameArgs);
+    assert.equal(equal.code,0,JSON.stringify(equal.report));
+    assert.equal(equal.report.changedPixels,0);
+    for (const f of [equal.report.overlay,equal.report.diff]) assert.equal((await readFile(f)).toString('ascii',1,4),'PNG');
+    const shifted = await runFrame([...frameArgs,'--frame-json',layout]);
+    assert.equal(shifted.code,1,JSON.stringify(shifted.report));
+    assert.deepEqual(shifted.report.changes[0].offset,{top:22});
+    assert.ok(shifted.report.changes[0].spacingTokens.some(entry => entry.token === 'spacing.intro'), JSON.stringify(shifted.report));
+    const visual = await runFrame(frameArgs.map(value => value === frame ? equal.report.diff : value === directory ? path.join(directory,'diff-test') : value));
+    assert.equal(visual.code,1,JSON.stringify(visual.report));
+    assert.ok(visual.report.changedPixels > 0 && visual.report.regions.length > 0);
+    await send('Emulation.clearDeviceMetricsOverride');
     await send('Emulation.setEmulatedMedia', {features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     const externallyEmulated = await compare(page, 'before.css', ['--target',targetId]);
     assert.equal(externallyEmulated.code, 0, JSON.stringify(externallyEmulated.report));

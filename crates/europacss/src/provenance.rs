@@ -316,7 +316,7 @@ pub(crate) fn refine(
                 };
                 let mut unique: Option<Origin> = None;
                 let mut valid = true;
-                let mut font_origin = None;
+                let mut labels = Vec::new();
                 for value in &values {
                     let Some(candidates) = block.get(value) else {
                         valid = false;
@@ -327,8 +327,23 @@ pub(crate) fn refine(
                         valid = false;
                         continue;
                     }
-                    if value.0.starts_with("font-size:") {
-                        font_origin = Some(first);
+                    if self.comments {
+                        if let Some(name) = first
+                            .authored
+                            .name
+                            .and_then(|n| self.original.get_name(n).ok())
+                        {
+                            let kind = if name.starts_with("typography.sizes.")
+                                && value.0.starts_with("font-size:")
+                            {
+                                "font"
+                            } else {
+                                "space"
+                            };
+                            if !labels.contains(&(kind, name)) {
+                                labels.push((kind, name));
+                            }
+                        }
                     }
                     if unique
                         .as_ref()
@@ -344,10 +359,7 @@ pub(crate) fn refine(
                     }
                 }
                 if self.comments {
-                    if let Some(name) = font_origin
-                        .and_then(|o| o.authored.name)
-                        .and_then(|n| self.original.get_name(n).ok())
-                    {
+                    for (kind, name) in labels {
                         // Prevent tokens containing comment terminators/newlines from
                         // changing CSS syntax; the source-map name retains the exact key.
                         let label = name
@@ -368,7 +380,7 @@ pub(crate) fn refine(
                                 column as u32 + if lines == 0 { position.1 } else { 0 },
                             ),
                             text: format!(
-                                " /* --ec-font-token: {}; */",
+                                " /* --ec-{kind}-token: {}; */",
                                 serde_json::to_string(&label).expect("string serializes")
                             ),
                         });

@@ -190,7 +190,7 @@ fn handle(
             .and_then(|i| fonts.assets.get(i))
         {
             drop(reader);
-            return response_bytes(stream, 200, asset.mime, &asset.bytes)
+            return response_bytes(stream, 200, asset.mime, &asset.bytes, false)
                 .map_err(|e| e.to_string());
         }
     }
@@ -204,6 +204,7 @@ fn handle(
         ("GET", "/editor.LICENSES.txt") => (200, "text/plain; charset=utf-8", include_str!("../studio/editor.LICENSES.txt").into()),
         ("GET", "/focused.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/focused.js").into()),
         ("GET", "/specimens.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/specimens.js").into()),
+        ("GET", "/frame.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/frame.js").into()),
         ("GET", "/studio.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/studio.js").into()),
         ("GET", "/accessibility.js") => (200, "text/javascript; charset=utf-8", include_str!("../studio/accessibility.js").into()),
         ("GET", "/preview") => (200, "text/html; charset=utf-8", "<!doctype html><html><head><meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; font-src 'self'\"></head><body></body></html>".into()),
@@ -252,11 +253,13 @@ fn handle(
         _ => (404, "application/json", "{\"error\":\"Not found\"}".into()),
     };
     drop(reader);
-    response(stream, status, mime, &body).map_err(|e| e.to_string())
+    let design_frame_ui = parts[0] == "GET" && parts[1] == "/";
+    response_bytes(stream, status, mime, body.as_bytes(), design_frame_ui)
+        .map_err(|e| e.to_string())
 }
 
 fn response(stream: &mut TcpStream, status: u16, mime: &str, body: &str) -> std::io::Result<()> {
-    response_bytes(stream, status, mime, body.as_bytes())
+    response_bytes(stream, status, mime, body.as_bytes(), false)
 }
 
 fn response_bytes(
@@ -264,6 +267,7 @@ fn response_bytes(
     status: u16,
     mime: &str,
     body: &[u8],
+    design_frame_ui: bool,
 ) -> std::io::Result<()> {
     let reason = match status {
         200 => "OK",
@@ -272,6 +276,11 @@ fn response_bytes(
         422 => "Unprocessable Content",
         _ => "Bad Request",
     };
-    write!(stream, "HTTP/1.1 {status} {reason}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'\r\n\r\n", body.len())?;
+    let frame_policy = if design_frame_ui {
+        "frame-src 'self' http: https:; img-src 'self' blob:"
+    } else {
+        "frame-src 'self'"
+    };
+    write!(stream, "HTTP/1.1 {status} {reason}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; {frame_policy}; frame-ancestors 'self'; base-uri 'none'; form-action 'none'\r\n\r\n", body.len())?;
     stream.write_all(body)
 }

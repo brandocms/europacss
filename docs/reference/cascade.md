@@ -211,4 +211,4 @@ fallback. Compare affected components at their breakpoints when updating.
 Legacy PostCSS migrations no longer need to reorder simple responsive/fallback
 pairs. Other differences remain: non-media declaration appending, overlapping
 query sorting, native selector specificity, and breakpoint boundaries. Migration
-reports use analyzer version 14; regenerate older saved reviews.
+reports use analyzer version 15; regenerate older saved reviews.

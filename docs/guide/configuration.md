@@ -346,7 +346,7 @@ columns: {
 
 The base bundle uses `columns.count` for its grid-overlay helpers. If you replace the `columns` section and use `@europa base`, include both `count` and `gutters`.
 
-`@column` uses the fraction written in CSS and these gutters. `@grid` currently emits a 12-column template and the configured **column gap**; it does not read `columns.count` to choose a track count. Set `grid-template-columns` explicitly for another layout. See [@grid](../reference/grid).
+`@column` uses the fraction written in CSS and these gutters. `@grid` uses both the configured count and gutters. See [@grid](../reference/grid).
 
 ## Global Options
 
@@ -357,6 +357,24 @@ When `true`, if your largest breakpoint uses `vw` units, EuropaCSS converts them
 ```json5
 setMaxForVw: true
 ```
+
+### Breakpoint collections in token maps
+
+Spacing, typography sizes, container sizes and column settings accept named breakpoints, collection keys and a wildcard. A named breakpoint overrides its collection. Two collections covering the same breakpoint produce an error naming both. The wildcard fills the remaining breakpoints.
+
+```json5
+{
+  dpxScaleFrom: 'desktop_lg',
+  theme: {
+    breakpoints: { mobile: 0, tablet: '768px', desktop_lg: '1280px' },
+    breakpointCollections: { $sm: '<=tablet', $lg: 'desktop_lg' },
+    spacing: { projectRows: { $sm: '96dpx', $lg: '149dpx' } },
+    columns: { count: { $sm: 4, $lg: 11 }, gutters: { '*': '16dpx' } },
+  },
+}
+```
+
+Below `dpxScaleFrom`, one design pixel compiles to one CSS pixel. Scaling begins at the named breakpoint. Omitting the option keeps viewport scaling at every breakpoint. `setMaxForVw` can still cap the upper end.
 
 ### `dpxViewportSize`
 

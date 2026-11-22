@@ -105,7 +105,9 @@ Named ranges now meet at `< next-breakpoint`: the old `width <= 739px` becomes `
 europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
 ```
 
-`--fix` writes supported suffix-selector rewrites and reruns analysis. A simple `.card { &__title { color: red; } }` can become `.card__title { color: red; }`. Complex/generated cases may require a manual edit. The command can still exit 1 after successful edits if other findings remain.
+`--check` flags uses of `@grid` where the resolved count changes from 12 and reports fractional column spans. For example, the new `0.5/11` is half a track. To preserve the old width, `--fix` rewrites the authored size to `0.5:-0.5/11` and marks the conversion in a CSS comment so subsequent runs keep the same width. Fractions supplied by a theme token or generated expression are reported at their use site for review.
+
+`--fix` also writes supported suffix-selector rewrites and reruns analysis. A simple `.card { &__title { color: red; } }` can become `.card__title { color: red; }`. Complex/generated cases may require a manual edit. The command can still exit 1 after successful edits if other findings remain.
 
 It does not change specificity, sizing, breakpoint semantics or declaration order on your behalf. Review the diff before continuing.
 
@@ -242,10 +244,7 @@ and explains the selected assumption under `limitations`. Terminal output also
 identifies skipped packing checks. `analysis_complete: true` refers to the checks
 enabled for that configuration; browser comparison is still needed.
 
-The report remains version 14. Existing reviews for unchanged inputs/configuration
-remain valid under the default assumption. Changing `migration.mediaPacking`
-changes the config snapshot: regenerate and review the report before replaying
-acceptances or applying reviewed edits. Keep the old-build evidence supporting
+Changing `migration.mediaPacking` changes the config snapshot. Regenerate the report before replaying acceptances or applying reviewed edits. Keep the old-build evidence supporting
 `'none'` with that review.
 
 ## Large reports and acceptance by code
@@ -301,7 +300,7 @@ jq '[.findings[] | select(.order_group != null)] |
   migration.json > order-priorities.json
 ```
 
-Keep the full report for acceptance and browser evidence. Report version 14
+Keep the full report for acceptance and browser evidence. Report version 15
 requires older acceptance receipts to be regenerated and reviewed.
 
 After reviewing the full report and browser evidence, you can accept all findings
@@ -343,3 +342,5 @@ default value is retained for compatibility. The library's
 
 Column gutters are separate: `theme.columns.gutters` still supplies the gutter
 used by `@column` sizing and numeric spacing such as `@space gap 1;`.
+
+Analyzer version 15 adds grid-count and fractional-column findings. Regenerate saved reviews from earlier versions.

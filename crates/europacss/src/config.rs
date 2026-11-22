@@ -1,17 +1,36 @@
 use crate::Error;
 use serde_json::Value;
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
+
+#[derive(Default)]
+pub struct Warnings {
+    pub items: Vec<Error>,
+    seen: HashSet<(String, usize, String)>,
+}
+
+impl Warnings {
+    fn record(&mut self, code: &str, offset: usize, key_offset: usize, message: String) {
+        if self.seen.insert((code.into(), key_offset, message.clone())) {
+            self.items.push(Error::new(code, message, offset));
+        }
+    }
+}
+
+pub type FractionChanges = BTreeMap<usize, BTreeMap<String, String>>;
 
 #[derive(Default)]
 pub struct MigrationWarnings {
-    pub items: Vec<Error>,
-    seen: HashSet<(String, usize, String)>,
+    pub diagnostics: Warnings,
+    pub fractions: FractionChanges,
 }
 
 pub struct Config<'a> {
     pub value: &'a Value,
     pub breakpoints: Vec<(String, f64)>,
+    pub dpx_scale_from: Option<usize>,
+    pub debug_tokens: bool,
+    pub warnings: RefCell<Warnings>,
     pub migration_warnings: Option<RefCell<MigrationWarnings>>,
     pub migration_beta6: bool,
     pub migration_beta11: bool,
@@ -85,7 +104,25 @@ impl<'a> Config<'a> {
                 0,
             ));
         }
+        let dpx_scale_from = value
+            .get("dpxScaleFrom")
+            .map(|value| {
+                breakpoints
+                    .iter()
+                    .position(|(name, _)| Some(name.as_str()) == value.as_str())
+                    .ok_or_else(|| {
+                        Error::new(
+                            "EU_CONFIG",
+                            format!("dpxScaleFrom must name a configured breakpoint, got {value}"),
+                            0,
+                        )
+                    })
+            })
+            .transpose()?;
         Ok(Self {
+            dpx_scale_from,
+            debug_tokens: false,
+            warnings: RefCell::default(),
             value,
             breakpoints,
             migration_warnings: None,
@@ -119,13 +156,35 @@ impl<'a> Config<'a> {
         } else {
             offset
         };
-        if !warnings
-            .seen
-            .insert((code.into(), key_offset, message.clone()))
-        {
-            return;
+        warnings
+            .diagnostics
+            .record(code, offset, key_offset, message);
+    }
+    pub fn warn(&self, code: &str, offset: usize, message: String) {
+        self.warnings
+            .borrow_mut()
+            .record(code, offset, offset, message);
+    }
+    pub fn responsive_value<'v>(
+        &self,
+        values: &'v serde_json::Map<String, Value>,
+        index: usize,
+        offset: usize,
+    ) -> Result<Option<&'v Value>, Error> {
+        let breakpoint = &self.breakpoints[index].0;
+        let mut covered = HashMap::new();
+        for (collection, value) in values.iter().filter(|(key, _)| key.starts_with('$')) {
+            for member in self.select(collection, offset)? {
+                if let Some((other, _)) = covered.insert(member, (collection, value)) {
+                    let name = &self.breakpoints[member].0;
+                    return Err(Error::new("EU_CONFIG", format!("Collections `{other}` and `{collection}` overlap at breakpoint `{name}`"), offset));
+                }
+            }
         }
-        warnings.items.push(Error::new(code, message, offset));
+        Ok(values
+            .get(breakpoint)
+            .or_else(|| covered.get(&index).map(|(_, value)| *value))
+            .or_else(|| values.get("*")))
     }
     pub fn get(&self, base: &str, key: &str) -> Option<&'a Value> {
         lookup(self.value.pointer(base)?, key)

@@ -144,6 +144,15 @@ Size elements as a fraction of the grid, accounting for column gutters from `the
 @space margin-top 6/12 mobile;
 ```
 
+A fractional track includes only the gutters between the spanned tracks. On an 11-column grid, `0.5/11` is half a column and `1.5/11` is one and a half columns plus one gutter. `0.5:0.5/11` adds half a gutter explicitly.
+
+For a transform, select the nearest inline-size container as the reference width with `cq`. An optional breakpoint query follows the modifier.
+
+```css
+.grid { @grid; container-type: inline-size; }
+.image { @space translate 0.5/11 cq; }
+```
+
 ### Gutter Multiplier
 
 Adjust the gutter offset using the `columns:gutterMultiplier/totalColumns` syntax:

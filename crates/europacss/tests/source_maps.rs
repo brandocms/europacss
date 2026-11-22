@@ -206,3 +206,34 @@ fn non_ascii_output_does_not_create_false_maps_for_later_minified_rules() {
         }
     }
 }
+
+#[test]
+fn spacing_comments_follow_longhands_and_shorthands_through_the_backend() {
+    let mut cfg = config();
+    cfg["theme"]["spacing"] = json!({"rows":"149px","intro":"108px"});
+    cfg["theme"]["columns"] = json!({"gutters":"16px"});
+    cfg["theme"]["container"] = json!({"padding":"48px","maxWidth":"1184px"});
+    let source = ".grid{@space gap rows}.row{@space margin-bottom negate(rows, intro)}.col{@column 0.5/11 desktop}.offset{@column-offset 2}.container{@space container}.nested{@space height calc(100vh - var[rows])}";
+    let mut req = request(source, cfg);
+    req.minify = false;
+    assert!(!compile(&req).unwrap().css.contains("--ec-space-token"));
+    req.debug_tokens = true;
+    let output = compile(&req).unwrap();
+    for label in [
+        "spacing.rows",
+        "negate(spacing.rows, spacing.intro)",
+        "0.5/11 (columns.gutters)",
+        "columns.gutters * 2",
+        "container.padding",
+        "container.maxWidth",
+        "calc(100vh - spacing.rows)",
+    ] {
+        assert!(
+            output
+                .css
+                .contains(&format!("--ec-space-token: \"{label}\";")),
+            "Missing {label} in {}",
+            output.css
+        );
+    }
+}

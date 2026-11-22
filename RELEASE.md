@@ -4,6 +4,15 @@ This repository builds the native compiler. The legacy JavaScript/PostCSS packag
 
 ## Native npm beta
 
+### 0.1.0-beta.1
+
+- Responsive spacing, type, container and column tokens accept breakpoint collections. Set `dpxScaleFrom` to keep design pixels at 1px below a named breakpoint. (#127)
+- **Layout change.** `@grid` now uses `columns.count` at each breakpoint and emits `minmax(0, 1fr)` tracks. Use `@grid subgrid` for a child sharing its parent’s columns. (#128)
+- **Layout change.** Fractional column spans include the gutters between the spanned tracks. Run `europa migrate --check` with the entry, config and source version to review affected sites. `--fix` can preserve authored fractional widths with explicit gutter adjustments. Use `cq` for container-relative offsets. (#129)
+- Compare a rendered page with a design PNG and optional layout JSON using `europa compare --frame`. Studio can overlay a local PNG with adjustable opacity and difference blending. (#130)
+- `--debug-tokens` labels generated spacing declarations and expressions in development CSS. (#131)
+- Typography accepts design line-height ratios such as `22/16`. Fixed pixel line heights paired with scaling sizes produce a warning. (#132)
+
 The first native npm release, **0.1.0-beta.0**, was published on October 15,
 2026 from commit `53af5527d1eaa4a3bdf42f2e1a720a651ab2f0b2`. All nine published
 packages match the tarballs from the successful [cross-platform release run](https://github.com/brandocms/europacss/actions/runs/38767861670).
@@ -48,7 +57,7 @@ for incomplete upstream crate archives live under `scripts/licenses/`.
 Use the archive path printed by that command:
 
 ```sh
-python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.0-aarch64-apple-darwin.tar.gz
+python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.1-aarch64-apple-darwin.tar.gz
 node scripts/test-npm.mjs --manager npm
 node scripts/test-npm.mjs --manager pnpm
 ```
@@ -120,8 +129,8 @@ requires a new version. Do not rebuild artifacts between validation and publish.
 After publication, validate actual registry installs on Node 22 and Node 24:
 
 ```sh
-node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.0 --manager npm
-node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.0 --manager pnpm
+node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.1 --manager npm
+node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.1 --manager pnpm
 ```
 
 ### Brando handoff

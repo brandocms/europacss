@@ -88,3 +88,7 @@ After applying edits, remaining decisions are cleared because their input snapsh
 Reopen a Studio report with pending edits in Studio to continue. Once no edits are selected, its accepted findings can also be replayed with the CLI's `--accept` flag. The terminal workflow remains available for scripts; there is no need to hand-edit a report when using Studio.
 
 A completed review covers the analyzer's listed checks. Compare rendered pages, breakpoint boundaries and interactions before shipping the migrated site.
+
+## Overlay a design frame
+
+Open **Design frame**, choose the exported PNG, and load the page URL. Studio sizes the page to the current config’s `dpxViewportSize` and scales the page and design together to fit the panel. Adjust **Opacity** to see both layers, or enable **Difference blend** and set opacity to 100% to highlight pixel differences. The PNG stays in the browser tab. For sites that block embedding, use the [frame comparison command](./compare#compare-a-page-with-a-design-frame).
