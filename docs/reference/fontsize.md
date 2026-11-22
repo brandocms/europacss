@@ -29,6 +29,8 @@ Append `/lineHeight` to override the line-height:
 @fontsize sm/1.5;
 ```
 
+A design line height of 22px on 16px type can be written as `'line-height': '22/16'` in a typography object, or as `@fontsize base/22/16`. Both emit `1.375em`. A fixed pixel line height paired with a scaling size or a size multiplier retains its pixel value and produces an `EU_LINE_HEIGHT` warning with the size name and suggested ratio.
+
 ## Multipliers
 
 Scale a size value with parentheses:
@@ -54,6 +56,8 @@ Use slash or dot notation for nested size definitions:
 @fontsize body/small/1.5;
 ```
 
+A literal key such as `'header/large'` is addressed by that exact slash name and takes precedence over the nested `header.large` path. Dot notation traverses nested objects.
+
 ## Between (Fluid Scaling)
 
 Linearly interpolate font-size between two values:
@@ -62,6 +66,10 @@ Linearly interpolate font-size between two values:
 @fontsize between(18px-22px);
 @fontsize between(14px-18px);
 ```
+
+`between()` is evaluated separately within each selected named breakpoint. Its legacy interpolation anchors are retained: the next breakpoint minus 1px, a 320px lower anchor for a zero breakpoint, and a 200px span for the last breakpoint. Media coverage itself uses `< next-breakpoint`, so there is no fractional-width coverage gap. Use `clamp()` for a formula you want to define directly.
+
+To keep a font at 18px below a named breakpoint and size it as `18dpx` from that breakpoint onward, use `@fontsize scale-from(18, desktop_lg);`. Typography tokens accept the same expression. See [design pixel scaling](./space#start-scaling-at-a-breakpoint).
 
 ## Breakpoint Constraints
 
@@ -82,7 +90,7 @@ Limit output to specific breakpoints:
 
 When your config defines sizes as objects with multiple properties:
 
-```js
+```json5
 // Config
 sizes: {
   h1: {
@@ -101,7 +109,7 @@ sizes: {
 
 Sizes with a `__base__` key output shared properties outside media queries:
 
-```js
+```json5
 // Config
 sizes: {
   'body-large': {
@@ -127,10 +135,10 @@ h2 {
   line-height: 135%;
   letter-spacing: -0.02em;
 }
-@media (width <= 739px) {
+@media (width < 740px) {
   h2 { font-size: 20px; }
 }
-@media (min-width: 740px) and (max-width: 1023px) {
+@media (width >= 740px) and (width < 1024px) {
   h2 { font-size: 25px; }
 }
 @media (width >= 1024px) {
@@ -138,15 +146,15 @@ h2 {
 }
 ```
 
-## Dynamic Font Family in `__base__`
+## Font family references in `__base__`
 
-Reference other config values via function:
+Reference another theme value without a JavaScript callback:
 
-```js
+```json5
 sizes: {
   'heading': {
     __base__: {
-      'font-family': theme => theme.typography.families['header/display']
+      'font-family': '{typography.families.header/display}'
     },
     xs: { 'font-size': '24px' },
     md: { 'font-size': '36px' }

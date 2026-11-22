@@ -1,0 +1,259 @@
+# EuropaCSS native compiler — implementation notes
+
+For the user-facing workflow, start with [getting started](../../docs/guide/getting-started.md), [Vite](../../docs/guide/vite.md), [builds](../../docs/guide/build.md), [lint and migration](../../docs/guide/lint-and-migration.md), or [Studio](../../docs/guide/studio.md).
+
+This is an experimental standalone Rust library and `europa` executable. Compiling CSS, migration analysis, and Studio require no Node, npm, PostCSS, or Node bindings. Europa source is parsed by our own Rust structural parser, expanded into standard CSS with common rules before responsive rules in each scope, and passed directly to the Lightning CSS Rust crate. The published JavaScript implementation remains in the repository as the migration reference. The optional [browser comparison command](../../docs/guide/compare.md) uses Node.js 22+ and an installed Chromium browser's CDP endpoint; it downloads no browser and needs no npm packages.
+
+```sh
+cargo build --locked --release -p europacss
+cargo test --locked -p europacss
+
+./target/release/europa crates/europacss/examples/app.css \
+  --config crates/europacss/examples/europa.json5 \
+  --targets 'defaults' --source-map -o /tmp/europa-example.css
+```
+
+The CLI also accepts stdin (`europa -`), writes CSS to stdout when `-o` is omitted, and supports `--minify`. Browser queries run in Rust using Lightning's Browserslist support. Nesting is lowered when the selected browsers require it and retained when every target supports it. This can reduce production bundles substantially. Browser support defaults are unchanged. The Rust Lightning dependency is pinned to `1.0.0-alpha.72`; it comes from the exact same source commit (`c6a0c3c`) as [GitHub/npm v1.33.0](https://github.com/parcel-bundler/lightningcss/blob/v1.33.0/Cargo.toml). Rust and npm use separate version numbers. Source maps compose through both compiler stages and include original source content. Diagnostics identify the source file, line, column, and a stable error code. Maps currently identify originating rules/directives, not every character of generated declarations.
+
+
+The terminal output uses color automatically on interactive terminals. Errors and warnings show the originating file, a numbered source excerpt, and a caret, including imported files. Build summaries show elapsed time, CSS size, file count, and enabled output options. All diagnostics and summaries go to stderr, so stdout remains CSS only. `--quiet` hides successful build/conversion summaries; warnings and errors remain visible. Use `--color auto|always|never` to override detection. Auto mode respects `NO_COLOR` and `TERM=dumb`; `--help` follows stdout's terminal status separately.
+
+```text
+  europa  ✓ compiled in 12.4 ms
+          css/app.css → public/app.css
+          8 files · 84.2 KiB · minified · source map
+```
+
+The numbers above illustrate the display, not benchmark results.
+
+## Native preview archives
+
+`python3 scripts/package-rust.py` builds a release executable for the host, creates
+an archive plus SHA-256 checksum under `dist/native/`, extracts it, and compiles the
+included example with an empty `PATH`. Python is packaging tooling only. The archive
+contains the binary, examples, manifest, dependency inventory, and available license
+notices. `--target <triple>` can package another installed Rust target; it still needs
+a suitable linker and a matching machine for the runtime smoke test.
+
+The [Rust CI workflow](../../.github/workflows/rust.yml) runs formatting, Clippy,
+tests, packaging, and the runtime smoke test on Linux, macOS, and Windows runners
+for each relevant push. It uploads preview artifacts only. The
+[native npm workflow](../../.github/workflows/native-release.yml) builds and tests
+all seven supported platforms; see [release notes](../../RELEASE.md) for the
+platform list and publication. Binaries are not yet signed or notarized. See
+[binary notes](BINARY-README.md).
+
+## Watch mode
+
+```sh
+europa css/app.css --config europa.json5 --source-map -o public/app.css --watch
+```
+
+Watch mode compiles immediately, then checks input contents every 250 ms. It tracks the current import graph, the JSON5 config, and symlink targets; editor file replacements are detected even when timestamps or sizes stay unchanged. Newly added imports are picked up on rebuild and removed imports stop triggering builds. Compile/config errors retain the previous CSS and source map. Failed builds retry once per second so creating a missing import or fixing the first build recovers automatically; identical repeated errors are printed only once. Stop with Ctrl-C.
+
+This first implementation uses content polling rather than operating-system notifications. Its idle I/O scales with the source/config size. Output files do not trigger rebuilds; asset contents, external URLs, and unrelated files are not watched. `--watch` requires a file input and `-o` output. It never concatenates repeated builds on stdout.
+
+## Implemented
+
+- Local `@import` resolution with dependency tracking, repeated imports in source order, media/supports/layer qualifiers, cycle and expansion limits, and per-file source maps and diagnostics. Relative `url()` and `image-set()` assets are rebased for the output directory. Leading external imports stay browser-loaded.
+- Own parser for Europa block/statement structure, strings, comments, escapes, functions, balanced component values, and custom properties containing blocks. CSS selector/property grammar is validated by Lightning.
+- `@color`, `@color!`, `@display`, `@order`, `@font`, `@if`, and `%placeholder` definitions at the root or inside unconditional layers, expanded with `@extend %name`. Placeholders share a global namespace and expand in the use site's layer. Extensions support forward references, nested rules, and cycle detection.
+- `@iterate` over config objects and arrays, with scoped `$key` / `$value` substitution in declarations, selectors, strings, and directive arguments. Comments, escapes, and longer names such as `$keyboard` are preserved. Nested iterators bind their own variables; all expansions stay at the directive's source position and have a bounded node budget.
+- `@unpack` responsive property maps, plus `containerPadding` / `gridGutter` custom-property aliases using the shared sizing evaluator.
+- `@abs100` / `@abs100!` with optional breakpoint queries and `@embed-responsive width/height` using the existing pseudo-element layout.
+- `@responsive` / `@mq` with nested intersections, named breakpoints, `$collections`, slash lists, comparisons, and pixel arrow ranges. Breakpoints are ordered numerically; named intervals meet at inclusive lower/exclusive upper bounds (`width >= 740px` and `width < 1024px`), covering fractional widths without gaps. Explicit pixel arrow endpoints remain inclusive.
+- `@space` / `@space!` and `@column-offset`: literal CSS sizes, named/wildcard tokens, negative values, gutter multipliers, column fractions and gutter modifiers, token multiplication/division, `calc(var[...])`, design pixels, capped viewport sizes, fluid `between()`, vertical rhythm, container padding, dynamic `*` padding with minimums, breakout, transforms, and `negate()` margin adjustments.
+- `@fontsize` and `@font`: named/wildcard sizes, literal and hierarchical slash keys, modifiers and line-height suffixes, property objects, shared `__base__` properties, design pixels, viewport zoom/maximums, fluid sizing, and native CSS calculations.
+- `@grid` and `@column` reuse the spacing evaluator. Column output retains the existing 0.002vw max-width adjustment. Deprecated `@row` reports replacement instructions.
+- `theme()` token lookup, scalar arrays, lazy fallbacks, and recursive value references; `ease()` with all 40 legacy easing names and aliases. Value functions run in declarations and directive/conditional parameters, while strings, comments, and URL payloads remain literal. Unknown keys, invalid value types, cycles, and excessive expansion produce diagnostics. Declaration values cannot introduce extra declarations or rules.
+- `@europa base` and `@europa arrows`, with bundled styles and normalize.css embedded in the executable. Their Europa directives use the same config and transforms as authored styles.
+- Local compaction of adjacent media blocks with identical conditions or bodies. Repeated width queries can also combine across media blocks proven to have disjoint width ranges. Exact authored query clauses remain; ordinary rules, overlapping or unknown conditions, and enclosing scopes are barriers. The proof search is bounded.
+- Common rules precede responsive rules across selectors within each scope. Native nesting specificity, media relative order, and enclosing layers/conditions are preserved. Layer registrations and unknown at-rules are ordering barriers; keyframes, font-face and property registrations are transparent while keeping their relative order. See [cascade and layers](../../docs/reference/cascade.md) for the policy and the Brando layer convention.
+- JSON5 configuration with comments, existing default data, theme-section replacement, `theme.extend`, and `{path.to.token}` references. Full references preserve object/array types; embedded references require strings or numbers. Unknown references and cycles fail.
+- A native config conversion command: `europa migrate-config europa.config.cjs -o europa.json5`. It accepts static CommonJS/ESM object exports or exported JSON data, validates references, and refuses to overwrite an existing output. Static JS conversion retains comments and quotes supported numeric keys without executing code.
+- `nesting: 'expanded'` emits plain selector lists with per-branch specificity, with explicit expansion limits. The default `native` mode follows CSS nesting semantics. See [nesting](../../docs/reference/nesting.md).
+- Versioned migration checks for nesting specificity, nested pseudo-elements, suffix syntax, local/repeated-selector media-order conflicts, cross-layer-block ordering, potential cross-selector authored-media conflicts, selected sizing corrections, and signed column intent. `europa migrate` reads the entry and local imports with the actual JSON5 config and collects independent expansion errors. Supported suffix fixes preserve conditions and declaration order; appearance choices remain explicit.
+
+## Configuration
+
+Use `--config europa.json5` explicitly. Without it, the compiler uses the checked-in default configuration. The library's `load_config` accepts `.json5` and strict `.json`; `resolve_config` accepts a data object. Call one of them before constructing a library `Request`. Pass `--watch` to monitor this config, inherited parents and imported stylesheets. Config discovery remains explicit.
+
+A top-level `extends: './presets/brando.json5'` inherits one file, resolved relative to the declaring file's real directory. Chains merge raw objects recursively; child arrays, scalars and null replace parent values. Defaults, existing `theme.extend` semantics and token references apply once after merging, so parent references see child overrides. Cycles and invalid/missing parents are errors. Use exact filenames, including paths into `node_modules`; package-name resolution and JavaScript execution are not supported. See [config inheritance](../../docs/guide/configuration.md#inherit-a-shared-config). `load_config_tracked` additionally returns dependencies/content snapshots and records attempted watch paths on failure; the data-only `resolve_config` rejects `extends`.
+
+JSON5 supports comments, single-quoted strings, unquoted identifier keys, and trailing commas. It is data only: no `module.exports`, imports, callbacks, or JavaScript evaluation. Parsing runs entirely in Rust. [JSON5 specification](https://spec.json5.org/).
+
+Advanced typography keeps shared properties and breakpoint overrides together:
+
+```json5
+{
+  theme: {
+    breakpoints: { mobile: '0', tablet: '740px', desktop: '1024px' },
+    colors: {
+      ink: '#163442',
+      text: '{colors.ink}', // References replace simple theme callbacks.
+    },
+    typography: {
+      families: { sans: ['Inter', 'sans-serif'] },
+      sizes: {
+        'heading/4xl': {
+          __base__: {
+            'font-family': '{typography.families.sans}',
+            'font-weight': 600,
+            'line-height': 1.1,
+            'letter-spacing': '-0.025em',
+          },
+          mobile: { 'font-size': '32px', 'line-height': 1.15 },
+          tablet: { 'font-size': '48px' },
+          desktop: {
+            'font-size': 'clamp(48px, 4vw, 72px)',
+            'letter-spacing': '-0.04em',
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+Use it with `.hero-title { @fontsize heading/4xl; }`. Shared properties are expanded first, followed by breakpoint overrides, all at the directive's source position. The full [example config](examples/europa.json5) also includes spacing and body text. A regression test compares its compiled typography with explicit CSS. Native `clamp()`, Europa `dpx`, and `'*'` fallback breakpoint entries are supported.
+
+Duplicate object keys and non-finite numbers (`NaN`, `Infinity`) are rejected as config errors; nulls are preserved. The loader does not rewrite source files, so comments remain untouched. The library's `json_to_json5` and CLI conversion command emit formatted JSON5 from exported JSON data.
+
+For a static legacy config, run `europa migrate-config europa.config.cjs -o europa.json5`. It recognizes `module.exports = { ... }` and `export default { ... }`, keeps comments/strings intact, and quotes safe decimal integer keys. JSON5 input is validated and retained; exported strict JSON is formatted as JSON5. The command refuses duplicate keys, non-finite values, prototype-setting properties, ambiguous numeric keys, or object-key order that JavaScript would rearrange. Arrange array-index keys in ascending order before other keys when asked, then rerun. Original files are never edited and existing output files are never overwritten.
+
+Constant theme section callbacks written as `() => ({ ... })` (including `theme.extend` sections) are unwrapped into data without evaluating JavaScript. Their returned objects must contain only JSON5 literals/token references; comments and numeric-key checks are retained. Other JavaScript callbacks, variable references, spreads, computed keys, imports, and function calls require manual conversion to static data or `{token.references}`. They produce an error before output is created; no code is executed. A general exporter for dynamic configs remains future work. Existing exported JSON can still be converted with `europa migrate-config resolved.json -o europa.json5`; comments absent from that JSON cannot be recovered.
+
+## Config Studio
+
+```sh
+europa studio                                    # bundled example
+europa studio --config europa.json5               # your config + detected project fonts
+europa studio --config europa.json5 --fonts css/fonts.css --public-dir public
+```
+
+Open the local URL printed by the command. The native binary serves the entire UI; no Node or development server is required. Edit JSON5 with comments, preview real compiled typography/spacing/grid CSS at an adjustable iframe viewport, and inspect computed styles, resolved tokens, and generated CSS. Fit view scales only the display: measurements and media queries use the selected viewport width. The specimen document initializes `--ec-zoom: 1`, matching the base stylesheet default so `dpx` calculations work in the isolated preview. Font-family selection supplies an inherited preview family; explicit font-family declarations in a typography token take precedence.
+
+The bundled CodeMirror editor provides JSON5 syntax colors, line numbers, bracket matching, automatic indentation, folding, undo/redo, and search. Tab/Shift-Tab indent selections; Escape followed by Tab leaves the editor. Comments and untouched line endings survive edits and export. JSON5 lines remain unwrapped by default, with horizontal scrolling to preserve indentation and line structure. Wrapping is an optional display toggle and never changes the source. Drag the divider (or focus it and use the arrow keys), toggle wrapping, or expand the editor to the full width. Escape returns from the expanded editor. The pane fits short laptop windows as well as larger screens.
+
+Editing a token highlights its preview and selects its category. Hovering a preview highlights its authored config without scrolling, moving the caret, or taking focus. Clicking (or Enter/Space on a focused specimen) unfolds and reveals the source. Links use parsed property paths from the current document, including literal slash keys, nested tokens, `theme.extend` overrides, and reference dependencies. Default-only tokens have no authored location and are labeled accordingly.
+
+**In context** combines selected heading, body, detail, spacing and column tokens in an article and two cards, with English or Norwegian copy and long words. The configured container and real project fonts apply. Measurements flag text overflow; these are sample layouts, not a reconstruction of your site.
+
+Click a preview to open **focused editing** for its authored scalar values, including breakpoint entries, `*`, `__base__`, references and `theme.extend`. Review shows exact value changes and compiles the proposed config before Apply. Applying is one undoable CodeMirror transaction, preserving comments, untouched number spelling and line endings. Concurrent source edits invalidate the proposal. Built-in defaults, new properties and arrays remain editable in JSON5.
+
+The zero-width mobile/iPhone breakpoint preset previews at 375px; manual viewport sizes remain adjustable.
+
+The **Accessibility** tab checks responsive text across breakpoint edges and intermediate widths, shows size graphs, and models how viewport-based text responds to page zoom. Choose the zoom runtime: CSS only, proportional `--ec-zoom` compensation, or Jupiter’s current Chrome DPR calculation. Results and exports identify that assumption; the table shows the multiplier used. It also checks specimen overflow at 320px, doubled text and user text-spacing overrides. Choose WCAG 2.2 AA/AAA contrast targets, foreground/background colors and a canvas for transparency; the chosen text token's size and weight determine its contrast threshold at each sampled width. Small-text and abrupt-jump limits are configurable design hints. Settings are remembered locally, source links reveal the relevant JSON5, and Export report downloads measurements with a config hash. These are token checks and a zoom model, not a site-wide conformance result; see [accessibility settings](../../docs/guide/studio.md#accessibility-settings). Root font size follows compiled `typography.base`, with a 16px fallback.
+
+Studio auto-detects `css/includes/fonts.css` and `public` beside the config. Other layouts use `--fonts` and `--public-dir`. It reads top-level `@font-face` rules and serves a fixed snapshot of their local WOFF/WOFF2/TTF/OTF files, preserving weights, styles, and Unicode ranges. Root-relative URLs map into the public directory; `/assets/fonts/...` can also map to `public/fonts/...`, as in the supplied Craft projects. Relative URLs resolve beside the font stylesheet and must remain inside that directory or the public directory. Remote URLs, stylesheet imports, and `local()` system-font substitutions are skipped. Font status reports loaded faces and failures; “Project fonts” lists faces and any skipped sources. Restart Studio to pick up changes to the on-disk config or font files.
+
+Config edits stay in the browser tab; Export downloads the exact JSON5 text, including comments. Opening JSON5 through the browser changes the config only, not the server's font snapshot. Config Studio does not write the source config; Migration Studio applies explicitly reviewed CSS edits. Invalid config retains the last successful preview with an error notice and disables export. Editor assets and their license notices are checked in and embedded into the native executable; Cargo builds and Studio need no npm install, CDN, or Node runtime. Only [regenerating the editor bundle](../../tools/studio-editor/README.md) uses optional maintainer tooling. This version has a code editor and compiler-backed specimens; focused scalar editing and proposed config diffs are available; adding properties and editing arrays still use JSON5. Specimens use the default backend targets and cannot certify a site's full cascade or visual parity.
+
+## Migration review
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --summary
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --check --json > migration.json
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --fix
+```
+
+The source version is required. The modeled profiles are exactly `1.0.0-beta.6`, `1.0.0-beta.11`, and `1.0.0-beta.16`; other versions fail rather than inheriting guessed semantics. The beta.6 profile adds warnings for verified older color, breakpoint, typography, lookup, and container behavior. The beta.11 profile covers changed lookup, responsive literal font sizes, and negate/breakout behavior. The default is read-only `--check`. Text diagnostics go to stderr; `--json` writes a structured report to stdout. Exit status 1 means findings remain or a listed analysis could not finish.
+
+Specificity checks expand legacy selector alternatives and compare them with native `:is()` parent semantics using Lightning's selector parser, including `:where()`, `:is()`, `:not()`, `:has()`, and `:nth-child(... of ...)`. Conditions containing only declarations do not trigger selector-list warnings. Iterators and placeholders are expanded with the real config. Limits or unsupported selector contexts produce an incomplete-analysis finding rather than a clean result.
+
+Matching checks also flag pseudo-element parents and multiple top-level `&` selectors separated by combinators. For example, `.a, .b { & + & {} }` used to expand to `.a + .a, .b + .b`; native CSS can additionally match `.a + .b` and `.b + .a`, despite equal specificity. General matching equivalence inside selector functions is not modeled.
+
+`EU_MIGRATION_BUNDLE_ORDER` flags bundles that the legacy compiler moved to the root but now expand at their authored position. Review reset/arrow order and enclosing conditions.
+
+Local order checks compare overlapping properties, including shorthand longhands and importance. For example, `@fontsize base; line-height: normal` reports a nonresponsive shared base value appended by the old compiler and the later authored value in the new compiler. Simple responsive/fallback pairs retain legacy media-last behavior and need no reordering or warning. The analyzer additionally compares exact repeated selector paths, overlapping width-only groups, and equal-value responsive groups that legacy media sorting could reorder. These are conservative review prompts, not a complete cascade simulation. Keeping corrected authored order needs no source edit. The diagnostic explains how to preserve an old override order deliberately; `--fix` never makes that appearance choice.
+
+To record intentional semantic changes, save a `--json` report and set `"accepted": true` on each finding you have reviewed. Rerun with `--accept migration.json`; accepted findings remain visible in JSON, and status 0 means no unresolved findings remain in the listed checks. Saving a report alone accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Review decisions are bound to the analyzer revision and a BLAKE3 snapshot of every source path/content, resolved configuration, and target query; any changed input requires a fresh review. Reports currently refer to canonical paths in the same checkout. Apply `--fix` before generating the review report; it cannot be combined with `--accept`.
+
+`EU_MIGRATION_BREAKPOINT` reports used named upper boundaries that now close the old final-pixel gap, once per boundary at its first use. Accept the correction after review; `--fix` makes no boundary edits. Standard CSS media queries, explicit arrow ranges and `between()` interpolation anchors are unchanged. Reports use analyzer version 12, including selector-pair groups and subject-disjointness pruning; earlier saved decisions require a fresh review.
+
+Resolved sizing checks follow actual token expansion and breakpoint selection. They flag the zero-width breakpoint correction in spacing `between()`, additive scalar calculations in `vertical-rhythm()` that are now multiplied as a whole, and object font modifiers that now retain their other properties. These findings identify the authored directive and affected breakpoint; unused config tokens do not warn. Formula changes require review and can be explicitly accepted; `--fix` does not change them.
+
+`--fix` currently flattens a suffix subtree only when it has one plain class/ID parent, suffix-only child selectors, and CSS declarations or supported conditions without Europa directives. It retains comments, declaration order, and enclosing scopes. It declines complex/generated cases and bounds proposed edits. Rewrites use source snapshots, reject stale/overlapping edits, preserve file permissions, replace individual files atomically, and rerun analysis afterward. A multi-file invocation is not a filesystem transaction; earlier successful edits remain if a later file write fails.
+
+For an adjacent fallback conflict, the report can propose a `preserve-appearance` edit. For example, `@fontsize body; line-height: normal;` can become `line-height: normal; @fontsize body;` if retaining the old directive override is desired. The proposal contains exact source and replacement text. Set `apply_fix: true` only on the chosen findings in a saved JSON report, then run:
+
+```sh
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --json > review.json
+# Review the proposals and select findings with apply_fix: true.
+europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --apply review.json
+```
+
+This uses freshly recomputed proposals, validates the complete source/config snapshot, rejects overlapping edits, and reruns analysis after writing. Editing the saved replacement text cannot inject a different edit. An unchanged report selects nothing. `--fix` still applies syntax fixes only; `--accept` accepts intentional semantic changes without editing CSS. Apply edits before accepting changes against a fresh report. Proposals are limited to adjacent authored directive/declaration pairs; they do not certify the whole cascade or reorder generated placeholder/iteration bodies. Appearance edit proposals currently require the beta.16 profile. Beta.6 and beta.11 emit review warnings without borrowing beta.16 appearance edits. Report version 13 invalidates earlier saved reviews, and review snapshots include the source version.
+
+For a browser review, add `--studio`: `europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --studio`. The searchable queue groups related findings, displays source context and diffs, and records decisions without editing JSON. **Review selected edits** prepares a verified plan; **Apply edits** rechecks the source/config snapshot, writes selected proposals and refreshes analysis. **Save review** / **Open review** retain decisions for unchanged inputs. See the [Studio guide](../../docs/guide/studio.md#review-a-migration).
+
+The default terminal report groups findings by source location and diagnostic code, with one excerpt per review item and the affected properties/breakpoint conditions underneath. `--summary` lists review-item and finding counts per file and code; `--details` prints each finding separately. `--json` retains every finding, and review decisions still apply individually. `--fix` applies supported syntax rewrites; `--apply review.json` applies selected edit proposals (`--apply-fixes` remains an alias).
+
+Large reports retain every unique finding, including sizing/profile warnings; there is no 512-finding cutoff. Declaration checks index expanded longhands and importance so unrelated properties do not consume the comparison budget. Selector expansion and comparison work remain bounded, and exhausted analysis still cannot be accepted. Reviewed JSON input is limited to 16 MiB, and proposed edits have a separate size budget.
+
+A clean report covers only the checks listed in its JSON. It does not prove unchanged computed styles. Cross-selector cascade, arbitrary condition overlap, global duplicate-selector/media sorting, logical/physical property interactions, other sizing differences, and backend/browser-target differences still need review. `@scope` analysis is currently reported as incomplete. Use rendered-page comparisons before upgrading a site.
+
+## Remaining work before migrating a site
+
+All 86 old spacing and 52 font-size source cases now have native fixture assertions, with intentional semantic and backend differences recorded per case. Further audit of other feature families, browsers, breakpoint boundaries and interactive states remains useful. Detailed source maps and further output compaction are separate improvements.
+
+Nested responsive blocks retain their outer conditions; sizes are selected by the innermost query. Placeholders are root definitions and `@extend %one, %two` expands them in listed order at the use site. Arbitrary selector extensions remain unsupported. `@unpack` property bags contain CSS declaration values; Europa sizing expressions in those bags are not evaluated.
+
+## Library
+
+```rust
+use europacss::{compile, load_config, Request};
+
+let request = Request {
+    source: ".card { @color fg text; }".into(),
+    filename: "app.css".into(),
+    config: load_config(std::path::Path::new("europa.json5"))?,
+    source_map: true,
+    browsers: vec!["defaults".into()],
+    ..Request::default()
+};
+let output = compile(&request)?;
+```
+
+Use `compile_file(&request, output_path)` for local import resolution. Set `request.filename` to the entry path and leave `request.source` empty. The optional output path determines the base for asset URLs; omitting it uses the entry directory. `Output.dependencies` contains canonical source paths in first-visit order. The CLI uses this API automatically for file inputs. In-memory input and stdin cannot load local imports.
+
+Standalone imports support exact relative paths and CSS packages through ancestor node_modules directories, including exports and style entries. Package manifests participate in watches and review snapshots. The Vite adapter uses Vite's resolver for packages and aliases. Globs and stylesheet-local `@namespace` bundling are not implemented. Remote/root-relative imports are retained without fetching; a remote import that would land after bundled style rules or inside a conditional/layer wrapper fails explicitly instead of being moved. Imported files must be UTF-8. Import conditions wrap the imported layer, following the [CSS import rules](https://drafts.csswg.org/css-cascade-5/#at-import). The bundler rebases assets but does not copy them. Symlinks resolve to canonical file locations.
+
+`compile_frontend` exposes the intermediate standard CSS before media compaction for transform development. `compile` also performs native nesting lowering, target transforms, optional compact printing, and source-map composition using [Lightning's Rust API](https://docs.rs/lightningcss/1.0.0-alpha.72/lightningcss/stylesheet/struct.StyleSheet.html).
+
+### Vite adapter
+
+The experimental [Vite adapter](../../packages/vite/README.md) calls the standalone
+binary and preserves normal CSS imports, asset handling, maps and HMR. It needs
+JavaScript only because Vite does; the compiler has no Node bindings or runtime
+dependency. The adapter is currently local-only and tested with Vite 6.4.3 and
+8.3.0. Its `targets` option shares one CSS browser policy between Europa and
+Vite's final CSS pass; JavaScript targets remain separate.
+
+Build-tool authors can invoke `europa bridge` with one JSON request on stdin:
+
+```json
+{"version":1,"filename":"/absolute/path/app.css","config":"/absolute/path/europa.json5","source":".card{@space left negate(1/4)}","browsers":["defaults"]}
+```
+
+`source` is optional; when provided it replaces only the entry's disk content.
+Imported files are still read relative to the entry. `config` can be omitted for
+defaults. The response contains `version`, `css`, a parsed `map`, `warnings`,
+`dependencies`, `watchFiles`, and `error`. Exit status is nonzero on error, with a
+JSON diagnostic on stdout. `watchFiles` includes attempted missing dependencies
+and logical symlink paths. This command writes no files.
+
+`europa bridge targets` resolves browser queries without loading project files:
+
+```json
+{"version":1,"browsers":["chrome 110","safari 15.6"]}
+```
+
+It returns the same response envelope with `css` and `map` set to `null`, empty
+dependency/watch lists, and `targets: {"chrome": 7208960, "safari": 984576}`.
+Versions use Lightning CSS's packed `major << 16 | minor << 8 | patch` format.
+An omitted or empty `browsers` list uses `defaults`; a query that selects no
+modeled browsers returns an empty target map. Invalid queries and protocol
+versions return a structured error and nonzero status. Compile responses omit
+`targets`. Adapters must handle unsupported or empty target maps explicitly.

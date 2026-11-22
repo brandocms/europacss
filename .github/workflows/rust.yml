@@ -1,0 +1,72 @@
+name: Native Rust compiler
+
+on:
+  push:
+    branches: ['**']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/rust.yml']
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust toolchain components
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          rustup default stable
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo clippy --locked -p europacss --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --locked -p europacss
+      - name: Package and smoke-test native preview
+        run: python scripts/package-rust.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: europa-native-${{ matrix.os }}
+          path: dist/native/*
+          if-no-files-found: error
+
+  vite:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        vite: ['6.4.3', '8.3.0']
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Build native compiler
+        run: cargo build --locked -p europacss
+      - name: Install optional adapter test dependencies
+        working-directory: packages
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Vite matrix version
+        if: matrix.vite != '6.4.3'
+        working-directory: packages
+        run: npm install --workspace @brandocms/vite-plugin-europacss --no-save --package-lock=false --ignore-scripts --no-audit --no-fund vite@${{ matrix.vite }}
+      - name: Test Vite build and HMR integration
+        working-directory: packages
+        run: npm test
+      - name: Test browser comparison
+        run: node --test crates/europacss/compare/*.test.mjs
+        env:
+          EUROPA_COMPARE_BROWSER: /usr/bin/google-chrome
+          EUROPA_BINARY: ${{ github.workspace }}/target/debug/europa

@@ -12,7 +12,7 @@ Conditionally includes a block of CSS based on a config value being truthy.
 
 ## Usage
 
-```js
+```json5
 // Config
 typography: {
   optimizeLegibility: true

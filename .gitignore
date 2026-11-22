@@ -1,6 +1,10 @@
 node_modules/
 npm-debug.log
 yarn-error.log
-/coverage
 /.vscode
 .DS_Store
+/target/
+/dist/native/
+/dist/npm/
+# Claude Code local settings: permission allowlists can hold secrets
+**/.claude/settings.local.json

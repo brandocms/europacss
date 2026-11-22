@@ -92,7 +92,7 @@ Apply colors conditionally per breakpoint:
 
 ## Config Format
 
-```js
+```json5
 colors: {
   // Flat
   black: '#000',

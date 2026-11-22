@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Europa Config Studio</title><link rel="stylesheet" href="/studio.css"><script src="/editor.js" defer></script><script src="/accessibility.js" defer></script><script src="/focused.js" defer></script><script src="/specimens.js" defer></script><script src="/frame.js" defer></script><script src="/studio.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark" aria-hidden="true">e.</span><div><strong>Europa</strong><span>Config Studio <small>PREVIEW</small></span></div></div>
+  <div class="actions"><a class="studio-migration-link" href="/migration">Migration review ↗</a><span id="status" role="status">Opening workspace…</span><button id="load">Open JSON5</button><button class="primary" id="export" disabled>Export JSON5 <span aria-hidden="true">↗</span></button><input id="file" type="file" accept=".json5,.json" hidden></div>
+</header>
+<main>
+  <aside class="editor-panel">
+    <div class="panel-heading"><div><span class="eyebrow">YOUR CONFIGURATION</span><h1 id="filename">europa.json5</h1></div><span class="file-icon" aria-hidden="true">{ }</span></div>
+    <p class="hint">Edit the rules. See how they feel.</p>
+    <div class="editor-tools"><button id="wrap" aria-pressed="false" title="Wrap long lines without changing the JSON5">Wrap lines</button><button id="expand" aria-pressed="false">Expand editor ↗</button></div>
+    <div id="source-context" class="source-context" role="status">Hover a preview to trace its config · click to edit</div>
+    <div id="editor" aria-label="Configuration code editor"></div>
+    <div class="editor-footer"><span>Tab indents · Esc, Tab leaves</span><button id="compile" title="Compile preview (⌘/Ctrl + Enter)">Update preview <kbd>⌘ ↵</kbd></button></div>
+    <p class="save-note">Edits stay in this browser tab. Export to keep a copy.</p>
+  </aside>
+  <div id="divider" role="separator" tabindex="0" aria-label="Resize configuration editor" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="800" aria-valuenow="420" title="Drag to resize · arrow keys to adjust · double-click to reset"></div>
+  <section class="workspace" aria-label="Configuration preview">
+    <div class="workspace-heading"><div><span class="eyebrow">SEE YOUR SYSTEM</span><h2 id="heading">Type, with intention.</h2><p id="description">Read the scale together. Look for a rhythm that holds at every width.</p></div><div class="count" id="count"></div></div>
+    <nav class="tabs" aria-label="Preview category"><button data-tab="typography" class="selected" aria-pressed="true">Typography</button><button data-tab="spacing" aria-pressed="false">Spacing</button><button data-tab="grid" aria-pressed="false">Grid &amp; container</button><button data-tab="context" aria-pressed="false">In context</button><button data-tab="accessibility" aria-pressed="false">Accessibility</button><button data-tab="frame" aria-pressed="false">Design frame</button></nav>
+    <div class="viewport-controls"><label for="width">Viewport <input id="width" type="number" min="280" max="2400" value="1200"> <span>px</span></label><input aria-label="Viewport width" id="slider" type="range" min="280" max="2400" value="1200"><button id="fit" aria-pressed="true">Fit view</button></div>
+    <div id="breakpoints" class="breakpoints" aria-label="Breakpoint presets"></div>
+    <div class="specimen-controls"><label for="specimen-text">Specimen</label><input id="specimen-text" value="A little space changes everything." maxlength="240"></div>
+    <div class="font-controls"><label for="family">Font family</label><select id="family" aria-label="Preview font family"></select><span id="font-status" role="status">Checking project fonts…</span></div>
+    <details class="font-help"><summary>Project fonts</summary><p id="font-info"></p></details>
+    <div id="errors" role="alert" hidden></div>
+    <section id="design-frame" hidden aria-label="Design frame comparison">
+      <form id="frame-form">
+        <label>Page URL <input id="frame-url" type="url" placeholder="https://example.com" required></label>
+        <button type="submit">Load page</button>
+      </form>
+      <label>Design frame <input id="frame-file" type="file" accept="image/png"></label>
+      <label>Opacity <input id="frame-opacity" type="range" min="0" max="100" value="50"> <output id="frame-percent">50%</output></label>
+      <label><input id="frame-difference" type="checkbox"> Difference blend</label>
+      <p id="frame-status" role="status">Choose a PNG and load the page to compare.</p>
+      <div id="frame-view"><div id="frame-stage">
+        <iframe id="frame-page" title="Page at the design viewport" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer"></iframe>
+        <img id="frame-image" alt="Design frame overlay" hidden>
+      </div></div>
+    </section>
+    <section id="accessibility" hidden aria-label="Accessibility checks">
+      <p class="a11y-intro">Check the compiled tokens across widths, then test their use on your site. These are specimen checks and a zoom model, not a WCAG conformance report.</p>
+      <details class="a11y-settings" open><summary>Check settings</summary>
+        <div class="a11y-fields">
+          <label>WCAG 2.2 target<select id="a11y-level"><option>AA</option><option>AAA</option></select></label>
+          <label>From width (px)<input id="a11y-from" type="number" value="320" min="280" max="3840"></label>
+          <label>To width (px)<input id="a11y-to" type="number" value="1920" min="280" max="3840"></label>
+          <label>Model zoom up to<select id="a11y-zoom"><option value="4">400%</option><option value="2">200%</option></select></label>
+          <label>Zoom runtime<select id="a11y-runtime"><option value="none">None (CSS only)</option><option value="proportional">--ec-zoom follows zoom</option><option value="jupiter-chrome">Jupiter Chrome (DPR)</option></select></label>
+          <label id="a11y-dpr-field" hidden>Display DPR at 100%<input id="a11y-dpr" type="number" value="2" min="0.5" max="4" step="0.25"></label>
+          <label>Small text hint (px)<input id="a11y-min-size" type="number" value="16" min="0" max="96" step="0.5"></label>
+          <label>Breakpoint jump hint (%)<input id="a11y-jump" type="number" value="20" min="1" max="100"></label>
+        </div>
+        <p>Size and jump limits are design hints, not WCAG requirements. Settings are remembered in this browser; they do not change your JSON5.</p>
+        <p id="a11y-runtime-help">CSS only holds --ec-zoom at 1. Select a runtime to include JavaScript zoom compensation.</p>
+      </details>
+      <div class="a11y-actions"><button id="a11y-run" class="primary">Run checks</button><button id="a11y-export" disabled>Export report</button><span id="a11y-status" role="status">Run checks on this configuration.</span></div>
+      <div id="a11y-results" hidden>
+        <div id="a11y-summary" class="a11y-summary"></div>
+        <h3>Responsive text &amp; zoom</h3>
+        <p class="a11y-help">Measurements include breakpoint edges and intermediate widths; browser viewport rounding can affect fractional edges. Zoom shrinks the layout viewport, then magnifies the result. Viewport-based text can cancel that enlargement. “Review” is a prompt to test real browser zoom and other supported text-resizing mechanisms.</p>
+        <div class="a11y-scroll" tabindex="0" aria-label="Typography check results"><table class="a11y-table"><thead><tr><th>Token</th><th>Size range</th><th>Zoom model</th><th>Review notes</th><th>Source</th></tr></thead><tbody id="a11y-types"></tbody></table></div>
+        <details id="a11y-detail" open><summary id="a11y-detail-title">Inspect a typography token</summary><div id="a11y-chart"></div><div id="a11y-detail-body"></div></details>
+      </div>
+      <h3>Color contrast</h3>
+      <p class="a11y-help">Choose a foreground/background pairing. Checks use the compiler’s emitted colors, including alpha precision. Palette membership does not tell us how a color is used. Transparent colors are composited over the selected canvas; unresolved variables, system colors and wide-gamut colors need manual review.</p>
+      <div class="a11y-fields a11y-colors">
+        <label>Foreground<select id="a11y-fg"></select></label><label>Background<select id="a11y-bg"></select></label>
+        <label>Canvas beneath transparency<input id="a11y-canvas" type="color" value="#ffffff"></label>
+      </div>
+      <div id="a11y-contrast" aria-live="polite"></div>
+      <details class="a11y-palette"><summary>Palette against the selected background</summary><div class="a11y-scroll" tabindex="0" aria-label="Palette contrast results"><table class="a11y-table"><thead><tr><th>Foreground</th><th>Ratio</th><th>Normal text</th><th>Large text</th><th>Source</th></tr></thead><tbody id="a11y-palette"></tbody></table></div></details>
+      <details class="a11y-method"><summary>What these checks cover</summary>
+        <p>Text is rendered with the real compiler output, selected family and available project fonts. Base test viewports are 900px tall; modeled zoom divides both width and height. Root font size follows typography.base (16px fallback). The selected runtime controls --ec-zoom at each zoom step. It affects only declarations that actually use that variable; fixed pixel rules are not multiplied.</p>
+        <p>“--ec-zoom follows zoom” models proportional compensation, assuming the runtime detects zoom correctly. “Jupiter Chrome (DPR)” models the current Jupiter Chrome calculation starting at 100% page zoom on one display; DPR is the display ratio at that starting point, not your current zoomed devicePixelRatio. Monitor changes, initial loads already zoomed, pinch zoom and other browser detectors require real-site testing.</p>
+        <p>The 320px reflow and text-spacing tests look for overflowing or clipped specimen text. Spacing overrides use at least 1.5 line height, 2em after paragraphs, 0.12em letter spacing and 0.16em word spacing. They are user overrides, not required design defaults. Full page layouts and functional content still need testing.</p>
+        <p>Also check on your site: real browser zoom, keyboard navigation and focus visibility, control target sizes, meaningful names and alt text, reduced motion, and contrast over images/gradients. No site-wide pass is inferred here.</p>
+        <p><a href="https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html" target="_blank" rel="noreferrer">Resize text</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html" target="_blank" rel="noreferrer">Reflow</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html" target="_blank" rel="noreferrer">Text spacing</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noreferrer">Contrast AA</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html" target="_blank" rel="noreferrer">Contrast AAA</a></p>
+      </details>
+    </section>
+    <section id="focused" hidden aria-labelledby="focused-title">
+      <div class="focused-heading"><h3 id="focused-title">Edit token</h3><button id="focused-source">View JSON5</button><button id="focused-close" aria-label="Close token editor">Close</button></div>
+      <div id="focused-fields"></div>
+      <div class="focused-actions"><button id="focused-review">Review change</button><button id="focused-apply" class="primary" disabled>Apply to JSON5</button></div>
+      <p id="focused-status" role="status"></p><pre id="focused-diff" aria-label="Proposed changes"></pre>
+    </section>
+    <section id="context-controls" hidden aria-label="Realistic specimen settings">
+      <p>Combine your tokens in an article and cards. Click a text or spacing marker to edit its rules. These are sample layouts, not a rendering of your site.</p>
+      <div class="context-fields">
+        <label>Heading<select id="context-heading"></select></label>
+        <label>Body<select id="context-body"></select></label>
+        <label>Small text &amp; buttons<select id="context-detail"></select></label>
+        <label>Spacing<select id="context-space"></select></label>
+        <label>Columns<select id="context-column"></select></label>
+        <label>Copy<select id="context-copy"><option value="en">English</option><option value="no">Norwegian · long words</option></select></label>
+      </div>
+      <label><input id="context-container" type="checkbox" checked> Use configured container</label>
+      <p id="context-measure" role="status"></p>
+    </section>
+    <div class="preview-shell"><div id="stage"><iframe id="preview" src="/preview" title="Live Europa configuration specimens" sandbox="allow-same-origin allow-scripts"></iframe></div></div>
+    <div class="preview-caption"><span id="active">Waiting for a valid config</span><span id="scale"></span></div>
+    <p class="notes" id="notes"></p>
+    <details class="inspector"><summary>Inspect resolved tokens &amp; generated CSS</summary><label for="token">Token</label><select id="token"></select><pre id="resolved"></pre></details>
+  </section>
+</main>
+</body>
+</html>

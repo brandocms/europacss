@@ -144,18 +144,27 @@ Size elements as a fraction of the grid, accounting for column gutters from `the
 @space margin-top 6/12 mobile;
 ```
 
+A fractional track includes only the gutters between the spanned tracks. On an 11-column grid, `0.5/11` is half a column and `1.5/11` is one and a half columns plus one gutter. `0.5:0.5/11` adds half a gutter explicitly.
+
+For a transform, select the nearest inline-size container as the reference width with `cq`. An optional breakpoint query follows the modifier.
+
+```css
+.grid { @grid; container-type: inline-size; }
+.image { @space translate 0.5/11 cq; }
+```
+
 ### Gutter Multiplier
 
 Adjust the gutter offset using the `columns:gutterMultiplier/totalColumns` syntax:
 
 ```css
-/* 6 of 12 columns, subtract 1 extra gutter unit */
+/* 6 of 12 columns, add 1 gutter to the usual width */
 @space width 6:1/12;
 ```
 
 ## Between (Fluid Scaling)
 
-Linearly interpolate between two values across the viewport:
+Linearly interpolate within each selected breakpoint interval (see [the interpolation anchors](./fontsize#between-fluid-scaling)):
 
 ```css
 @space padding between(20px-50px);
@@ -173,6 +182,17 @@ Scale values relative to a reference viewport width (configured via `dpxViewport
 ```
 
 A `40dpx` value with a reference viewport of 1440px computes to a proportional `vw` value.
+
+### Start scaling at a breakpoint
+
+`scale-from(number, breakpoint)` takes a unitless design number and one configured breakpoint name. It resolves to that many CSS pixels below the breakpoint and to the same number of design pixels from the breakpoint onward. The `dpx` conversion uses the active reference viewport, `--ec-zoom` while scaling, and the configured `setMaxForVw` cap.
+
+```css
+@space row-gap scale-from(149, desktop_lg) $lg;
+@space max-width 1228dpx $lg;
+```
+
+The two rules cover the same collection. The row gap stays at 149px until `desktop_lg`. The maximum width scales throughout `$lg`. The function works the same way in a spacing token or inside a sizing expression such as `calc(100% - scale-from(24, desktop_lg))`.
 
 ## Calc with Variable References
 
@@ -217,8 +237,8 @@ Outputs: `margin-top: calc(-{spacingToCancel} + {desiredGap})` per breakpoint.
 Given `block = { xs: '20px', sm: '30px', md: '40px' }`, outputs:
 
 ```css
-@media (width <= 739px)  { margin-top: calc(-20px + 25px); }
-@media (...tablet...)    { margin-top: calc(-30px + 25px); }
+@media (width < 740px)  { margin-top: calc(-20px + 25px); }
+@media (width >= 740px) and (width < 1024px)    { margin-top: calc(-30px + 25px); }
 @media (width >= 1024px) { margin-top: calc(-40px + 25px); }
 ```
 
@@ -310,3 +330,34 @@ Use `@space!` for `!important`:
   @space gap sm;
 }
 ```
+
+## Reusable negation
+
+The native compiler also accepts `negate(value)` in sizing expressions:
+
+```css
+@column-offset negate(1/4);
+@space margin-left negate(1/4);
+@space margin-top negate(block, sm); /* desired gap minus current gap */
+@space negate(block, sm);           /* existing margin-top shorthand */
+```
+
+A spacing token can contain `negate(1/4)` too. It resolves at each breakpoint,
+including inside `calc()`. This helper belongs to Europa sizing directives, not
+ordinary CSS declarations.
+
+`negate(1/4)` negates the entire gutter-adjusted width. Bare `-1/4` retains the
+legacy signed column-count formula. In a 1000px container with a 20px gutter:
+
+| Expression | Resolved offset |
+| --- | ---: |
+| `1/4` | 235px |
+| `negate(1/4)` | -235px |
+| `negate(1:1/4)` (one column step) | -255px |
+| `-1/4` (legacy signed count) | -275px |
+
+Migration reports flag negative column fractions, including values reached through
+spacing tokens. They show an explicit `calc()` equivalent for each breakpoint.
+Review the layout before choosing whole-width negation: `--fix` cannot infer that
+intent and does not change these values. A reviewed legacy offset can be accepted
+in the migration report without changing the layout.

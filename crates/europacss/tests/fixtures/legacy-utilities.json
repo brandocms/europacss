@@ -1,0 +1,1072 @@
+[
+  {
+    "id": "utils/buildMediaQueryQ:1",
+    "title": "returns correct for <sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<sm",
+    "media": "(width < 740px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:2",
+    "title": "returns correct for <=sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<=sm",
+    "media": "(width < 1024px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:3",
+    "title": "returns correct for >sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">sm",
+    "media": "(width >= 1024px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:4",
+    "title": "returns correct for >=sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">=sm",
+    "media": "(width >= 740px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:5",
+    "title": "returns correct for >lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">lg",
+    "media": "(width >= 1900px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:6",
+    "title": "returns correct for >=lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">=lg",
+    "media": "(width >= 1399px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:7",
+    "title": "returns only xs",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs",
+    "media": "(width < 740px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:8",
+    "title": "returns only sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "sm",
+    "media": "(width >= 740px) and (width < 1024px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:9",
+    "title": "returns only md",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "md",
+    "media": "(width >= 1024px) and (width < 1399px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:10",
+    "title": "returns only lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "lg",
+    "media": "(width >= 1399px) and (width < 1900px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:11",
+    "title": "returns only xl",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xl",
+    "media": "(width >= 1900px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:12",
+    "title": "parses multiple bps",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs/sm/xl",
+    "media": "(width < 1024px), (width >= 1900px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/buildMediaQueryQ:13",
+    "title": "parses collection",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "$desktop",
+    "media": "(width >= 1024px)",
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:1",
+    "title": "returns correct for <sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<sm",
+    "keys": [
+      "xs"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:2",
+    "title": "returns correct for <=sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<=sm",
+    "keys": [
+      "xs",
+      "sm"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:3",
+    "title": "returns correct for >sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">sm",
+    "keys": [
+      "md",
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:4",
+    "title": "returns correct for >=sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">=sm",
+    "keys": [
+      "sm",
+      "md",
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:5",
+    "title": "returns correct for >lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">lg",
+    "keys": [
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:6",
+    "title": "returns correct for >=lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": ">=lg",
+    "keys": [
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:7",
+    "title": "returns only xs",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs",
+    "keys": [
+      "xs"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:8",
+    "title": "returns only sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "sm",
+    "keys": [
+      "sm"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:9",
+    "title": "returns only md",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "md",
+    "keys": [
+      "md"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:10",
+    "title": "returns only lg",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "lg",
+    "keys": [
+      "lg"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:11",
+    "title": "returns only xl",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xl",
+    "keys": [
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:12",
+    "title": "returns multiple breakpoints for slash separated list",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs/md/xl",
+    "keys": [
+      "xs",
+      "md",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/extractBreakpointKeys:13",
+    "title": "returns multiple breakpoints for collection",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "$desktop",
+    "keys": [
+      "md",
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/mqpacker:1",
+    "title": "sorts max-width-only queries before min-width queries",
+    "input": "\n    @media (width >= 740px) {\n      .test {\n        color: blue;\n      }\n    }\n    @media (width <= 739px) {\n      .test {\n        color: red;\n      }\n    }\n  ",
+    "order": [
+      "(width >= 740px)",
+      "(width <= 739px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/mqpacker:2",
+    "title": "sorts multiple mixed media queries in mobile-first order",
+    "input": "\n    @media (width >= 1024px) {\n      .desktop {\n        display: block;\n      }\n    }\n    @media (width <= 739px) {\n      .mobile {\n        display: block;\n      }\n    }\n    @media (width >= 740px) and (width <= 1023px) {\n      .tablet {\n        display: block;\n      }\n    }\n  ",
+    "order": [
+      "(width >= 1024px)",
+      "(width <= 739px)",
+      "(width >= 740px) and (width <= 1023px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/mqpacker:3",
+    "title": "properly handles the legacy syntax",
+    "input": "\n    @media (min-width: 1024px) {\n      .desktop {\n        display: block;\n      }\n    }\n    @media (max-width: 739px) {\n      .mobile {\n        display: block;\n      }\n    }\n    @media (min-width: 740px) and (max-width: 1023px) {\n      .tablet {\n        display: block;\n      }\n    }\n  ",
+    "order": [
+      "(width >= 1024px)",
+      "(width <= 739px)",
+      "(width >= 740px) and (width <= 1023px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/mqpacker:4",
+    "title": "merges identical media queries",
+    "input": "\n    @media (width <= 739px) {\n      .test1 {\n        color: red;\n      }\n    }\n    @media (width <= 739px) {\n      .test2 {\n        color: pink;\n      }\n    }\n  ",
+    "order": [
+      "(width <= 739px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/mqpacker:5",
+    "title": "can disable sorting if needed",
+    "input": "\n    @media (width >= 1024px) {\n      .desktop {\n        display: block;\n      }\n    }\n    @media (width <= 739px) {\n      .mobile {\n        display: block;\n      }\n    }\n  ",
+    "order": [
+      "(width >= 1024px)",
+      "(width <= 739px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/mqpacker:6",
+    "title": "sorts queries with same min-width by max-width in descending order",
+    "input": "\n    @media (width >= 1024px) and (width <= 1398px) {\n      .desktop-small {\n        display: block;\n      }\n    }\n    @media (width >= 1024px) {\n      .desktop-all {\n        display: block;\n      }\n    }\n    @media (width >= 1024px) and (width <= 1899px) {\n      .desktop-medium {\n        display: block;\n      }\n    }\n  ",
+    "order": [
+      "(width >= 1024px) and (width <= 1398px)",
+      "(width >= 1024px)",
+      "(width >= 1024px) and (width <= 1899px)"
+    ],
+    "note": "Preserve authored media order. Adjacent identical conditions may merge; the old global sorting expectations are intentionally replaced."
+  },
+  {
+    "id": "utils/parseQ:1",
+    "title": "returns correct for <sm",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<sm",
+    "keys": [
+      "xs"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/parseQ:2",
+    "title": "returns correct for <sm/xl",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "<sm/xl",
+    "keys": [
+      "xs",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/parseQ:3",
+    "title": "returns correct for xs/>=md",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs/>=md",
+    "keys": [
+      "xs",
+      "md",
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/parseQ:4",
+    "title": "returns correct for xs/sm/xl",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "xs/sm/xl",
+    "keys": [
+      "xs",
+      "sm",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/parseQ:5",
+    "title": "returns correct for xs/sm/xl",
+    "theme": {
+      "breakpoints": {
+        "xs": "0",
+        "sm": "740px",
+        "md": "1024px",
+        "lg": "1399px",
+        "xl": "1900px"
+      },
+      "breakpointCollections": {
+        "$desktop": "md/lg/xl",
+        "$tablet": "sm",
+        "$mobile": "xs"
+      }
+    },
+    "query": "$desktop",
+    "keys": [
+      "md",
+      "lg",
+      "xl"
+    ],
+    "note": "Named intervals end exclusively at the next breakpoint. Query selection and collection membership are retained; JS return-object formatting is not a native API."
+  },
+  {
+    "id": "utils/presetEnv:1",
+    "title": "enables preset-env by default",
+    "input": ".test { border-radius: 5px; }",
+    "contains": [
+      "border-radius:5px"
+    ],
+    "note": "Use the native browsers policy to test the retained browser behavior; do not reintroduce PostCSS-specific controls."
+  },
+  {
+    "id": "utils/presetEnv:2",
+    "title": "@media query",
+    "input": "@media (width >= 1024px) and (width <= 1899px) { article { border-radius: 5px } }",
+    "browsers": [
+      "ie 10"
+    ],
+    "contains": [
+      "(min-width:1024px) and (max-width:1899px)"
+    ],
+    "note": "Use the native browsers policy to test the retained browser behavior; do not reintroduce PostCSS-specific controls."
+  },
+  {
+    "id": "utils/presetEnv:3",
+    "title": "allows disabling preset-env",
+    "input": ".test { border-radius: 5px; }",
+    "retired": "The removed PostCSS presetEnv.disable option has no native counterpart. Europa always performs its configured browser transforms.",
+    "note": "Use the native browsers policy to test the retained browser behavior; do not reintroduce PostCSS-specific controls."
+  },
+  {
+    "id": "utils/presetEnv:4",
+    "title": "accepts browsers option for autoprefixer",
+    "input": ".test { display: flex; }",
+    "browsers": [
+      "ie 10"
+    ],
+    "contains": [
+      "display:-ms-flexbox"
+    ],
+    "note": "Use the native browsers policy to test the retained browser behavior; do not reintroduce PostCSS-specific controls."
+  },
+  {
+    "id": "utils/resolveTokenReferences:1",
+    "title": "passes through plain values unchanged",
+    "theme": {
+      "colors": {
+        "red": "#f00",
+        "blue": "#00f"
+      },
+      "spacing": {
+        "sm": "10px"
+      },
+      "count": 42,
+      "flag": true
+    },
+    "values": {
+      "/colors": {
+        "red": "#f00",
+        "blue": "#00f"
+      },
+      "/spacing": {
+        "sm": "10px"
+      },
+      "/count": 42,
+      "/flag": true
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:2",
+    "title": "resolves a simple string reference",
+    "theme": {
+      "colors": {
+        "red": "#f00"
+      },
+      "button": {
+        "primary": "{colors.red}"
+      }
+    },
+    "values": {
+      "/button/primary": "#f00"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:3",
+    "title": "resolves a deep path reference",
+    "theme": {
+      "typography": {
+        "sizes": {
+          "base": "16px"
+        }
+      },
+      "components": {
+        "card": {
+          "fontSize": "{typography.sizes.base}"
+        }
+      }
+    },
+    "values": {
+      "/components/card/fontSize": "16px"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:4",
+    "title": "resolves an object reference (preserves type)",
+    "theme": {
+      "spacing": {
+        "xs": {
+          "xs": "10px",
+          "sm": "15px",
+          "md": "15px",
+          "lg": "15px",
+          "xl": "15px"
+        }
+      },
+      "block": "{spacing.xs}"
+    },
+    "values": {
+      "/block": {
+        "xs": "10px",
+        "sm": "15px",
+        "md": "15px",
+        "lg": "15px",
+        "xl": "15px"
+      }
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:5",
+    "title": "resolves an array reference (preserves type)",
+    "theme": {
+      "typography": {
+        "families": {
+          "sans": [
+            "Helvetica",
+            "Arial",
+            "sans-serif"
+          ]
+        }
+      },
+      "font": {
+        "body": "{typography.families.sans}"
+      }
+    },
+    "values": {
+      "/font/body": [
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ]
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:6",
+    "title": "resolves partial string interpolation",
+    "theme": {
+      "colors": {
+        "red": "#f00"
+      },
+      "border": {
+        "default": "1px solid {colors.red}"
+      }
+    },
+    "values": {
+      "/border/default": "1px solid #f00"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:7",
+    "title": "resolves multiple interpolations in one string",
+    "theme": {
+      "colors": {
+        "red": "#f00",
+        "blue": "#00f"
+      },
+      "gradient": "{colors.red} to {colors.blue}"
+    },
+    "values": {
+      "/gradient": "#f00 to #00f"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:8",
+    "title": "resolves chained references (A -> B -> C)",
+    "theme": {
+      "primitives": {
+        "red500": "#f00"
+      },
+      "semantic": {
+        "danger": "{primitives.red500}"
+      },
+      "button": {
+        "error": "{semantic.danger}"
+      }
+    },
+    "values": {
+      "/button/error": "#f00",
+      "/semantic/danger": "#f00"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:9",
+    "title": "throws on circular reference",
+    "theme": {
+      "a": "{b}",
+      "b": "{a}"
+    },
+    "error": "EU_CONFIG",
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:10",
+    "title": "throws on self-referencing token",
+    "theme": {
+      "a": "{a}"
+    },
+    "error": "EU_CONFIG",
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:11",
+    "title": "throws on missing reference",
+    "theme": {
+      "button": {
+        "primary": "{colors.nonexistent}"
+      }
+    },
+    "error": "EU_CONFIG",
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:12",
+    "title": "throws when interpolating a non-string/number value",
+    "theme": {
+      "spacing": {
+        "xs": {
+          "xs": "10px",
+          "sm": "15px"
+        }
+      },
+      "border": "something {spacing.xs} else"
+    },
+    "error": "EU_CONFIG",
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:13",
+    "title": "resolves number values in partial interpolation",
+    "theme": {
+      "grid": {
+        "columns": 12
+      },
+      "layout": {
+        "colInfo": "{grid.columns} columns"
+      }
+    },
+    "values": {
+      "/layout/colInfo": "12 columns"
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:14",
+    "title": "resolves references inside arrays",
+    "theme": {
+      "colors": {
+        "red": "#f00",
+        "blue": "#00f"
+      },
+      "palette": [
+        "{colors.red}",
+        "{colors.blue}"
+      ]
+    },
+    "values": {
+      "/palette": [
+        "#f00",
+        "#00f"
+      ]
+    },
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  },
+  {
+    "id": "utils/resolveTokenReferences:15",
+    "title": "does not modify the original theme object",
+    "theme": {
+      "colors": {
+        "red": "#f00"
+      },
+      "button": {
+        "primary": "{colors.red}"
+      }
+    },
+    "retired": "JavaScript object mutation contract: the Rust API consumes owned JSON data. Resolution behavior is covered by the other 14 cases; a clone-then-compare test would be vacuous.",
+    "note": "References stay unresolved in these fixtures; typed values, interpolation, chains and diagnostics are asserted after native resolution."
+  }
+]

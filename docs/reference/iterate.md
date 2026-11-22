@@ -1,12 +1,14 @@
 # @iterate
 
-Loops through a config object, generating CSS for each key/value pair.
+Loops through a config object or array, generating CSS for each entry. Array keys are zero-based indices. Use `@iterate` inside a style rule.
 
 ## Syntax
 
 ```css
-@iterate {configPath} {
-  /* use $key and $value */
+.selector {
+  @iterate {configPath} {
+    /* use $key and $value */
+  }
 }
 ```
 
@@ -18,7 +20,7 @@ Inside the loop body:
 
 ## Usage
 
-```js
+```json5
 // Config
 spacing: {
   xs: { xs: '10px', sm: '15px', md: '15px' },
@@ -28,9 +30,13 @@ spacing: {
 ```
 
 ```css
-@iterate theme.spacing {
-  .mt-$key {
-    @space margin-top $key;
+.stack {
+  display: flex;
+  flex-direction: column;
+  @iterate theme.spacing {
+    &.gap-$key {
+      @space gap $key;
+    }
   }
 }
 ```
@@ -38,9 +44,10 @@ spacing: {
 ## With @responsive
 
 ```css
-@iterate theme.spacing {
-  @responsive $key {
-    .spacer {
+.spacer {
+  /* Loop over the breakpoint/value entries of one token. */
+  @iterate theme.spacing.md {
+    @responsive $key {
       margin: $value;
     }
   }
@@ -49,15 +56,17 @@ spacing: {
 
 ## Examples
 
-### Generate utility classes
+### Generate color variants
 
 ```css
-@iterate theme.colors {
-  .text-$key {
-    color: $value;
-  }
-  .bg-$key {
-    background-color: $value;
+.palette {
+  @iterate theme.colors {
+    &.text-$key {
+      color: $value;
+    }
+    &.bg-$key {
+      background-color: $value;
+    }
   }
 }
 ```

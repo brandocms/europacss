@@ -1,0 +1,8 @@
+parcel_sourcemap 2.1.1
+https://github.com/parcel-bundler/source-map
+
+The upstream Cargo.toml declares the MIT license and identifies Jasper De Moor
+<jasperdemoor@gmail.com> as its author. The source repository at the published
+commit contains no standalone license file or copyright statement.
+Cargo.toml.upstream reproduces that declaration. LICENSE contains the standard
+MIT permission and warranty terms; it is not an upstream copyright statement.

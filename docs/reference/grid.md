@@ -1,54 +1,22 @@
 # @grid
 
-Sets up a CSS Grid layout using your configured column counts and gutters.
+`@grid` sets `display: grid`, takes its track count from `theme.columns.count`, and sets `column-gap` from `theme.columns.gutters`. Each track uses `minmax(0, 1fr)` so wide content can fit inside equal-width columns.
 
-## Syntax
-
-```css
-@grid;
-```
-
-## Usage
-
-```css
-.container {
-  @grid;
-}
-```
-
-## Output
-
-Based on your `theme.columns` config:
-
-```js
+```json5
 columns: {
-  count: { xs: 2, sm: 4, md: 12 },
-  gutters: { xs: '20px', sm: '30px', md: '50px' }
+  count: { $sm: 4, $lg: 11 },
+  gutters: { $sm: '12px', $lg: '16px' },
 }
 ```
-
-Outputs per breakpoint:
 
 ```css
-@media (width <= 739px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-}
-@media (min-width: 740px) and (max-width: 1023px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 30px;
-  }
-}
-@media (width >= 1024px) {
-  .container {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 50px;
-  }
+.page { @grid; }
+.media-row {
+  grid-column: 1 / -1;
+  @grid subgrid;
 }
 ```
+
+At a breakpoint in `$lg`, the page gets `repeat(11, minmax(0, 1fr))` and a 16px column gap. A missing count falls back to 12. The bundled theme supplies its own counts.
+
+`@grid subgrid` sets `display: grid` and `grid-template-columns: subgrid`. The child shares its parent’s column tracks. Either directive can be used inside `@responsive`.

@@ -1,6 +1,6 @@
 # @responsive
 
-Creates media queries using your configured breakpoints.
+Creates media queries using your configured breakpoints. Examples here use native compiler semantics; browser-target transforms may print equivalent conditions differently.
 
 **Alias:** `@mq`
 
@@ -25,6 +25,8 @@ Targets one specific breakpoint range:
   .hero { padding: 60px; }
 }
 ```
+
+Named ranges include their lower bound and exclude the next breakpoint. For `xs: '0', sm: '740px', md: '1024px'`, `xs` covers `width < 740px` and `sm` covers `740px <= width < 1024px`, including fractional widths such as 739.5px. Breakpoints are sorted by width, not object order.
 
 ## Comparison Operators
 
@@ -79,7 +81,7 @@ Use `$`-prefixed collection names from your config:
 
 ## Custom Pixel Ranges
 
-Define arbitrary ranges with the `->` syntax:
+Define arbitrary ranges with the `->` syntax. Authored pixel endpoints are inclusive: `359px->740px` includes 740px. This differs from the exclusive upper bound of named breakpoint bands.
 
 ```css
 /* Between 359px and 740px */
@@ -114,6 +116,8 @@ Define arbitrary ranges with the `->` syntax:
 }
 ```
 
+Nested queries intersect with their outer conditions. A Europa directive inside `@responsive` inherits that scope; do not give it another inline breakpoint query. Nested selectors follow native CSS nesting, including selector-list specificity.
+
 ## Output
 
 Given breakpoints `{ xs: '0', sm: '740px', md: '1024px' }`:
@@ -125,7 +129,7 @@ Given breakpoints `{ xs: '0', sm: '740px', md: '1024px' }`:
 }
 
 /* Output */
-@media (min-width: 740px) and (max-width: 1023px) {
+@media (width >= 740px) and (width < 1024px) {
   .box { padding: 30px; }
 }
 ```
