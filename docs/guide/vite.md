@@ -2,14 +2,14 @@
 
 The optional adapter runs the native `europa` executable before Vite's CSS pipeline. It provides builds, HMR, dependency watching and source maps without native Node bindings. Vite still needs Node; the standalone compiler and Studio do not.
 
-The native adapter supports Vite 6.4.3 and 8.3.0+ on Node 22.12+ and Node 24+. The current native npm beta is `0.1.0-beta.1`.
+The native adapter supports Vite 6.4.3 and 8.3.0+ on Node 22.12+ and Node 24+. The current native npm beta is `0.1.0-beta.2`.
 
 ## Install the packages
 
 From your application's directory:
 
 ```sh
-pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.1 @brandocms/europacss-cli@0.1.0-beta.1
+pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.2 @brandocms/europacss-cli@0.1.0-beta.2
 ```
 
 The adapter installs an exact compiler dependency and resolves its executable directly. Adding the CLI as a direct dependency also exposes `pnpm exec europa` for migration commands. No global executable or Rust toolchain is required. Keep optional dependencies enabled so npm/pnpm installs the matching platform binary. Installation works with scripts disabled.

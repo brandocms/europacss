@@ -41,7 +41,7 @@ The native CI workflow checks Linux, macOS and Windows. The native npm release w
 Pack the CLI wrapper, adapter and a host binary for installation tests:
 
 ```sh
-python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.1-aarch64-apple-darwin.tar.gz
+python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.2-aarch64-apple-darwin.tar.gz
 node scripts/test-npm.mjs --manager npm
 ```
 

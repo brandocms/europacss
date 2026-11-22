@@ -7,7 +7,7 @@ Vite. There are no N-API bindings or JavaScript config evaluation.
 Install the matching adapter and CLI beta in your application:
 
 ```sh
-pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.1 @brandocms/europacss-cli@0.1.0-beta.1
+pnpm add -D --save-exact @brandocms/vite-plugin-europacss@0.1.0-beta.2 @brandocms/europacss-cli@0.1.0-beta.2
 ```
 
 The adapter has an exact dependency on the CLI package. It resolves the native

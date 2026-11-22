@@ -4,6 +4,12 @@ This repository builds the native compiler. The legacy JavaScript/PostCSS packag
 
 ## Native npm beta
 
+### 0.1.0-beta.2
+
+Use `scale-from(number, breakpoint)` in a sizing directive or theme token to keep a value fixed below a named breakpoint. For example, `scale-from(149, desktop_lg)` resolves to `149px` below `desktop_lg` and to `149dpx` from that breakpoint onward. Plain `dpx` uses the configured reference viewport, zoom compensation while scaling, and the optional upper cap. [#137](https://github.com/brandocms/europacss/issues/137)
+
+**Migrating from beta.1.** Remove the global `dpxScaleFrom` option. Use `scale-from()` for values that depended on it, and `px` for values that stay fixed throughout a collection. The compiler reports the obsolete setting with migration guidance.
+
 ### 0.1.0-beta.1
 
 - Responsive spacing, type, container and column tokens accept breakpoint collections. Set `dpxScaleFrom` to keep design pixels at 1px below a named breakpoint. (#127)
@@ -57,7 +63,7 @@ for incomplete upstream crate archives live under `scripts/licenses/`.
 Use the archive path printed by that command:
 
 ```sh
-python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.1-aarch64-apple-darwin.tar.gz
+python3 scripts/package-npm.py --shared --archive dist/native/europa-0.1.0-beta.2-aarch64-apple-darwin.tar.gz
 node scripts/test-npm.mjs --manager npm
 node scripts/test-npm.mjs --manager pnpm
 ```
@@ -129,8 +135,8 @@ requires a new version. Do not rebuild artifacts between validation and publish.
 After publication, validate actual registry installs on Node 22 and Node 24:
 
 ```sh
-node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.1 --manager npm
-node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.1 --manager pnpm
+node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.2 --manager npm
+node scripts/test-npm.mjs --registry https://registry.npmjs.org --version 0.1.0-beta.2 --manager pnpm
 ```
 
 ### Brando handoff
