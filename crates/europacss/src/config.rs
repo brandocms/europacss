@@ -28,7 +28,6 @@ pub struct MigrationWarnings {
 pub struct Config<'a> {
     pub value: &'a Value,
     pub breakpoints: Vec<(String, f64)>,
-    pub dpx_scale_from: Option<usize>,
     pub debug_tokens: bool,
     pub warnings: RefCell<Warnings>,
     pub migration_warnings: Option<RefCell<MigrationWarnings>>,
@@ -104,23 +103,14 @@ impl<'a> Config<'a> {
                 0,
             ));
         }
-        let dpx_scale_from = value
-            .get("dpxScaleFrom")
-            .map(|value| {
-                breakpoints
-                    .iter()
-                    .position(|(name, _)| Some(name.as_str()) == value.as_str())
-                    .ok_or_else(|| {
-                        Error::new(
-                            "EU_CONFIG",
-                            format!("dpxScaleFrom must name a configured breakpoint, got {value}"),
-                            0,
-                        )
-                    })
-            })
-            .transpose()?;
+        if value.get("dpxScaleFrom").is_some() {
+            return Err(Error::new(
+                "EU_CONFIG",
+                "Remove dpxScaleFrom from the config. Use scale-from(number, breakpoint) on values that should stay fixed below that breakpoint.",
+                0,
+            ));
+        }
         Ok(Self {
-            dpx_scale_from,
             debug_tokens: false,
             warnings: RefCell::default(),
             value,

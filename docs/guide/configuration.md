@@ -364,17 +364,18 @@ Spacing, typography sizes, container sizes and column settings accept named brea
 
 ```json5
 {
-  dpxScaleFrom: 'desktop_lg',
   theme: {
-    breakpoints: { mobile: 0, tablet: '768px', desktop_lg: '1280px' },
-    breakpointCollections: { $sm: '<=tablet', $lg: 'desktop_lg' },
-    spacing: { projectRows: { $sm: '96dpx', $lg: '149dpx' } },
+    breakpoints: { mobile: 0, tablet: '1024px', desktop_lg: '1440px' },
+    breakpointCollections: { $sm: 'mobile', $lg: '>=tablet' },
+    spacing: { projectRows: { $sm: '96px', $lg: 'scale-from(149, desktop_lg)' } },
     columns: { count: { $sm: 4, $lg: 11 }, gutters: { '*': '16dpx' } },
   },
 }
 ```
 
-Below `dpxScaleFrom`, one design pixel compiles to one CSS pixel. Scaling begins at the named breakpoint. Omitting the option keeps viewport scaling at every breakpoint. `setMaxForVw` can still cap the upper end.
+Here `projectRows` is `96px` on mobile, `149px` from 1024px, and `149dpx` from 1440px. The literal `16dpx` gutter uses the reference viewport at every breakpoint.
+
+**Migrating from 0.1.0-beta.1.** Remove the top-level `dpxScaleFrom` option. For each value that relied on it, write `scale-from(number, breakpoint)` with the former breakpoint. Use plain `px` for a value that stays fixed throughout its collection and plain `dpx` for a value that scales throughout.
 
 ### `dpxViewportSize`
 

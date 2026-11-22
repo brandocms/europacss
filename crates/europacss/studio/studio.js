@@ -45,7 +45,7 @@ const isPrefix = (prefix, path) => prefix.length <= path.length && prefix.every(
 const overlaps = (a, b) => isPrefix(a, b) || isPrefix(b, a);
 function matchingSpecimens() {
   if(!latest || !editingPath.length) return [];
-  const general = ['dpxViewportSize', 'dpxViewportSizes', 'dpxScaleFrom', 'setMaxForVw'].includes(editingPath[0]) || [['theme','breakpoints'],['theme','extend','breakpoints'],['theme','breakpointCollections']].some(path => overlaps(path, editingPath));
+  const general = ['dpxViewportSize', 'dpxViewportSizes', 'setMaxForVw'].includes(editingPath[0]) || [['theme','breakpoints'],['theme','extend','breakpoints'],['theme','breakpointCollections']].some(path => overlaps(path, editingPath));
   const family = [['theme','typography','families'],['theme','extend','typography','families']].some(path => isPrefix(path, editingPath));
   return latest.specimens.filter(s => general || family && s.kind === 'typography' || [...s.config_paths,...s.dependency_paths].some(path => overlaps(path, editingPath)));
 }

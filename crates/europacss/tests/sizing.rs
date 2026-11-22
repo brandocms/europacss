@@ -376,13 +376,14 @@ fn column_and_offset_context_and_argument_errors_are_explicit() {
 }
 
 #[test]
-fn responsive_collections_and_design_pixel_floor_apply_across_sizing_rules() {
+fn responsive_collections_and_scale_from_apply_across_sizing_rules() {
     let mut cfg = sizes_config();
-    cfg["dpxScaleFrom"] = json!("tablet");
-    cfg["theme"]["spacing"]["rows"] = json!({"$sm":"16dpx", "tablet":"24dpx", "*":"32dpx"});
-    cfg["theme"]["container"]["padding"] = json!({"$sm":"16dpx","*":"32dpx"});
+    cfg["theme"]["spacing"]["rows"] =
+        json!({"$sm":"scale-from(16, tablet)", "tablet":"24dpx", "*":"32dpx"});
+    cfg["theme"]["container"]["padding"] = json!({"$sm":"scale-from(16, tablet)","*":"32dpx"});
     cfg["theme"]["columns"] = json!({"count":{"$sm":4,"$lg":11},"gutters":{"*":"16px"}});
-    cfg["theme"]["typography"]["sizes"] = json!({"body":{"$sm":{"font-size":"16dpx"},"*":"28dpx"}});
+    cfg["theme"]["typography"]["sizes"] =
+        json!({"body":{"$sm":{"font-size":"scale-from(16, tablet)"},"*":"28dpx"}});
     for (query, expected) in [
         ("@space gap rows mobile", "gap:16px"),
         ("@space gap rows tablet", "gap:calc(2.4vw * var(--ec-zoom))"),
@@ -417,6 +418,71 @@ fn responsive_collections_and_design_pixel_floor_apply_across_sizing_rules() {
             && error.message.contains("$also")
             && error.message.contains("tablet")
     );
+}
+
+#[test]
+fn scale_from_matches_explicit_units_across_the_design_modes_and_cap() {
+    let mut cfg = sizes_config();
+    cfg["theme"]["breakpoints"] =
+        json!({"desktop_xl":"1920px","mobile":0,"tablet":"1024px","desktop_lg":"1440px"});
+    cfg["theme"]["breakpointCollections"] = json!({"$sm":"mobile","$lg":">=tablet"});
+    cfg["theme"]["container"]["maxWidth"] = json!({"*":"1920px"});
+    cfg["setMaxForVw"] = true.into();
+    cfg["dpxViewportSizes"] = json!({"$lg":1440, "desktop_xl":1600});
+    cfg["theme"]["spacing"]["projectRows"] =
+        json!({"$sm":"96px","$lg":"scale-from(149, desktop_lg)"});
+
+    let source = ".rows{@space gap projectRows}
+        .literal{@space gap scale-from(149, desktop_lg) $lg}
+        .hero{@space max-width 1228dpx tablet}
+        .footer{@space min-height 420dpx tablet}";
+    let expected =
+        ".rows{@space gap 96px mobile; @space gap 149px tablet; @space gap 149dpx >=desktop_lg}
+        .literal{@space gap 149px tablet; @space gap 149dpx >=desktop_lg}
+        .hero{@space max-width calc(85.27778vw * var(--ec-zoom)) tablet}
+        .footer{@space min-height calc(29.16667vw * var(--ec-zoom)) tablet}";
+    assert_css(source, expected, cfg);
+}
+
+#[test]
+fn scale_from_resolves_inside_calculations_and_responsive_blocks() {
+    let mut cfg = sizes_config();
+    cfg["dpxViewportSizes"] = json!({"tablet":800});
+    assert_css(
+        ".x{@responsive $sm {@space margin-top calc(10px + scale-from(-2.5, tablet))}}",
+        ".x{@responsive $sm {
+            @media (width < 740px) {margin-top:7.5px}
+            @media (width >= 740px) and (width < 1024px) {margin-top:calc(10px + calc(-0.3125vw * var(--ec-zoom)))}
+        }}",
+        cfg,
+    );
+}
+
+#[test]
+fn scale_from_rejects_invalid_arguments_and_reports_the_directive() {
+    for (args, diagnostic) in [
+        ("16", "number and a named breakpoint"),
+        ("16, tablet, desktop", "number and a named breakpoint"),
+        ("16px, tablet", "finite unitless number"),
+        ("NaN, tablet", "finite unitless number"),
+        ("1e400, tablet", "finite unitless number"),
+        ("16, missing", "named breakpoint, got `missing`"),
+        ("16, $sm", "named breakpoint, got `$sm`"),
+    ] {
+        let source = format!(".x {{\n @space gap scale-from({args}); }}");
+        let error = compile(&request(&source, sizes_config())).unwrap_err();
+        assert_eq!((error.code.as_str(), error.line), ("EU_SIZE", 2));
+        assert!(error.message.contains(diagnostic), "{error}");
+    }
+}
+
+#[test]
+fn removed_global_dpx_setting_reports_how_to_migrate() {
+    let mut cfg = sizes_config();
+    cfg["dpxScaleFrom"] = json!("tablet");
+    let error = compile(&request(".x{@space gap 40dpx}", cfg)).unwrap_err();
+    assert_eq!(error.code, "EU_CONFIG");
+    assert!(error.message.contains("dpxScaleFrom") && error.message.contains("scale-from("));
 }
 
 #[test]

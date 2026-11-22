@@ -78,6 +78,50 @@ fn dpx_font_sizes_and_line_heights_convert_together() {
 }
 
 #[test]
+fn scale_from_in_type_tokens_literals_and_object_properties() {
+    let mut cfg = font_config();
+    cfg["theme"]["typography"]["sizes"]["scale-from"] = json!("12px");
+    assert_css(
+        ".x{@fontsize scale-from(2)}",
+        ".x{font-size:24px}",
+        cfg.clone(),
+    );
+    cfg["theme"]["typography"]["sizes"]["body"] = json!({"*":{
+        "font-size":"scale-from(20, tablet)",
+        "line-height":"scale-from(24, tablet)",
+        "letter-spacing":"calc(scale-from(-0.5, tablet) + 1px)"
+    }});
+    for (query, size, height, tracking) in [
+        ("mobile", "40px", "24px", "0.5px"),
+        (
+            "tablet",
+            "calc(4vw * var(--ec-zoom))",
+            "calc(2.4vw * var(--ec-zoom))",
+            "calc(calc(-0.05vw * var(--ec-zoom)) + 1px)",
+        ),
+    ] {
+        assert_css(
+            &format!(".x{{@fontsize body(2) {query}}}"),
+            &format!(".x{{@responsive {query} {{font-size:{size};line-height:{height};letter-spacing:{tracking}}}}}"),
+            cfg.clone(),
+        );
+        assert_css(
+            &format!(".x{{@fontsize scale-from(40, tablet)/scale-from(24, tablet) {query}}}"),
+            &format!(".x{{@responsive {query} {{font-size:{size};line-height:{height}}}}}"),
+            cfg.clone(),
+        );
+    }
+    for (query, count) in [("mobile", 0), ("tablet", 1)] {
+        let source = format!(".x{{@fontsize scale-from(16, tablet)/22px {query}}}");
+        let output = compile(&request(&source, cfg.clone())).unwrap();
+        assert_eq!(output.warnings.len(), count);
+        if let Some(warning) = output.warnings.first() {
+            assert!(warning.message.contains("1.375em"), "{warning}");
+        }
+    }
+}
+
+#[test]
 fn object_properties_and_modifiers_use_reference_viewports() {
     let mut cfg = font_config();
     cfg["dpxViewportSizes"] = json!({"mobile":400, "$sm":800});

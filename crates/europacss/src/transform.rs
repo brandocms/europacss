@@ -1071,8 +1071,9 @@ impl Compiler<'_, '_> {
             return Err(error(node, "EU_SIZE", "Missing line height after /"));
         }
         if let Some((key, factor)) = name.strip_suffix(')').and_then(|s| s.rsplit_once('(')) {
-            if self.config.get("/theme/typography/sizes", key).is_some()
-                || crate::size::dimension(key).is_some()
+            if !(key == "scale-from" && factor.contains(','))
+                && (self.config.get("/theme/typography/sizes", key).is_some()
+                    || crate::size::dimension(key).is_some())
             {
                 let factor = factor
                     .parse::<f64>()
@@ -1130,8 +1131,9 @@ impl Compiler<'_, '_> {
             for (property, value) in properties {
                 let raw = css_value(value, property, node)?;
                 let value = if property == "font-size" {
+                    let length = sizes.font_length(&raw, index)?;
                     sizes.css(
-                        &crate::size::scale(&raw, multiplier, node.offset)?,
+                        &crate::size::scale(&length, multiplier, node.offset)?,
                         index,
                         true,
                     )?
@@ -1141,6 +1143,8 @@ impl Compiler<'_, '_> {
                     .is_some_and(|(_, unit)| matches!(unit, "vw" | "dpx"))
                 {
                     sizes.css(&raw, index, true)?
+                } else if raw.contains("scale-from(") {
+                    sizes.rewrite_size_functions(&raw, index, true, 0)?
                 } else {
                     raw
                 };
@@ -1175,17 +1179,21 @@ impl Compiler<'_, '_> {
             }
             let suffix = parts[1..].join("/");
             let height = line_height.or((parts.len() > 1).then_some(suffix.as_str()));
-            if parts[0].ends_with("dpx") && height.is_some_and(|v| v.ends_with("vw")) {
+            let length = sizes.font_length(parts[0], index)?;
+            if length.ends_with("dpx") && height.is_some_and(|v| v.ends_with("vw")) {
                 return Err(error(
                     node,
                     "EU_SIZE",
                     "Do not mix dpx font sizes with vw line heights",
                 ));
             }
-            let raw = crate::size::scale(parts[0], multiplier, node.offset)?;
             result.push(decl(
                 "font-size",
-                &sizes.css(&raw, index, true)?,
+                &sizes.css(
+                    &crate::size::scale(&length, multiplier, node.offset)?,
+                    index,
+                    true,
+                )?,
                 node,
                 false,
             ));

@@ -5,6 +5,7 @@ use crate::{
     Error,
 };
 use serde_json::Value;
+use std::borrow::Cow;
 
 /// Design pixels use a reference viewport and retain Europa's zoom variable.
 pub fn design_pixels(
@@ -19,9 +20,6 @@ pub fn design_pixels(
         .and_then(|value| value.parse::<f64>().ok())
         .filter(|n| n.is_finite())
         .ok_or_else(|| error(format!("Invalid design-pixel value `{value}`")))?;
-    if config.dpx_scale_from.is_some_and(|start| index < start) {
-        return Ok(format!("{number}px"));
-    }
     let reference = reference_width(config, index, offset)?;
     let vw = number / reference * 100.0;
     if !vw.is_finite() {
@@ -490,6 +488,45 @@ impl Sizes<'_, '_> {
     pub fn css(&self, value: &str, index: Option<usize>, zoom: bool) -> Result<String, Error> {
         self.css_inner(value, index, zoom, 0)
     }
+    /// Select the authored length before dpx conversion or font-size multiplication.
+    fn scale_from(&self, args: &str, index: Option<usize>) -> Result<String, Error> {
+        let parts = split_top_level(args, ',').map_err(|e| self.error(e.message))?;
+        let [amount, breakpoint] = parts.as_slice() else {
+            return Err(self.error("scale-from() expects a unitless number and a named breakpoint"));
+        };
+        let Some((number, "")) = dimension(amount) else {
+            return Err(self.error("scale-from() requires a finite unitless number"));
+        };
+        let start = self
+            .config
+            .breakpoints
+            .iter()
+            .position(|(name, _)| name == breakpoint)
+            .ok_or_else(|| {
+                self.error(format!(
+                    "scale-from() requires a named breakpoint, got `{breakpoint}`"
+                ))
+            })?;
+        let unit = if self.index(index)? < start {
+            "px"
+        } else {
+            "dpx"
+        };
+        Ok(format!("{number}{unit}"))
+    }
+    pub(crate) fn font_length<'a>(
+        &self,
+        value: &'a str,
+        index: Option<usize>,
+    ) -> Result<Cow<'a, str>, Error> {
+        match value
+            .strip_prefix("scale-from(")
+            .and_then(|s| s.strip_suffix(')'))
+        {
+            Some(args) => self.scale_from(args, index).map(Cow::Owned),
+            None => Ok(Cow::Borrowed(value)),
+        }
+    }
     fn css_inner(
         &self,
         value: &str,
@@ -554,6 +591,7 @@ impl Sizes<'_, '_> {
             "env(",
             "fit-content(",
             "between(",
+            "scale-from(",
             "vertical-rhythm(",
             "negate(",
         ]
@@ -562,12 +600,25 @@ impl Sizes<'_, '_> {
         {
             return Err(self.error(format!("Unknown size expression `{value}`")));
         }
+        self.rewrite_size_functions(value, index, zoom, depth)
+    }
+    pub(crate) fn rewrite_size_functions(
+        &self,
+        value: &str,
+        index: Option<usize>,
+        zoom: bool,
+        depth: usize,
+    ) -> Result<String, Error> {
         rewrite_value(value, &mut |name, args| {
             if let Some(args) = args {
                 match name {
                     "var[]" => return self.spacing_inner(args.trim(), index, depth + 1).map(Some),
                     "negate" => return self.negate_inner(args, index, depth + 1).map(Some),
                     "between" => return self.between(args, index, zoom).map(Some),
+                    "scale-from" => {
+                        let length = self.scale_from(args, index)?;
+                        return self.css_inner(&length, index, zoom, depth + 1).map(Some);
+                    }
                     "vertical-rhythm" => return self.rhythm(args, index, depth + 1).map(Some),
                     _ => {}
                 }
@@ -747,24 +798,16 @@ impl Sizes<'_, '_> {
         index: Option<usize>,
         multiplier: f64,
     ) -> Option<f64> {
+        let font = self.font_length(font, index).ok()?;
         let fluid = font
             .strip_prefix("between(")
             .and_then(|v| v.strip_suffix(')'))
             .and_then(between_endpoints);
-        let (n, unit) = fluid.map(|(lower, _)| lower).or_else(|| dimension(font))?;
+        let (n, unit) = fluid.map(|(lower, _)| lower).or_else(|| dimension(&font))?;
         let n = match unit {
             "px" if fluid.is_some() || multiplier != 1.0 => n,
             "rem" if fluid.is_some() || multiplier != 1.0 => n * self.root_pixels()?,
-            "dpx"
-                if multiplier != 1.0
-                    || self
-                        .config
-                        .dpx_scale_from
-                        .zip(index)
-                        .is_none_or(|(start, i)| i >= start) =>
-            {
-                n
-            }
+            "dpx" => n,
             "vw" => {
                 let width = match index {
                     Some(i) => reference_width(self.config, i, self.offset).ok()?,

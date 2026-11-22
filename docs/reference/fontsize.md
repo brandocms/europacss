@@ -69,6 +69,8 @@ Linearly interpolate font-size between two values:
 
 `between()` is evaluated separately within each selected named breakpoint. Its legacy interpolation anchors are retained: the next breakpoint minus 1px, a 320px lower anchor for a zero breakpoint, and a 200px span for the last breakpoint. Media coverage itself uses `< next-breakpoint`, so there is no fractional-width coverage gap. Use `clamp()` for a formula you want to define directly.
 
+To keep a font at 18px below a named breakpoint and size it as `18dpx` from that breakpoint onward, use `@fontsize scale-from(18, desktop_lg);`. Typography tokens accept the same expression. See [design pixel scaling](./space#start-scaling-at-a-breakpoint).
+
 ## Breakpoint Constraints
 
 Limit output to specific breakpoints:
