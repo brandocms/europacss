@@ -33,6 +33,7 @@ export default defineConfig({
             { text: 'Lint & migration', link: '/guide/lint-and-migration' },
             { text: 'Browser comparison', link: '/guide/compare' },
             { text: 'Studio', link: '/guide/studio' },
+            { text: 'WebAssembly', link: '/guide/webassembly' },
             { text: 'Development', link: '/guide/development' },
             { text: 'Legacy PostCSS', link: '/guide/legacy-postcss' }
           ]

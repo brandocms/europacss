@@ -242,6 +242,35 @@ pub(crate) fn load_raw(
     })
 }
 
+/// Parse and resolve in-memory JSON5 config text, for hosts without file access.
+/// `extends` is rejected. Syntax errors carry the authored line and column.
+pub fn config_from_json5(source: &str) -> Result<Value, Error> {
+    let value = json5::from_str::<ConfigValue>(source).map_err(|e| {
+        let full = json5_error(source, &e);
+        let Some(position) = e.position() else {
+            return Error::new("EU_CONFIG", full, 0);
+        };
+        // The location goes in line and column; keep any quoting hint after it.
+        let message = full.replacen(&format!(" at {position}"), "", 1);
+        let offset = source
+            .split_inclusive('\n')
+            .take(position.line)
+            .map(str::len)
+            .sum::<usize>();
+        let line = &source[offset..];
+        let column = line
+            .char_indices()
+            .nth(position.column)
+            .map_or(line.len(), |(index, _)| index);
+        Error {
+            line: position.line + 1,
+            column: position.column + 1,
+            ..Error::new("EU_CONFIG", message, offset + column)
+        }
+    })?;
+    resolve_config(value.0)
+}
+
 /// Convert already exported data to JSON5. This does not evaluate JavaScript callbacks.
 pub fn json_to_json5(source: &str) -> Result<String, String> {
     let value = serde_json::from_str::<ConfigValue>(source)

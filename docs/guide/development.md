@@ -47,6 +47,19 @@ node scripts/test-npm.mjs --manager npm
 
 Replace the archive path with the one printed by `package-rust.py`. The smoke test starts a read-only loopback registry for these tarballs and installs ordinary dependencies from npm. `--manager pnpm` uses globally installed pnpm 10.32.1; `EUROPA_PNPM_CLI` can point to a local `pnpm.cjs` instead. A source-workspace install deliberately omits platform dependencies; the packer generates the exact dependency map when making release tarballs.
 
+## Build the WebAssembly compiler
+
+The browser build lives in `crates/europacss-wasm`:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo test --locked -p europacss-wasm
+python3 scripts/build-wasm.py
+cd packages/wasm && npm test
+```
+
+Set `EUROPA_BINARY` to a native `europa` build to compare its output with the WebAssembly build. See [WebAssembly](./webassembly) for the JavaScript API.
+
 ## Optional Vite adapter tests
 
 With Node 22 or 24 and npm available:

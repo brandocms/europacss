@@ -19,9 +19,13 @@ mod transform;
 mod value_functions;
 pub mod watch;
 pub use config_file::{
-    json_to_json5, load_config, load_config_tracked, resolve_config, LoadedConfig,
+    config_from_json5, json_to_json5, load_config, load_config_tracked, resolve_config,
+    LoadedConfig,
 };
 pub use config_migration::{migrate_config, migrate_config_report, MigrationOutput};
+
+/// The compiler version, shared by the executable and the WebAssembly build.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

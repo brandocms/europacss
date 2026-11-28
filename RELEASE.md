@@ -90,8 +90,10 @@ gh workflow run native-release.yml --ref <branch>
 ```
 
 1. Set the same version in Cargo and the CLI/adapter manifests, including the
-   adapter's exact compiler dependency. Refresh Cargo.lock and the `packages/`
-   npm workspace lockfile. The packer rejects inconsistent versions. Add the
+   adapter's exact compiler dependency. Set it in `crates/europacss-wasm` and
+   `packages/wasm` too; the WebAssembly test checks that the module reports the
+   package version. Refresh Cargo.lock and the `packages/` npm workspace
+   lockfile. The packer rejects inconsistent versions. Add the
    version to `NATIVE_RELEASES` in `crates/europacss/src/migration/mod.rs`,
    with checks for any output it changes, so `europa migrate --from` an earlier
    native version reports them. A test fails until the list includes it.

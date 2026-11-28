@@ -11,6 +11,7 @@ The Rust compiler is in `crates/europacss`. Its CLI and Studio use JSON5 data an
 - Tests: `cargo test --locked -p europacss`
 - One suite: `cargo test --locked -p europacss --test responsive`
 - Package preview: `python3 scripts/package-rust.py`
+- WebAssembly build: `python3 scripts/build-wasm.py` (needs `rustup target add wasm32-unknown-unknown`), then `npm test` in `packages/wasm`
 
 Follow nearby Rust style. Diagnostics should retain authored source locations. Meaningful regression cases live in `crates/europacss/tests`; frozen legacy expectations record intentional differences. Do not regenerate expectations blindly from compiler output.
 
