@@ -49,11 +49,48 @@ if (result.error) {
 | `sourceMap` | `false` | Return a source map object as `map`. |
 | `browsers` | `defaults` | Browserslist queries for Lightning CSS. |
 | `debugTokens` | `false` | Label generated font sizes. |
+| `scope` | none | Compile `source` as the body of this selector. See [scoped styles](#scoped-styles). |
+| `externalUrls` | `'allow'` | `'deny'`, or the hosts that absolute URLs may name. See [scoped styles](#scoped-styles). |
 
 It never throws for invalid input. It returns `{ css, map, warnings, error }`:
 
 - On success, `error` is `null` and `css` holds the stylesheet.
 - On failure, `css` is `null` and `error` names the file. Stylesheet and JSON5 syntax errors include the 1-based `line` and `column`. Configuration errors found after parsing have line `0`.
+
+## Scoped styles
+
+A CMS that lets editors write CSS for one block or module can confine that CSS to the module and keep it from loading resources from other hosts:
+
+```js
+const result = europa.compile({
+  source: moduleCss,
+  config: siteConfig,
+  scope: '[b-tpl="hero"]',
+  externalUrls: ['example.com', 'cdn.example.com'],
+})
+```
+
+`scope` compiles the source as the body of that selector, so `.inner { … }` becomes `[b-tpl="hero"] .inner`. The compiler nests the parsed source itself, so errors keep the author's lines and columns, and a stray `}` is a parse error instead of closing the scope early. Every rule must select the scope element or its descendants. These are `EU_SCOPE` errors:
+
+- `&` followed by `~` or `+` where `&` is the scope element, as in `& ~ *` or `~ .next`. Siblings inside the module are fine, as in `.a ~ .b`.
+- `&` inside a selector function such as `:not(&)`, `:is(&)` or `body:has(&)`.
+- At-rules that apply to the whole page: `@keyframes`, `@font-face`, `@property`, `@import`, `@page`, `@scope`, the `@layer a, b;` statement, `@europa` and any other at-rule outside the list below.
+
+Scoped styles can use Europa directives, placeholders with `@extend`, and `@media`, `@supports`, `@container`, `@layer` and `@starting-style` blocks. Ancestor conditions such as `body.dark & { … }` still select the scope element, so they're allowed.
+
+A scope limits which elements the rules select, not what they draw. A fixed-position element can still cover the page.
+
+`externalUrls` checks `url()`, `image-set()`, `image()`, `src()` and `@import` in the authored source:
+
+- `'allow'` (the default) passes every URL through.
+- `'deny'` rejects absolute and protocol-relative URLs, and every `@import`.
+- An array of host names allows `http(s)` URLs on exactly those hosts. Subdomains must be listed separately.
+
+Relative, root-relative, fragment and `data:` URLs are always allowed, except `data:` in `@import`. Other schemes, such as `javascript:`, are rejected. URLs are read the way browsers parse them, so CSS escapes, backslashes, stray whitespace and `user@host` forms can't hide a host. Violations are `EU_EXTERNAL_URL` errors at the URL.
+
+Use both for CSS written in an admin and served on public pages. Attribute selectors with `url()` beacons can otherwise read form values, such as CSRF tokens, one character at a time. Neither option makes output safe to inline: `content: "</style>"` is valid CSS. Serve the result as a `text/css` file, or reject output that contains `</style` before inlining it.
+
+The CLI takes the same options as `--scope` and `--external-urls`.
 
 ## Inspect a config
 

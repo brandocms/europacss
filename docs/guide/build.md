@@ -81,6 +81,8 @@ Stdin does not resolve local imports. Diagnostics and build summaries go to stde
 | `--minify` | Compact generated CSS. |
 | `--debug-tokens` | Add development font and spacing token labels, omitted with `--minify`. |
 | `--source-map` | Write an adjacent external map; requires `-o`. |
+| `--scope <selector>` | Compile the input as the body of a selector, for embedded styles. See [scoped styles](./webassembly#scoped-styles). |
+| `--external-urls <policy>` | `allow` (default), `deny`, or a comma-separated list of hosts that absolute URLs may name. |
 | `--watch` | Rebuild file input and config changes; requires `-o`. |
 | `--color auto\|always\|never` | Control terminal colors. Auto respects `NO_COLOR`. |
 | `-q`, `--quiet` | Hide success summaries; keep warnings and errors. |

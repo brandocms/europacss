@@ -128,3 +128,44 @@ fn resolves_configs_for_editors() {
     let response: Value = serde_json::from_slice(&resolve_json(b"{ a: 1, a: 2 }")).unwrap();
     assert_eq!(response["error"]["code"], "EU_CONFIG");
 }
+
+#[test]
+fn scope_and_external_urls_apply_to_compiles() {
+    let response = call(json!({
+        "source": ".inner { background: url(https://cdn.example.com/a.png); }",
+        "config": CONFIG,
+        "minify": true,
+        "browsers": ["chrome 100"],
+        "scope": "[b-tpl=hero]",
+        "externalUrls": ["cdn.example.com"],
+    }));
+    assert_eq!(response["error"], Value::Null, "{response}");
+    assert!(
+        response["css"]
+            .as_str()
+            .unwrap()
+            .starts_with("[b-tpl=hero] .inner{"),
+        "{response}"
+    );
+
+    let response = call(json!({
+        "source": ".a { color: red; }\n& ~ * { display: none; }",
+        "scope": "[b-tpl=hero]",
+    }));
+    let error = &response["error"];
+    assert_eq!(
+        (error["code"].as_str(), error["line"].as_u64()),
+        (Some("EU_SCOPE"), Some(2)),
+        "{error}"
+    );
+    assert_eq!(error["filename"], "input.css");
+
+    let response = call(json!({
+        "source": "div { background: url(//evil.example/a); }",
+        "externalUrls": "deny",
+    }));
+    assert_eq!(response["error"]["code"], "EU_EXTERNAL_URL", "{response}");
+
+    let response = call(json!({ "source": ".a {}", "externalUrls": "https://cdn.example.com" }));
+    assert_eq!(response["error"]["code"], "EU_REQUEST", "{response}");
+}

@@ -4,6 +4,7 @@ mod cascade;
 mod config;
 mod config_file;
 mod config_migration;
+mod embed;
 mod emit;
 mod imports;
 pub mod migration;
@@ -23,6 +24,7 @@ pub use config_file::{
     LoadedConfig,
 };
 pub use config_migration::{migrate_config, migrate_config_report, MigrationOutput};
+pub use embed::{EmbedOptions, ExternalUrls};
 
 /// The compiler version, shared by the executable and the WebAssembly build.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -90,21 +92,33 @@ impl Error {
 }
 
 pub fn compile(request: &Request) -> Result<Output, Error> {
+    compile_with(request, &EmbedOptions::default())
+}
+
+/// Compile with a scope selector or a URL policy, for styles a host embeds,
+/// such as CSS written for one CMS module.
+pub fn compile_with(request: &Request, options: &EmbedOptions) -> Result<Output, Error> {
     // Keep internal mappings even when output maps are disabled, for backend diagnostics.
     let sources = single_source(request);
-    let frontend = frontend(request, true, true)?;
+    let frontend = frontend(request, true, true, options)?;
     backend::compile(request, frontend, &sources)
 }
 
 /// Expand Europa syntax into standard CSS with native nesting and scoped media-last order.
 pub fn compile_frontend(request: &Request) -> Result<Output, Error> {
-    frontend(request, request.source_map, false)
+    frontend(request, request.source_map, false, &EmbedOptions::default())
 }
 
-fn frontend(request: &Request, source_map: bool, optimize: bool) -> Result<Output, Error> {
+fn frontend(
+    request: &Request,
+    source_map: bool,
+    optimize: bool,
+    options: &EmbedOptions,
+) -> Result<Output, Error> {
     (|| {
         let nodes = parser::parse(&request.source)?;
         imports::validate_external_order(&nodes)?;
+        let nodes = embed::apply(nodes, options)?;
         let mut config = config::Config::new(&request.config)?;
         config.debug_tokens = request.debug_tokens && !request.minify;
         let nodes = transform::transform(nodes, &config)?;
@@ -148,6 +162,15 @@ fn single_source(request: &Request) -> sources::Sources {
 /// `request.source` must be empty; `request.filename` names the entry file.
 /// Relative asset URLs target the output directory, or the entry directory when omitted.
 pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Result<Output, Error> {
+    compile_file_with(request, output, &EmbedOptions::default())
+}
+
+/// `compile_file` with a scope selector or a URL policy; see `compile_with`.
+pub fn compile_file_with(
+    request: &Request,
+    output: Option<&std::path::Path>,
+    options: &EmbedOptions,
+) -> Result<Output, Error> {
     if !request.source.is_empty() {
         return Err(Error::new(
             "EU_INPUT",
@@ -156,14 +179,19 @@ pub fn compile_file(request: &Request, output: Option<&std::path::Path>) -> Resu
         ));
     }
     let loaded = imports::load(std::path::Path::new(&request.filename), output)?;
-    compile_loaded(request, loaded)
+    compile_loaded(request, loaded, options)
 }
 
-fn compile_loaded(request: &Request, loaded: imports::Loaded) -> Result<Output, Error> {
+fn compile_loaded(
+    request: &Request,
+    loaded: imports::Loaded,
+    options: &EmbedOptions,
+) -> Result<Output, Error> {
     let result = (|| {
         let mut config = config::Config::new(&request.config)?;
         config.debug_tokens = request.debug_tokens && !request.minify;
-        let mut nodes = transform::transform(loaded.nodes, &config)?;
+        let nodes = embed::apply(loaded.nodes, options)?;
+        let mut nodes = transform::transform(nodes, &config)?;
         imports::rebase(&mut nodes, &loaded.sources, &loaded.output_dir)?;
         let nodes = optimize::media(nodes);
         let mut frontend = emit::emit(&nodes, &loaded.sources, true);
