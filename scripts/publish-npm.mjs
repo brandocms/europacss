@@ -10,8 +10,8 @@ const { values } = parseArgs({ options: { packages: { type: 'string', default: '
 const packages = await readPackages(values.packages);
 const cli = JSON.parse(await readFile(new URL('../packages/cli/package.json', import.meta.url)));
 const platforms = JSON.parse(await readFile(new URL('../packages/cli/platforms.json', import.meta.url)));
-const order = [...platforms.map(p => `@brandocms/europacss-${p.suffix}`), cli.name, '@brandocms/vite-plugin-europacss'];
-assert.deepEqual([...packages.keys()].sort(), [...order].sort(), 'All seven platform packages, CLI and adapter are required');
+const order = [...platforms.map(p => `@brandocms/europacss-${p.suffix}`), '@brandocms/europacss-wasm', cli.name, '@brandocms/vite-plugin-europacss'];
+assert.deepEqual([...packages.keys()].sort(), [...order].sort(), 'All seven platform packages, the WebAssembly compiler, CLI and adapter are required');
 assert.equal(process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : `native-v${cli.version}`, `native-v${cli.version}`, 'Tag and package version differ');
 for (const name of order) {
   const pkg = packages.get(name);

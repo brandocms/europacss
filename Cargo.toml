@@ -1,7 +1,15 @@
 [workspace]
-members = ["crates/europacss"]
+members = ["crates/europacss", "crates/europacss-wasm"]
 resolver = "2"
 
 [profile.release]
 lto = "thin"
 strip = "symbols"
+
+# Browser build: cargo build --profile wasm --target wasm32-unknown-unknown -p europacss-wasm
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

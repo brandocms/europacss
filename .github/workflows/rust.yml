@@ -3,7 +3,7 @@ name: Native Rust compiler
 on:
   push:
     branches: ['**']
-    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', 'crates/europacss/**', 'packages/**', 'scripts/**', '.github/workflows/rust.yml']
+    paths: ['Cargo.toml', 'Cargo.lock', 'rustfmt.toml', '.cargo/**', 'crates/**', 'packages/**', 'scripts/**', '.github/workflows/rust.yml']
   workflow_dispatch:
   workflow_call:
 
@@ -30,15 +30,46 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Lint
-        run: cargo clippy --locked -p europacss --all-targets -- -D warnings
+        run: cargo clippy --locked -p europacss -p europacss-wasm --all-targets -- -D warnings
       - name: Test
-        run: cargo test --locked -p europacss
+        run: cargo test --locked -p europacss -p europacss-wasm
       - name: Package and smoke-test native preview
         run: python scripts/package-rust.py
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: europa-native-${{ matrix.os }}
           path: dist/native/*
+          if-no-files-found: error
+
+  wasm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Rust toolchain and WebAssembly target
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --target wasm32-unknown-unknown
+          rustup default stable
+      - name: Lint WebAssembly build
+        run: cargo clippy --locked -p europacss-wasm --target wasm32-unknown-unknown -- -D warnings
+      - name: Build browser compiler
+        run: python3 scripts/build-wasm.py
+      - name: Build native compiler for comparison
+        run: cargo build --locked -p europacss
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test JavaScript wrapper
+        working-directory: packages/wasm
+        run: npm test
+        env:
+          EUROPA_BINARY: ${{ github.workspace }}/target/debug/europa
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: europacss-wasm
+          path: |
+            packages/wasm/europacss.wasm
+            packages/wasm/THIRD-PARTY-NOTICES.txt
+            packages/wasm/dependencies.json
           if-no-files-found: error
 
   vite:

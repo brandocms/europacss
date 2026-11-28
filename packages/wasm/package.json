@@ -1,0 +1,35 @@
+{
+  "name": "@brandocms/europacss-wasm",
+  "version": "0.1.0-beta.2",
+  "private": true,
+  "description": "The EuropaCSS compiler as WebAssembly, for browsers and live editors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandocms/europacss.git",
+    "directory": "packages/wasm"
+  },
+  "homepage": "https://brandocms.github.io/europacss/guide/webassembly",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./europacss.wasm": "./europacss.wasm",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "europacss.wasm",
+    "README.md",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.txt",
+    "dependencies.json"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
