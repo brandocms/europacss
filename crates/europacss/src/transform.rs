@@ -1323,21 +1323,24 @@ impl Compiler<'_, '_> {
             Some(q) if !arrow => self.config.select(q, node.offset)?,
             _ => (0..self.config.breakpoints.len()).collect(),
         };
+        let rendered = indices
+            .iter()
+            .map(|index| render(Some(*index)))
+            .collect::<Result<Vec<_>, Error>>()?;
+        if ctx.responsive.is_some() && !arrow && rendered.windows(2).all(|w| w[0] == w[1]) {
+            // One value across the enclosing @responsive scope; a query would repeat it.
+            return Ok(rendered.into_iter().next().unwrap_or_default());
+        }
         let mut result = Vec::new();
-        for index in &indices {
-            let nodes = render(Some(*index))?;
-            if ctx.responsive.is_some() && indices.len() == 1 && !arrow {
-                result.extend(nodes);
-            } else {
-                result.push(Node::generated_media_block(
-                    format!(
-                        "@media {}",
-                        self.config.media_indices(&[*index], node.offset)
-                    ),
-                    nodes,
-                    node.offset,
-                ));
-            }
+        for (index, nodes) in indices.iter().zip(rendered) {
+            result.push(Node::generated_media_block(
+                format!(
+                    "@media {}",
+                    self.config.media_indices(&[*index], node.offset)
+                ),
+                nodes,
+                node.offset,
+            ));
         }
         if arrow && query.is_some() {
             self.wrap(node, result, query, ctx)

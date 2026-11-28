@@ -54,6 +54,8 @@ pub struct MigrationSummary {
     pub accepted: usize,
     pub fixed: usize,
     pub complete: bool,
+    /// The source used the native compiler, so only release changes were checked.
+    pub native: bool,
     pub review_items: usize,
     pub appearance_proposals: usize,
 }
@@ -410,9 +412,15 @@ impl Ui {
             accepted,
             fixed,
             complete,
+            native,
             review_items,
             appearance_proposals,
         } = summary;
+        let scope = if native {
+            "Output changes in later native releases; rendered-page comparison remains necessary."
+        } else {
+            "Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."
+        };
         let unresolved = findings - accepted;
         if self.quiet && unresolved == 0 && complete {
             return;
@@ -422,7 +430,7 @@ impl Ui {
         } else {
             "! migration review required"
         };
-        eprintln!("\n  {}  {}\n          {} · {}\n          {unresolved} unresolved · {accepted} accepted · {} fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), counted(files, "file", "files"), counted(review_items, "review item", "review items"), counted(fixed, "file", "files"), self.dim("Nesting, syntax, order, and selected sizing corrections; rendered-page comparison remains necessary."));
+        eprintln!("\n  {}  {}\n          {} · {}\n          {unresolved} unresolved · {accepted} accepted · {} fixed\n          {}\n", self.paint("1;36", "europa"), self.paint(if unresolved == 0 && complete { "1;32" } else { "1;33" }, label), counted(files, "file", "files"), counted(review_items, "review item", "review items"), counted(fixed, "file", "files"), self.dim(scope));
         if appearance_proposals > 0 {
             eprintln!("  {} {}\n", self.paint("1;32", &counted(appearance_proposals, "distinct appearance edit proposal", "distinct appearance edit proposals")), self.dim("· export --json, review apply_fix:true choices, then use --apply <review.json>"));
         }

@@ -45,18 +45,14 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<(), String> {
     if entry.is_some() != from.is_some() {
         return Err("Migration Studio requires both --entry and --from".into());
     }
-    if from.as_deref().is_some_and(|value| {
-        !matches!(
-            value,
-            europacss::migration::LEGACY_VERSION
-                | europacss::migration::LEGACY_BETA6
-                | europacss::migration::LEGACY_BETA11
-        )
-    }) {
-        return Err(
-            "Unsupported migration version; use 1.0.0-beta.6, 1.0.0-beta.11, or 1.0.0-beta.16"
-                .into(),
-        );
+    if from
+        .as_deref()
+        .is_some_and(|value| !europacss::migration::is_supported(value))
+    {
+        return Err(format!(
+            "Unsupported migration version; use one of {}",
+            europacss::migration::supported_versions().join(", ")
+        ));
     }
     let mut migration =
         entry.map(|entry| crate::cli_review::Session::new(entry, path.clone(), from.unwrap()));

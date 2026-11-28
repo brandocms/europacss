@@ -89,7 +89,7 @@ fn preview_in_context(source: &str, inheritance: &Inheritance) -> Result<Preview
         return Err("Studio configs are limited to 1 MiB".into());
     }
     let authored = json5::from_str::<ConfigValue>(source)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| crate::config_file::json5_error(source, &e))?
         .0;
     let config = inheritance.resolve(authored.clone())?;
     let checked = Config::new(&config).map_err(|e| e.to_string())?;

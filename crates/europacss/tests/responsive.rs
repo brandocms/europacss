@@ -128,3 +128,26 @@ fn fractional_breakpoints_partition_widths_without_gaps_or_shared_endpoints() {
         cfg,
     );
 }
+
+#[test]
+fn space_under_responsive_adds_no_redundant_query() {
+    // #123: one value across the @responsive scope needs no second, nested query.
+    let mut cfg = config();
+    cfg["theme"]["spacing"] =
+        json!({"md": {"mobile": "10px", "tablet": "10px", "desktop": "20px"}});
+    let source = ".a { @responsive $sm { @space padding-x md; } }";
+    assert_css(
+        source,
+        ".a{@media (width < 1024px){padding-left:10px;padding-right:10px}}",
+        cfg.clone(),
+    );
+    let raw = compile_frontend(&request(source, cfg.clone())).unwrap().css;
+    assert_eq!(raw.matches("@media").count(), 1, "{raw}");
+    assert_eq!(raw.matches("padding-left").count(), 1, "{raw}");
+    // Different values still get one query each, inside the @responsive scope.
+    assert_css(
+        ".a { @responsive >=tablet { @space padding-x md; } }",
+        ".a{@media (width >= 740px){@media (width >= 740px) and (width < 1024px){padding-left:10px;padding-right:10px}@media (width >= 1024px){padding-left:20px;padding-right:20px}}}",
+        cfg,
+    );
+}

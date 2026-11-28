@@ -89,7 +89,7 @@ export function parseArgs(args) {
 export function differences(before, after, tolerance = 0.1, ignoreCustomProperties = false) {
   const primary = snapshot => snapshot.elements.filter(element => !/::(?:before|after)$/.test(element.selector)).map(element => element.selector);
   if (before.mutations !== after.mutations || JSON.stringify(primary(before)) !== JSON.stringify(primary(after))) {
-    const error = new Error('DOM changed during comparison; prepare a stable page state and rerun');
+    const error = new Error('DOM changed during comparison; prepare a stable page state, or give scripts that change the page after load longer to finish (for example --settle 1500), and rerun');
     error.evidence = { mutations: { before: before.mutations, after: after.mutations }, examples: after.mutationDetails ?? [] };
     throw error;
   }
@@ -316,7 +316,7 @@ export async function comparePage(cdp, options, beforeCSS, afterCSS, viewport) {
       }
       const end = await mutationState();
       if (end.mutations !== start.mutations) {
-        const error = new Error('DOM changed during priming; prepare a stable page state and rerun');
+        const error = new Error('DOM changed during priming; prepare a stable page state, or give scripts that change the page after load longer to finish (for example --settle 1500), and rerun');
         error.evidence = { stage: 'priming', mutations: { before: start.mutations, after: end.mutations }, examples: end.mutationDetails ?? [] };
         throw error;
       }

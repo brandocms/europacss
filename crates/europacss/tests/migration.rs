@@ -1499,3 +1499,136 @@ fn cross_selector_groups_can_be_accepted_with_a_compact_snapshot_bound_receipt()
     .unwrap();
     assert!(!limited.analysis_complete);
 }
+
+#[test]
+fn color_directives_followed_by_their_property_report_the_legacy_append_order() {
+    // #125: legacy releases appended @color's declaration after the rule's own.
+    let mut cfg = config();
+    cfg["theme"]["colors"] = json!({"hair": "#ff0000"});
+    let order = |source: &str| {
+        migration::analyze(&request(source, cfg.clone()), LEGACY_VERSION)
+            .unwrap()
+            .findings
+            .into_iter()
+            .filter(|f| f.diagnostic.code == "EU_MIGRATION_ORDER")
+            .collect::<Vec<_>>()
+    };
+    for (source, earlier, later) in [
+        (
+            ".a{@color border-top hair; border-top:1px solid;}",
+            "border-top-color: red",
+            "border-top-color: currentColor",
+        ),
+        (
+            ".b{@color fg hair; color:blue;}",
+            "color: red",
+            "color: #00f",
+        ),
+        (
+            ".c{@color! bg hair; background:blue!important;}",
+            "background-color: red",
+            "background-color: #00f",
+        ),
+    ] {
+        let findings = order(source);
+        assert_eq!(findings.len(), 1, "{source}: {findings:?}");
+        let message = &findings[0].diagnostic.message;
+        assert!(
+            message.contains("legacy append order favored")
+                && message.contains(earlier)
+                && message.contains(later),
+            "{source}: {message}"
+        );
+        assert!(findings[0]
+            .fix
+            .as_ref()
+            .is_some_and(|f| f.kind == "preserve-appearance"));
+    }
+    for source in [
+        ".d{color:blue; @color fg hair;}",
+        ".e{@color fg hair; background:blue;}",
+        ".f{@color fg hair desktop; color:blue;}",
+        ".g{@color bg hair; background-color:#ff0000;}",
+    ] {
+        assert!(order(source).is_empty(), "{source}: {:?}", order(source));
+    }
+}
+
+#[test]
+fn native_sources_check_only_changes_in_later_native_releases() {
+    // #133: a site on 0.1.0-beta.0 moves to the @grid and fraction changes of beta.1.
+    let mut cfg = config();
+    cfg["theme"]["columns"] =
+        json!({"count": {"mobile": 4, "tablet": 4, "desktop": 11}, "gutters": {"*": "20px"}});
+    cfg["theme"]["colors"] = json!({"hair": "#ff0000"});
+    let source = ".grid{@grid}.half{@column 0.5/11 desktop}.whole{@column 3/11 desktop}\
+        .a{@color fg hair; color:blue}";
+    let codes = |from: &str| {
+        let report = migration::analyze(&request(source, cfg.clone()), from).unwrap();
+        let mut codes: Vec<_> = report
+            .findings
+            .iter()
+            .map(|f| f.diagnostic.code.clone())
+            .collect();
+        codes.dedup();
+        (report, codes)
+    };
+    let (report, found) = codes("0.1.0-beta.0");
+    assert_eq!(
+        found,
+        ["EU_MIGRATION_GRID", "EU_MIGRATION_FRACTION"],
+        "{report:?}"
+    );
+    assert_eq!(report.checks, ["grid-column-count", "fractional-columns"]);
+    let fraction = report
+        .findings
+        .iter()
+        .find(|f| f.diagnostic.code == "EU_MIGRATION_FRACTION")
+        .unwrap();
+    assert!(fraction.diagnostic.message.contains("`0.5:-0.5/11`"));
+    assert!(fraction
+        .fix
+        .as_ref()
+        .is_some_and(|f| f.kind == "fractional-columns"));
+    // The legacy profile also reports PostCSS-specific findings for the same source.
+    let (_, legacy) = codes(LEGACY_VERSION);
+    assert!(
+        legacy.iter().any(|code| code == "EU_MIGRATION_ORDER"),
+        "{legacy:?}"
+    );
+    for from in ["0.1.0-beta.1", "0.1.0-beta.2"] {
+        let (report, found) = codes(from);
+        assert!(found.is_empty(), "{from}: {report:?}");
+        assert!(
+            report.checks.is_empty() && report.analysis_complete,
+            "{from}"
+        );
+    }
+    // A native report covers what the configured compiler rejects.
+    let mut expanded = cfg.clone();
+    expanded["nesting"] = json!("expanded");
+    let report = migration::analyze(
+        &request(".a { @scope (.b) { .c { color: red; } } }", expanded),
+        "0.1.0-beta.0",
+    )
+    .unwrap();
+    assert!(!report.analysis_complete, "{report:?}");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.diagnostic.message.contains("EU_EXPANDED_NESTING")),
+        "{report:?}"
+    );
+    let error = migration::analyze(&request(source, cfg), "0.1.0-beta.99").unwrap_err();
+    assert_eq!(error.code, "EU_MIGRATION_VERSION");
+    assert!(error.message.contains("0.1.0-beta.0"), "{error}");
+}
+
+#[test]
+fn every_native_release_is_a_migration_source() {
+    // A release that changes output must list its checks in NATIVE_RELEASES.
+    let (latest, _) = migration::NATIVE_RELEASES.last().unwrap();
+    assert_eq!(*latest, env!("CARGO_PKG_VERSION"));
+    assert!(migration::is_supported(env!("CARGO_PKG_VERSION")));
+}

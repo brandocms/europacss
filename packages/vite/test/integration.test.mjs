@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm, realpath, unlink } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, writeFile, readFile, rm, realpath, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -177,6 +177,66 @@ test('adapter respects transform input, opt-outs and executable errors', async (
   for (const suffix of ['?raw', '?url', '?vue&type=style']) assert.equal(await plugin.transform.call(context, '', id + suffix), null);
   const missing = europa({ binary: './no-such-executable' });
   await assert.rejects(missing.config.handler({ root }), /Cannot start EuropaCSS/);
+});
+
+test('dev server restarts once when a reinstall removed the executable', async (t) => {
+  const { root, config } = await fixture(t);
+  // pnpm keeps each version in its own directory; an update removes the old one.
+  const versioned = path.join(root, `europa-old${process.platform === 'win32' ? '.exe' : ''}`);
+  await copyFile(binary, versioned);
+  config.plugins = [europa({ binary: versioned })];
+  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1' } });
+  t.after(() => server.close());
+  let restarts = 0;
+  server.restart = async () => { restarts++; };
+  assert.match((await server.transformRequest('/app.css')).code, /red/);
+  await unlink(versioned);
+  const module = server.moduleGraph.getModuleById(path.join(root, 'app.css'));
+  server.moduleGraph.invalidateModule(module);
+  await assert.rejects(server.transformRequest('/app.css'), /EuropaCSS was reinstalled.*Vite is restarting/);
+  assert.equal(restarts, 1);
+  // If the restart did not bring an executable back, report it instead of looping.
+  server.moduleGraph.invalidateModule(module);
+  await assert.rejects(server.transformRequest('/app.css'), /ENOENT\. Reinstall @brandocms\/europacss-cli/);
+  assert.equal(restarts, 1);
+  // Once the executable works again, a later reinstall may restart again.
+  await copyFile(binary, versioned);
+  server.moduleGraph.invalidateModule(module);
+  assert.match((await server.transformRequest('/app.css')).code, /red/);
+  await unlink(versioned);
+  server.moduleGraph.invalidateModule(module);
+  await assert.rejects(server.transformRequest('/app.css'), /Vite is restarting/);
+  assert.equal(restarts, 2);
+});
+
+test('a missing file outside the executable never restarts the dev server', async (t) => {
+  const { root, config, write } = await fixture(t);
+  config.plugins = [europa({ binary }), {
+    name: 'throwing-resolver',
+    resolveId(id) {
+      if (id === 'broken-package/theme.css') throw Object.assign(new Error('ENOENT: no such file, open package.json'), { code: 'ENOENT' });
+    },
+  }];
+  await write('app.css', "@import 'broken-package/theme.css'; .entry{color:blue}");
+  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1' } });
+  t.after(() => server.close());
+  let restarts = 0;
+  server.restart = async () => { restarts++; };
+  await assert.rejects(server.transformRequest('/app.css'), (error) => !/reinstalled|Reinstall/.test(error.message));
+  assert.equal(restarts, 0);
+});
+
+test('builds report a missing executable without restarting', async (t) => {
+  const { root, config } = await fixture(t);
+  const versioned = path.join(root, `europa-gone${process.platform === 'win32' ? '.exe' : ''}`);
+  await copyFile(binary, versioned);
+  const plugin = europa({ binary: versioned });
+  const settings = { root };
+  await plugin.config.handler(settings);
+  plugin.configResolved({ ...settings, command: 'build', build: { cssTarget: settings.build.cssTarget }, css: settings.css });
+  await unlink(versioned);
+  const context = { addWatchFile() {}, warn() {}, error(error) { throw error; } };
+  await assert.rejects(plugin.transform.call(context, '.a{color:red}', path.join(root, 'app.css')), /ENOENT\. Reinstall/);
 });
 
 test('one CSS policy survives legacy defaults and final minification, including excluded CSS', async (t) => {

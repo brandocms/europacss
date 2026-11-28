@@ -49,7 +49,13 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             "--studio" => studio = true,
             "--port" => port = Some(args.next().ok_or("--port needs a number")?),
             "--help" | "-h" => {
-                println!("Supported source versions: 1.0.0-beta.6, 1.0.0-beta.11, 1.0.0-beta.16");
+                println!(
+                    "Supported source versions: {}",
+                    migration::supported_versions().join(", ")
+                );
+                println!(
+                    "Native versions (0.1.x) check only output changes in later native releases."
+                );
                 println!("Browser review: europa migrate <entry.css> --from <version> [--config europa.json5] --studio [--port 0]\n");
                 println!("Usage: europa migrate <entry.css> --from 1.0.0-beta.16 [--config europa.json5] [--check | --fix] [--json | --summary | --details] [--accept review.json | --apply review.json]\n\nChecks the entry and local imports. Default: read-only --check, grouped by source location and diagnostic code.\n--fix applies supported suffix edits and preserves legacy fractional column widths.\n--apply applies only proposals marked apply_fix:true in a saved report, then reruns analysis (--apply-fixes is an alias).\n--accept reads explicit accepted:true decisions from a saved JSON report for these exact inputs.\n--budget N sets the cross-selector comparison limit (default 20000000, maximum 1000000000).\nConfig migration.mediaPacking:'none' skips checks that assume old media packing (default: 'assume'); emitted CSS is unchanged.\n--summary lists review-item and finding counts by file and diagnostic code.\n--details prints every unresolved finding separately. Grouping never skips checks or accepts findings.\nExit 1 means findings remain unresolved or analysis could not finish. --json writes the full report to stdout.\nA clean report covers the listed checks; rendered-page comparison is still required.");
                 return Ok(ExitCode::SUCCESS);
@@ -206,6 +212,7 @@ pub fn run(args: Vec<String>, ui: &Ui) -> Result<ExitCode, String> {
             accepted: report.findings.len() - unresolved,
             fixed: changed,
             complete: report.analysis_complete,
+            native: migration::is_native(&report.from),
             review_items: items.len(),
             appearance_proposals: display::appearance_proposals(&items),
         });

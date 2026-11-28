@@ -91,7 +91,10 @@ gh workflow run native-release.yml --ref <branch>
 
 1. Set the same version in Cargo and the CLI/adapter manifests, including the
    adapter's exact compiler dependency. Refresh Cargo.lock and the `packages/`
-   npm workspace lockfile. The packer rejects inconsistent versions.
+   npm workspace lockfile. The packer rejects inconsistent versions. Add the
+   version to `NATIVE_RELEASES` in `crates/europacss/src/migration/mod.rs`,
+   with checks for any output it changes, so `europa migrate --from` an earlier
+   native version reports them. A test fails until the list includes it.
 2. Dispatch Native npm packages on the release commit and let all platform
    builds, Node 22/24 consumer tests and compiler/adapter checks pass. Review the `npm-*` and `archive-*` artifacts.
 3. Configure npm publishing access to the `@brandocms` scope. For the first
