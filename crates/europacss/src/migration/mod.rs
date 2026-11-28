@@ -330,7 +330,9 @@ fn report(
         }
     }
     if native.is_some() {
-        if let Err(error) = transform::for_migration(nodes, &config) {
+        // The compiler's own frontend, so the report covers every diagnostic
+        // the configured compiler raises (suffixes, expanded nesting, …).
+        if let Err(error) = transform::transform(nodes, &config) {
             audit.complete = false;
             audit.add("EU_MIGRATION_INCOMPLETE", format!("Expansion stopped: [{}] {}", error.code, error.message), error.offset,
                 "Resolve this compiler diagnostic and rerun migration; later rules have not been checked.", None);

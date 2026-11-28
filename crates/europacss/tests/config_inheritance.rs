@@ -301,9 +301,20 @@ fn unquoted_numeric_keys_say_to_quote_them() {
         "{ theme: { colors: { 'beige': { '50': '#fff' } } } }",
     );
     assert_eq!(p.load().unwrap()["theme"]["colors"]["beige"]["50"], "#fff");
-    p.write("europa.json5", "{ theme: { colors: { @x: 1 } } }");
-    let error = p.load().unwrap_err();
-    assert!(!error.contains("numeric keys"), "{error}");
+    // The hint names the whole key, and calls it numeric only when it is a number.
+    for (source, hint) in [
+        ("{ x: { 1e+3: 1 } }", "numeric keys must be quoted: '1e+3'"),
+        ("{ x: { .5: 1 } }", "numeric keys must be quoted: '.5'"),
+        (
+            "{ x: { -brand: 1 } }",
+            "not identifiers must be quoted: '-brand'",
+        ),
+        ("{ x: { @x: 1 } }", "not identifiers must be quoted: '@x'"),
+    ] {
+        p.write("europa.json5", source);
+        let error = p.load().unwrap_err();
+        assert!(error.ends_with(hint), "{source}: {error}");
+    }
     let Err(error) = studio::preview("{ colors: { 50: 'red' } }") else {
         panic!("numeric key accepted")
     };

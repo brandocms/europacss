@@ -72,12 +72,14 @@ pub fn json5_error(source: &str, error: &json5::Error) -> String {
         .nth(position.line)
         .into_iter()
         .flat_map(|line| line.chars().skip(position.column))
-        .take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+        .take_while(|c| !c.is_whitespace() && !matches!(c, ':' | ',' | '{' | '}' | '[' | ']'))
         .collect();
-    if key.starts_with(|c: char| c.is_ascii_digit() || c == '-' || c == '.') {
+    if key.is_empty() || key.contains(['\'', '"']) {
+        message
+    } else if key.parse::<f64>().is_ok() || json5::from_str::<f64>(&key).is_ok() {
         format!("{message}: numeric keys must be quoted: '{key}'")
     } else {
-        message
+        format!("{message}: keys that are not identifiers must be quoted: '{key}'")
     }
 }
 

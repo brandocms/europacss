@@ -1562,7 +1562,7 @@ fn native_sources_check_only_changes_in_later_native_releases() {
         json!({"count": {"mobile": 4, "tablet": 4, "desktop": 11}, "gutters": {"*": "20px"}});
     cfg["theme"]["colors"] = json!({"hair": "#ff0000"});
     let source = ".grid{@grid}.half{@column 0.5/11 desktop}.whole{@column 3/11 desktop}\
-        .a{@color fg hair; color:blue}.x{&-suffix{color:red}}";
+        .a{@color fg hair; color:blue}";
     let codes = |from: &str| {
         let report = migration::analyze(&request(source, cfg.clone()), from).unwrap();
         let mut codes: Vec<_> = report
@@ -1604,6 +1604,22 @@ fn native_sources_check_only_changes_in_later_native_releases() {
             "{from}"
         );
     }
+    // A native report covers what the configured compiler rejects.
+    let mut expanded = cfg.clone();
+    expanded["nesting"] = json!("expanded");
+    let report = migration::analyze(
+        &request(".a { @scope (.b) { .c { color: red; } } }", expanded),
+        "0.1.0-beta.0",
+    )
+    .unwrap();
+    assert!(!report.analysis_complete, "{report:?}");
+    assert!(
+        report
+            .findings
+            .iter()
+            .any(|f| f.diagnostic.message.contains("EU_EXPANDED_NESTING")),
+        "{report:?}"
+    );
     let error = migration::analyze(&request(source, cfg), "0.1.0-beta.99").unwrap_err();
     assert_eq!(error.code, "EU_MIGRATION_VERSION");
     assert!(error.message.contains("0.1.0-beta.0"), "{error}");

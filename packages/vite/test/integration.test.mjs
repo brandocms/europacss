@@ -199,6 +199,31 @@ test('dev server restarts once when a reinstall removed the executable', async (
   server.moduleGraph.invalidateModule(module);
   await assert.rejects(server.transformRequest('/app.css'), /ENOENT\. Reinstall @brandocms\/europacss-cli/);
   assert.equal(restarts, 1);
+  // Once the executable works again, a later reinstall may restart again.
+  await copyFile(binary, versioned);
+  server.moduleGraph.invalidateModule(module);
+  assert.match((await server.transformRequest('/app.css')).code, /red/);
+  await unlink(versioned);
+  server.moduleGraph.invalidateModule(module);
+  await assert.rejects(server.transformRequest('/app.css'), /Vite is restarting/);
+  assert.equal(restarts, 2);
+});
+
+test('a missing file outside the executable never restarts the dev server', async (t) => {
+  const { root, config, write } = await fixture(t);
+  config.plugins = [europa({ binary }), {
+    name: 'throwing-resolver',
+    resolveId(id) {
+      if (id === 'broken-package/theme.css') throw Object.assign(new Error('ENOENT: no such file, open package.json'), { code: 'ENOENT' });
+    },
+  }];
+  await write('app.css', "@import 'broken-package/theme.css'; .entry{color:blue}");
+  const server = await createServer({ ...config, server: { port: 0, host: '127.0.0.1' } });
+  t.after(() => server.close());
+  let restarts = 0;
+  server.restart = async () => { restarts++; };
+  await assert.rejects(server.transformRequest('/app.css'), (error) => !/reinstalled|Reinstall/.test(error.message));
+  assert.equal(restarts, 0);
 });
 
 test('builds report a missing executable without restarting', async (t) => {

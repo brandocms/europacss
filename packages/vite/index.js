@@ -10,6 +10,8 @@ const require = createRequire(import.meta.url);
 const loadedVersion = require('@brandocms/europacss-cli/package.json').version;
 // Executables a restart was already tried for. Restarts create a new plugin
 // instance in the same process, so this survives them and prevents a loop.
+// A successful compilation clears its executable, so a later reinstall that
+// returns to the same path can restart again.
 const restarted = (globalThis[Symbol.for('@brandocms/vite-plugin-europacss/restarted')] ??= new Set());
 
 /** The CLI version now installed for `root`, read from disk rather than the module cache. */
@@ -41,7 +43,8 @@ function compile(binary, request, cwd, targetsOnly = false) {
     }, 30_000);
     child.on('error', (error) => {
       clearTimeout(timer);
-      reject(Object.assign(new Error(`Cannot start EuropaCSS executable ${JSON.stringify(binary)}: ${error.message}`), { code: error.code }));
+      // Mark only a missing executable, not ENOENT from elsewhere in a transform.
+      reject(Object.assign(new Error(`Cannot start EuropaCSS executable ${JSON.stringify(binary)}: ${error.message}`), { executableMissing: error.code === 'ENOENT' }));
     });
     child.stdout.on('data', (chunk) => {
       size += chunk.length;
@@ -120,7 +123,7 @@ export default function europa(options = {}) {
   // running plugin and CLI modules are that old version too, so restart Vite
   // once to load the new ones from node_modules.
   const missingExecutable = (error) => {
-    if (error.code !== 'ENOENT') return undefined;
+    if (!error.executableMissing) return undefined;
     if (!server || restarted.has(binary)) {
       return new Error(`${error.message}. Reinstall @brandocms/europacss-cli with optional dependencies enabled, then restart Vite.`);
     }
@@ -209,6 +212,7 @@ export default function europa(options = {}) {
         const resolved = new Set();
         for (let round = 0; round < 65; round++) {
           const response = await compile(binary, request, root);
+          restarted.delete(binary);
           for (const file of response.watchFiles) watched.add(file);
           response.watchFiles = [...watched];
           if (response.error || !response.resolveImports?.length) return response;
