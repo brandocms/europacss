@@ -283,3 +283,32 @@ fn studio_previews_local_edits_without_flattening_or_following_browser_paths() {
         source
     );
 }
+
+#[test]
+fn unquoted_numeric_keys_say_to_quote_them() {
+    let p = Project::new();
+    p.write(
+        "europa.json5",
+        "{\n  theme: {\n    colors: {\n      beige: { 50: '#fff', 100: '#eee' },\n    },\n  },\n}",
+    );
+    let error = p.load().unwrap_err();
+    assert!(
+        error.contains("line 4 column 16") && error.ends_with("numeric keys must be quoted: '50'"),
+        "{error}"
+    );
+    p.write(
+        "europa.json5",
+        "{ theme: { colors: { 'beige': { '50': '#fff' } } } }",
+    );
+    assert_eq!(p.load().unwrap()["theme"]["colors"]["beige"]["50"], "#fff");
+    p.write("europa.json5", "{ theme: { colors: { @x: 1 } } }");
+    let error = p.load().unwrap_err();
+    assert!(!error.contains("numeric keys"), "{error}");
+    let Err(error) = studio::preview("{ colors: { 50: 'red' } }") else {
+        panic!("numeric key accepted")
+    };
+    assert!(
+        error.ends_with("numeric keys must be quoted: '50'"),
+        "{error}"
+    );
+}

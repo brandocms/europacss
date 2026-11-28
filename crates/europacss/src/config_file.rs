@@ -44,7 +44,9 @@ pub fn load_config_tracked(
 
 fn parse_config(source: &str, path: &Path) -> Result<Value, String> {
     let value = match path.extension().and_then(|s| s.to_str()) {
-        Some("json5") => json5::from_str::<ConfigValue>(source).map_err(|e| e.to_string()),
+        Some("json5") => {
+            json5::from_str::<ConfigValue>(source).map_err(|e| json5_error(source, &e))
+        }
         Some("json") => serde_json::from_str::<ConfigValue>(source).map_err(|e| e.to_string()),
         _ => Err(
             "Expected .json5 or .json config; JavaScript configuration must be migrated first"
@@ -53,6 +55,30 @@ fn parse_config(source: &str, path: &Path) -> Result<Value, String> {
     }
     .map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(value.0)
+}
+
+/// JSON5 keys must be identifiers or strings; name the usual mistake, an unquoted
+/// numeric key such as a color scale's `50:`.
+pub fn json5_error(source: &str, error: &json5::Error) -> String {
+    let message = error.to_string();
+    let Some(position) = error
+        .position()
+        .filter(|_| error.code() == Some(json5::ErrorCode::ExpectedIdentifier))
+    else {
+        return message;
+    };
+    let key: String = source
+        .lines()
+        .nth(position.line)
+        .into_iter()
+        .flat_map(|line| line.chars().skip(position.column))
+        .take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+        .collect();
+    if key.starts_with(|c: char| c.is_ascii_digit() || c == '-' || c == '.') {
+        format!("{message}: numeric keys must be quoted: '{key}'")
+    } else {
+        message
+    }
 }
 
 fn take_extends(value: &mut Value) -> Result<Option<String>, String> {

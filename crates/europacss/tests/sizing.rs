@@ -509,3 +509,21 @@ fn fractional_tracks_count_internal_gutters_and_support_container_units() {
         );
     }
 }
+
+#[test]
+fn a_missing_breakpoint_names_the_ways_to_fill_it() {
+    let mut cfg = config();
+    cfg["theme"]["spacing"] = json!({"blocks": {"mobile": "128px", "desktop": "160px"}});
+    let error = compile(&request(".x { @space margin-top blocks; }", cfg.clone())).unwrap_err();
+    assert_eq!(error.code, "EU_SIZE");
+    assert!(
+        error.message.contains("breakpoint `tablet`") && error.message.contains("`'*'` default"),
+        "{error}"
+    );
+    cfg["theme"]["spacing"] = json!({"blocks": {"*": "160px", "$sm": "128px"}});
+    assert_css(
+        ".x { @space margin-top blocks; }",
+        "@media (width < 740px), (width >= 740px) and (width < 1024px) { .x { margin-top: 128px } } @media (width >= 1024px) { .x { margin-top: 160px } }",
+        cfg,
+    );
+}

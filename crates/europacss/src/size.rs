@@ -285,7 +285,11 @@ impl Sizes<'_, '_> {
             let key = &self.config.breakpoints[index].0;
             self.config
                 .responsive_value(values, index, self.offset)?
-                .ok_or_else(|| self.error(format!("Size has no value for breakpoint `{key}`")))
+                .ok_or_else(|| {
+                    self.error(format!(
+                        "Size has no value for breakpoint `{key}`; add `{key}`, a collection key that covers it, or a `'*'` default"
+                    ))
+                })
         } else {
             Ok(value)
         }
