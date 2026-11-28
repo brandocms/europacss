@@ -467,6 +467,65 @@ pub(crate) fn nesting_offsets(selector: &str) -> Result<Vec<usize>, Error> {
     Ok(offsets)
 }
 
+/// One complex selector's top-level structure: its compounds, the combinator
+/// before each (a leading one makes the selector relative), and whether each
+/// contains `&`. Attributes, strings, comments and escapes are skipped.
+pub(crate) struct SelectorShape {
+    pub compounds: Vec<(Option<char>, bool)>,
+    /// `&` inside a selector function's arguments, such as `:not(&)`.
+    pub nested_ampersand: bool,
+}
+
+pub(crate) fn selector_shape(selector: &str) -> Result<SelectorShape, Error> {
+    let mut scanner = Scanner {
+        source: selector,
+        pos: 0,
+    };
+    let mut shape = SelectorShape {
+        compounds: Vec::new(),
+        nested_ampersand: false,
+    };
+    let mut combinator = None;
+    let mut in_compound = false;
+    while let Some(c) = scanner.byte() {
+        if space(c) {
+            if in_compound {
+                combinator = Some(' ');
+                in_compound = false;
+            }
+            scanner.pos += 1;
+            continue;
+        }
+        if matches!(c, b'>' | b'+' | b'~') {
+            combinator = Some(char::from(c));
+            in_compound = false;
+            scanner.pos += 1;
+            continue;
+        }
+        if scanner.rest().starts_with("/*") {
+            scanner.opaque(0)?;
+            continue;
+        }
+        if !in_compound {
+            shape.compounds.push((combinator.take(), false));
+            in_compound = true;
+        }
+        if c == b'&' {
+            shape.compounds.last_mut().unwrap().1 = true;
+            scanner.pos += 1;
+        } else if c == b'(' {
+            let start = scanner.pos;
+            scanner.component(0)?;
+            if !nesting_offsets(&selector[start + 1..scanner.pos - 1])?.is_empty() {
+                shape.nested_ampersand = true;
+            }
+        } else if !scanner.opaque(0)? {
+            scanner.advance();
+        }
+    }
+    Ok(shape)
+}
+
 pub(crate) fn nesting_crosses_combinator(selector: &str) -> Result<bool, Error> {
     let mut scanner = Scanner {
         source: selector,

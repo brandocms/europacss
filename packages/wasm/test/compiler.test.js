@@ -78,3 +78,19 @@ test('resolves configs with defaults and references', () => {
   assert.ok(resolved.theme.breakpoints)
   assert.equal(europa.resolveConfig('{ a: 1, a: 2 }').error.code, 'EU_CONFIG')
 })
+
+test('scopes module styles and limits external URLs', () => {
+  const ok = europa.compile({
+    source: '.inner { background: url(/a.png); }',
+    config,
+    minify: true,
+    scope: '[b-tpl="hero"]',
+    externalUrls: ['cdn.example.com'],
+  })
+  assert.equal(ok.error, null)
+  assert.match(ok.css, /^\[b-tpl=hero\] \.inner\{/)
+  const escape = europa.compile({ source: '& ~ * { display: none; }', config, scope: '[b-tpl="hero"]' })
+  assert.equal(escape.error.code, 'EU_SCOPE')
+  const beacon = europa.compile({ source: 'input { background: url(https://evil.example/?a); }', config, externalUrls: 'deny' })
+  assert.deepEqual([beacon.error.code, beacon.error.line, beacon.error.column], ['EU_EXTERNAL_URL', 1, 25])
+})

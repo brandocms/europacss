@@ -5,7 +5,9 @@ mod cli_review;
 mod cli_studio;
 mod cli_watch;
 use cli_output::{Build, Color, Ui};
-use europacss::{compile, compile_file, watch::Snapshot, Request};
+use europacss::{
+    compile_file_with, compile_with, watch::Snapshot, EmbedOptions, ExternalUrls, Request,
+};
 use std::{
     env, fs,
     io::{self, Read, Write},
@@ -66,6 +68,7 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
     let mut source_map = false;
     let mut debug_tokens = false;
     let mut watch = false;
+    let mut embed = EmbedOptions::default();
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--help" | "-h" => {
@@ -85,6 +88,14 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
             "--source-map" => source_map = true,
             "--debug-tokens" => debug_tokens = true,
             "--watch" => watch = true,
+            "--scope" => embed.scope = Some(args.next().ok_or("--scope needs a selector")?),
+            "--external-urls" => {
+                embed.external_urls = ExternalUrls::parse(
+                    &args
+                        .next()
+                        .ok_or("--external-urls needs allow, deny or a host list")?,
+                )?
+            }
             "-" => {
                 if input.replace(arg).is_some() {
                     return Err("Only one input is supported".into());
@@ -141,9 +152,9 @@ fn run(args: Vec<String>, ui: &Ui, color: Color) -> Result<Vec<Snapshot>, String
         browsers,
     };
     let mut result = if input == "-" {
-        compile(&request)
+        compile_with(&request, &embed)
     } else {
-        compile_file(&request, output.as_deref())
+        compile_file_with(&request, output.as_deref(), &embed)
     }
     .map_err(|e| {
         ui.diagnostic(

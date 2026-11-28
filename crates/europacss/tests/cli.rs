@@ -580,6 +580,67 @@ fn stdin_stdout_and_default_config_work() {
 }
 
 #[test]
+fn scope_and_external_url_flags() {
+    let dir = Temp::new();
+    fs::write(
+        dir.0.join("module.css"),
+        ".inner { background: url(/a.png); }",
+    )
+    .unwrap();
+    let scoped = [
+        "module.css",
+        "--minify",
+        "--targets",
+        "chrome 100",
+        "--scope",
+        "[b-tpl=hero]",
+    ];
+    let result = dir
+        .command()
+        .args(scoped)
+        .args(["--external-urls", "cdn.example.com"])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert!(String::from_utf8(result.stdout)
+        .unwrap()
+        .contains("[b-tpl=hero] .inner{"));
+
+    fs::write(
+        dir.0.join("module.css"),
+        ".inner {\n  background: url(https://evil.example/a.png);\n}",
+    )
+    .unwrap();
+    let result = dir
+        .command()
+        .args(scoped)
+        .args(["--external-urls", "deny"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    let diagnostic = String::from_utf8_lossy(&result.stderr);
+    assert!(diagnostic.contains("[EU_EXTERNAL_URL]"), "{diagnostic}");
+    assert!(diagnostic.contains("module.css:2:19"), "{diagnostic}");
+
+    fs::write(dir.0.join("module.css"), "& ~ * { display: none; }").unwrap();
+    let result = dir.command().args(scoped).output().unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("[EU_SCOPE]"));
+
+    let result = dir
+        .command()
+        .args(["module.css", "--external-urls", "https://cdn.example.com"])
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("host names"));
+}
+
+#[test]
 fn diagnostics_fail_the_build_without_partial_output() {
     let dir = Temp::new();
     fs::write(dir.0.join("input.css"), ".card {\n &__title {color:red}\n}").unwrap();

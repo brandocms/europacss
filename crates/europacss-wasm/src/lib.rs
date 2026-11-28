@@ -3,7 +3,7 @@
 //! One JSON request in, one JSON response out, through a raw linear-memory ABI.
 //! The module has no imports: no wasm-bindgen glue, WASI, clock or network.
 //! `packages/wasm` wraps the ABI for JavaScript.
-use europacss::{config_from_json5, Error, Request};
+use europacss::{config_from_json5, EmbedOptions, Error, ExternalUrls, Request};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -30,6 +30,12 @@ pub struct CompileRequest {
     /// Browserslist queries. Empty means `defaults`.
     #[serde(default)]
     pub browsers: Vec<String>,
+    /// Compile the source as the body of this selector; rules outside it are errors.
+    #[serde(default)]
+    pub scope: Option<String>,
+    /// `"allow"` (default), `"deny"`, or the hosts absolute URLs may name.
+    #[serde(default)]
+    pub external_urls: ExternalUrls,
 }
 
 fn default_filename() -> String {
@@ -72,15 +78,22 @@ pub fn compile(request: CompileRequest) -> CompileResponse {
         },
         None => europacss::resolve_config(Value::Object(Default::default())).unwrap(),
     };
-    let result = europacss::compile(&Request {
-        source: request.source,
-        filename: request.filename.clone(),
-        config,
-        source_map: request.source_map,
-        minify: request.minify,
-        debug_tokens: request.debug_tokens,
-        browsers: request.browsers,
-    });
+    let options = EmbedOptions {
+        scope: request.scope,
+        external_urls: request.external_urls,
+    };
+    let result = europacss::compile_with(
+        &Request {
+            source: request.source,
+            filename: request.filename.clone(),
+            config,
+            source_map: request.source_map,
+            minify: request.minify,
+            debug_tokens: request.debug_tokens,
+            browsers: request.browsers,
+        },
+        &options,
+    );
     match result {
         Ok(output) => CompileResponse {
             css: Some(output.css),

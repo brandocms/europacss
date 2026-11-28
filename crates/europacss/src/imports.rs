@@ -398,6 +398,10 @@ fn function<'a>(value: &'a str, expected: &str) -> Option<&'a str> {
         .flatten()
 }
 
+/// The URL an `@import` prelude names, decoded.
+pub(crate) fn import_url(params: &str, offset: usize) -> Result<String, Error> {
+    Ok(Import::parse(params, offset)?.url)
+}
 pub(crate) fn external_import(params: &str, offset: usize) -> Result<bool, Error> {
     Ok(external(&Import::parse(params, offset)?.url))
 }

@@ -174,7 +174,7 @@ pub fn compile(request: Request) -> Response {
         if !response.resolve_imports.is_empty() {
             return Ok(None);
         }
-        crate::compile_loaded(&compiler_request, loaded).map(Some)
+        crate::compile_loaded(&compiler_request, loaded, &crate::EmbedOptions::default()).map(Some)
     })();
     response.watch_files.sort();
     response.watch_files.dedup();

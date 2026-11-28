@@ -24,6 +24,17 @@ export interface CompileOptions {
   debugTokens?: boolean
   /** Browserslist queries. Empty means `defaults`. */
   browsers?: string[]
+  /**
+   * Compile the source as the body of this selector, such as `[b-tpl="hero"]`.
+   * Rules that can select outside it, and page-wide at-rules, are `EU_SCOPE` errors.
+   */
+  scope?: string
+  /**
+   * Which absolute URLs `url()`, `image-set()` and `@import` may name: `'allow'` (default),
+   * `'deny'`, or exact host names. Relative and `data:` URLs are always allowed.
+   * Others are `EU_EXTERNAL_URL` errors.
+   */
+  externalUrls?: 'allow' | 'deny' | string[]
 }
 
 export interface CompileResult {
