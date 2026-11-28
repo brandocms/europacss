@@ -63,6 +63,17 @@ Target specific breakpoints with `/` separator:
 }
 ```
 
+`/` lists breakpoints; it is not a range. Only the breakpoints listed are included, so `md/xl` leaves out `lg`:
+
+```css
+/* md and xl, but not lg */
+@responsive md/xl {
+  .card { gap: 0; }
+}
+```
+
+For a run of breakpoints, list each one (`md/lg/xl`), use an open range (`>=md`), or a [collection](#breakpoint-collections).
+
 ## Breakpoint Collections
 
 Use `$`-prefixed collection names from your config:

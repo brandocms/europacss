@@ -291,6 +291,8 @@ Limit output to specific breakpoints:
 @space margin-y md xs/sm;
 ```
 
+`/` lists breakpoints; it is not a range. `md/xl` leaves out `lg`. For a run of breakpoints, list each one (`md/lg/xl`), use an open range (`>=md`), or a collection. See [@responsive](./responsive.md#multiple-breakpoints).
+
 ## Important Flag
 
 Use `@space!` for `!important`:
