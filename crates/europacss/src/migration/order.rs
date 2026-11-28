@@ -36,7 +36,9 @@ pub(super) fn origins(nodes: &[Node], config: &Config<'_>) -> Result<Origins, Er
             let mut iteration = iterated;
             if let Some((name, params)) = node.at_rule() {
                 result.labels.insert(node.offset, format!("@{name}"));
-                if name == "unpack" {
+                // Every modeled legacy release appended @color's declaration (or,
+                // with a breakpoint query, its media rule) after the parent's own.
+                if matches!(name, "unpack" | "color" | "color!") {
                     result
                         .append
                         .entry(node.offset)
