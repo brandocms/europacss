@@ -31,6 +31,10 @@ The CLI, adapter, Cargo executable and all platform packages share one version:
 - `@brandocms/europacss-cli` exposes `europa` and `getBinaryPath()`.
 - `@brandocms/vite-plugin-europacss` depends on that exact CLI version.
 - `@brandocms/europacss-<platform>` contains the matching executable and notices.
+- `@brandocms/europacss-wasm` contains the same compiler as an import-free
+  WebAssembly module, for browsers and server runtimes such as Wasmtime. The
+  release checks that it reports the release version and compiles the same CSS
+  as the executable.
 
 `packages/cli/platforms.json` defines seven targets: macOS arm64/x64, Linux
 arm64/x64 with glibc or musl, and Windows x64. The GNU build runners use Ubuntu
@@ -112,7 +116,9 @@ gh workflow run native-release.yml --ref <branch>
    npm trust github @brandocms/europacss-cli --repo brandocms/europacss --file native-release.yml --env npm --allow-publish --yes
    ```
 
-   Repeat for the adapter and all seven platform packages. This requires an
+   Repeat for the adapter, the WebAssembly package and all seven platform
+   packages. `@brandocms/europacss-wasm` is new after `0.1.0-beta.2`: publish
+   its tested tarball once by hand as in step 3, then configure its trusted publisher. This requires an
    authenticated package maintainer with account 2FA. A new configuration must
    complete its first successful publish within two days or it expires, so
    configure it when that next release is ready. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
@@ -120,7 +126,7 @@ gh workflow run native-release.yml --ref <branch>
    tags run the publisher, after all checks pass. Branch/manual runs never
    publish. The JavaScript workflow excludes native tags.
 
-Download all nine `npm-*` package tarballs and their checksums into one directory.
+Download all ten `npm-*` package tarballs and their checksums into one directory.
 The publisher defaults to validation only:
 
 ```sh
@@ -131,7 +137,7 @@ node scripts/publish-npm.mjs --packages dist/npm --publish
 
 CI adds `--provenance` and uses npm OIDC trusted publishing. All packages publish
 with public access under `beta`; the JavaScript package's `latest` tag is
-unchanged. Platform packages publish first, then CLI, then adapter. The script
+unchanged. Platform packages publish first, then the WebAssembly package, CLI and adapter. The script
 checks the complete set, exact versions, manifests and checksums before writes.
 It skips an already-published version only when its registry integrity matches
 the tested tarball, so a partial publication can be resumed. A changed tarball

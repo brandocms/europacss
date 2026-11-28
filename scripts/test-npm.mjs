@@ -55,6 +55,7 @@ try {
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'europa-release-smoke', private: true, type: 'module', scripts: { build: 'vite build' }, devDependencies: {
     '@brandocms/europacss-cli': version,
     '@brandocms/vite-plugin-europacss': version,
+    '@brandocms/europacss-wasm': version,
     vite: values.vite,
     lightningcss: '1.33.0',
   } }));
@@ -71,6 +72,17 @@ try {
   await writeFile(path.join(root, 'css/app.css'), '.card{@color fg brand;}');
   await cli('css/app.css', '--config', 'europa.json5', '-o', 'compiled.css');
   assert.match(await readFile(path.join(root, 'compiled.css'), 'utf8'), /color:\s*red/);
+  // The WebAssembly compiler matches the executable. It has no file access, so it takes the parent config.
+  await cli('css/app.css', '--config', 'base.json5', '-o', 'base.css');
+  await writeFile(path.join(root, 'wasm.mjs'), `import { createCompiler } from '@brandocms/europacss-wasm';
+import { readFileSync, writeFileSync } from 'node:fs';
+const europa = await createCompiler();
+const result = europa.compile({ source: readFileSync('css/app.css', 'utf8'), config: readFileSync('base.json5', 'utf8'), filename: 'css/app.css' });
+if (result.error || europa.version !== ${JSON.stringify(version)}) throw new Error(JSON.stringify({ version: europa.version, error: result.error }));
+writeFileSync('wasm.css', result.css);
+`);
+  await run(['wasm.mjs'], { executable: [process.execPath] });
+  assert.equal(await readFile(path.join(root, 'wasm.css'), 'utf8'), await readFile(path.join(root, 'base.css'), 'utf8'));
   const cliManifest = (await run(['-p', "require.resolve('@brandocms/europacss-cli/package.json')"], { executable: [process.execPath] })).trim();
   const launcher = [process.execPath, path.join(path.dirname(cliManifest), 'bin/europa.cjs')];
   const stdinCss = await run(['-'], { executable: launcher, input: '.stdin { color: green; }' });
@@ -118,7 +130,7 @@ try {
   await run(values.manager === 'pnpm' ? [...install, '--no-frozen-lockfile'] : install);
   await run(['run', 'build']);
   if (registry) assert.deepEqual(registry.unexpectedDownloads, [], 'Installed an incompatible or unbuilt platform');
-  console.log(`Passed: Node ${process.versions.node}, ${values.manager}, Vite ${values.vite}, ${process.platform}/${process.arch}; clean install, frozen reinstall, CLI, migration, error exit, and adapter-only build`);
+  console.log(`Passed: Node ${process.versions.node}, ${values.manager}, Vite ${values.vite}, ${process.platform}/${process.arch}; clean install, frozen reinstall, CLI, WebAssembly parity, migration, error exit, and adapter-only build`);
 } finally {
   await registry?.close();
   await rm(root, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pack native npm releases. Does not publish or download executables."""
+"""Pack native and WebAssembly npm releases. Does not publish or download executables."""
 import argparse
 import hashlib
 import json
@@ -33,10 +33,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, help="Archive created by package-rust.py, for one platform")
     parser.add_argument("--shared", action="store_true", help="Pack CLI wrapper and Vite adapter")
+    parser.add_argument("--wasm", action="store_true", help="Pack the WebAssembly compiler built by build-wasm.py")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist/npm")
     args = parser.parse_args()
-    if not args.archive and not args.shared:
-        parser.error("supply --archive and/or --shared")
+    if not (args.archive or args.shared or args.wasm):
+        parser.error("supply --archive, --shared and/or --wasm")
     cli = read_json(ROOT / "packages/cli/package.json")
     vite = read_json(ROOT / "packages/vite/package.json")
     cargo = tomllib.loads((ROOT / "crates/europacss/Cargo.toml").read_text(encoding="utf-8"))
@@ -58,6 +59,23 @@ def main():
                 shutil.copy2(ROOT / "LICENSE", stage / "LICENSE")
                 (stage / "package.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
                 pack(stage, output)
+        if args.wasm:
+            wasm = read_json(ROOT / "packages/wasm/package.json")
+            wasm_cargo = tomllib.loads((ROOT / "crates/europacss-wasm/Cargo.toml").read_text(encoding="utf-8"))
+            if wasm["version"] != version or wasm_cargo["package"]["version"] != version:
+                raise ValueError("The WebAssembly crate and package must have the CLI's exact version")
+            missing = [f for f in wasm["files"] if not (ROOT / "packages/wasm" / f).is_file()]
+            if missing:
+                raise ValueError(f"Run scripts/build-wasm.py first; missing {', '.join(missing)}")
+            if any(not p["included_notices"] for p in read_json(ROOT / "packages/wasm/dependencies.json")):
+                raise ValueError("Missing dependency notices in the WebAssembly build")
+            # The source manifest stays private so the workspace is never published directly.
+            del wasm["private"]
+            wasm["publishConfig"] = {"access": "public", "tag": "beta"}
+            stage = temporary / "wasm"
+            shutil.copytree(ROOT / "packages/wasm", stage, ignore=shutil.ignore_patterns("node_modules", "test", "*.tgz"))
+            (stage / "package.json").write_text(json.dumps(wasm, indent=2) + "\n", encoding="utf-8")
+            pack(stage, output)
         if args.archive:
             extracted = temporary / "native"
             if args.archive.suffix == ".zip":

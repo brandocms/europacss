@@ -4,9 +4,11 @@ The Rust compiler also builds for `wasm32-unknown-unknown`, for in-browser editi
 
 The module is the same compiler as the native executable, and its output is byte for byte the same. It has no imports: no wasm-bindgen glue, WASI, clock or network access. A compile usually takes well under a millisecond after the first one.
 
-::: warning Not yet published
-`@brandocms/europacss-wasm` lives in `packages/wasm` and is marked private. Build it from this repository as shown below.
-:::
+```sh
+npm install @brandocms/europacss-wasm@beta
+```
+
+`@brandocms/europacss-wasm` ships with each native release, at the same version as `@brandocms/europacss-cli`, under the `beta` tag. The first release that includes it is the one after `0.1.0-beta.2`. Pin the same version as the site's CLI, so that the browser and the site build compile alike.
 
 ## Compile in the browser
 
@@ -73,6 +75,32 @@ Without file access, the browser build cannot:
 - Inline local `@import` files. Concatenate them into `source` yourself.
 
 A Rust panic stops the WebAssembly instance. The wrapper then starts a fresh instance and returns an `EU_INTERNAL` error. In an editor, compile on each change and keep the last good CSS while there are errors.
+
+## Other hosts
+
+Server runtimes such as Wasmtime (`wasmex` in Elixir) or Wasmer can load `europacss.wasm` without the JavaScript wrapper. The module has no imports, so instantiate it with an empty import object. Each call takes UTF-8 bytes and returns a UTF-8 JSON response, through the module's exported `memory`:
+
+| Export | Signature | |
+| --- | --- | --- |
+| `europa_abi_version` | `() -> i32` | The interface version, currently `1`. Check it once after loading. |
+| `europa_alloc` | `(len: i32) -> i32` | Allocates `len` bytes and returns a pointer. Write the request there. |
+| `europa_compile` | `(ptr: i32, len: i32) -> i32` | Compiles a JSON request shaped like the `compile()` options, with `config` as JSON5 text. Returns a pointer to the response. |
+| `europa_resolve` | `(ptr: i32, len: i32) -> i32` | Resolves a config, for `resolveConfig()`. The request is the raw `europa.json5` text. Returns `{"config": …}` or `{"error": …}`. |
+| `europa_preview` | `(ptr: i32, len: i32) -> i32` | Config Studio preview data, for `preview()`. Takes the same raw JSON5 text as `europa_resolve`. |
+| `europa_result_len` | `() -> i32` | The byte length of the last response. |
+| `europa_version` | `() -> i32` | A pointer to the compiler version as UTF-8 text; its length is `europa_result_len()`. |
+| `europa_free` | `(ptr: i32, len: i32)` | Frees a request or response buffer. |
+
+A compile looks like this:
+
+1. Encode the request as UTF-8 JSON, for example `{"source": "...", "config": "<europa.json5 text>", "filename": "module.css"}`.
+2. `europa_alloc(len)`, then write the bytes at the returned pointer.
+3. `europa_compile(ptr, len)` returns the response pointer, and `europa_result_len()` returns its length.
+4. Read the response, the `{ css, map, warnings, error }` object described above. Then call `europa_free` on both the request and the response.
+
+The pointers are offsets into `memory`. Read them after each call, because a call can grow memory and move its buffer.
+
+An instance handles one call at a time. Run one instance per process, or a small pool, behind something that serializes calls, such as an Elixir GenServer. Compile the module once and instantiate it from that. A Rust panic traps the call and leaves the instance unusable, so discard it, start a new one, and report the trap as an internal error. Error `offset` values are byte offsets into the UTF-8 source. Lines and columns are 1-based, and columns count characters.
 
 ## Build the module
 
