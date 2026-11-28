@@ -27,7 +27,7 @@ Errors exit with status 1. `--quiet` keeps diagnostics visible. These checks do 
 
 ## Convert an existing config
 
-Work on a migration branch and use the version the source was authored against. Supported profiles are `1.0.0-beta.6`, `1.0.0-beta.11` and `1.0.0-beta.16`; other versions are rejected rather than treated as equivalent.
+Work on a migration branch and use the version the source was authored against. Supported profiles are `1.0.0-beta.6`, `1.0.0-beta.11` and `1.0.0-beta.16` for the PostCSS plugin, and the native releases from `0.1.0-beta.0`. Other versions are rejected rather than treated as equivalent.
 
 ```sh
 europa migrate-config europa.config.cjs -o europa.json5
@@ -136,6 +136,21 @@ europa migrate css/app.css --from 1.0.0-beta.16 --config europa.json5 --accept r
 Saving a report accepts nothing. Syntax errors and incomplete analysis cannot be accepted. Reviews are tied to the source version, analyzer revision, config, source paths and contents in the same checkout. Edits or a newer analyzer require a fresh review. Run `--fix`, `--apply` and `--accept` as separate stages.
 
 Analyzer version 12 groups potential cross-selector conflicts by selector pair and prunes provably disjoint subjects and width ranges. See [common-before-responsive ordering](../reference/cascade). Simple responsive/fallback pairs no longer need order warnings or source edits. Non-media append differences and overlapping media that legacy packing could reorder still need review. Regenerate reports from older analyzer versions, including version 10; changing their version field does not make them current. Grouped terminal output and the optional JSON `order` evidence do not change finding identity within the current version. Review input remains limited to 16 MiB, and automatic edit proposals have a separate size budget.
+
+## Update between native releases
+
+A site already on the native compiler passes the native version it uses, for example `--from 0.1.0-beta.0`. The report then covers only the output changes of later native releases. The PostCSS checks for nesting, media packing, append order and bundle placement are skipped, because they compare against the old plugin.
+
+```sh
+europa migrate css/app.css --from 0.1.0-beta.0 --config europa.json5 --check
+```
+
+| Release | Checked change |
+|---|---|
+| `0.1.0-beta.1` | `@grid` uses `columns.count` instead of 12 tracks (`EU_MIGRATION_GRID`). Fractional column spans count only the gutters between columns (`EU_MIGRATION_FRACTION`); `--fix` keeps the old width, for example `0.5/11` → `0.5:-0.5/11`. |
+| `0.1.0-beta.2` | No output change. The removed `dpxScaleFrom` option is a compiler error with migration guidance. |
+
+A site without `@grid` or fractional sizes gets a clean report from `0.1.0-beta.0`.
 
 ## Sources older than beta.6
 

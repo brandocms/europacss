@@ -23,6 +23,42 @@ use std::{collections::HashSet, path::Path};
 pub const LEGACY_VERSION: &str = "1.0.0-beta.16";
 pub const LEGACY_BETA6: &str = "1.0.0-beta.6";
 pub const LEGACY_BETA11: &str = "1.0.0-beta.11";
+/// Native releases, oldest first, with the checks for the output changes each
+/// made. A native source runs the checks of every release after it. A release
+/// that changes output adds its checks here.
+pub const NATIVE_RELEASES: &[(&str, &[&str])] = &[
+    ("0.1.0-beta.0", &[]),
+    ("0.1.0-beta.1", &["grid-column-count", "fractional-columns"]),
+    ("0.1.0-beta.2", &[]),
+];
+
+/// Every version `--from` accepts, legacy PostCSS releases first.
+pub fn supported_versions() -> Vec<&'static str> {
+    [LEGACY_BETA6, LEGACY_BETA11, LEGACY_VERSION]
+        .into_iter()
+        .chain(NATIVE_RELEASES.iter().map(|(version, _)| *version))
+        .collect()
+}
+
+pub fn is_supported(from: &str) -> bool {
+    supported_versions().contains(&from)
+}
+
+/// Whether `from` is a native compiler release rather than a PostCSS one.
+pub fn is_native(from: &str) -> bool {
+    NATIVE_RELEASES.iter().any(|(version, _)| *version == from)
+}
+
+/// The checks for a native source version, or None for a legacy version.
+fn native_checks(from: &str) -> Option<Vec<&'static str>> {
+    let index = NATIVE_RELEASES.iter().position(|(v, _)| *v == from)?;
+    Some(
+        NATIVE_RELEASES[index + 1..]
+            .iter()
+            .flat_map(|(_, checks)| checks.iter().copied())
+            .collect(),
+    )
+}
 pub const REPORT_VERSION: u32 = 15;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
@@ -183,8 +219,8 @@ impl AnalysisAssumptions {
 }
 
 fn version(from: &str) -> Result<(), Error> {
-    if !matches!(from, LEGACY_VERSION | LEGACY_BETA6 | LEGACY_BETA11) {
-        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {LEGACY_BETA6}, {LEGACY_BETA11} and {LEGACY_VERSION}; received `{from}`. No assumptions were made about another version."), 0));
+    if !is_supported(from) {
+        return Err(Error::new("EU_MIGRATION_VERSION", format!("Migration currently models EuropaCSS {}; received `{from}`. No assumptions were made about another version.", supported_versions().join(", ")), 0));
     }
     Ok(())
 }
@@ -268,57 +304,75 @@ fn report(
         fix_bytes: 0,
         order_fixes: std::collections::HashMap::new(),
     };
-    bundle_placement(&nodes, false, &mut audit);
-    // Collect authored syntax fixes before expansion, so edits never target generated text.
-    for index in 0..sources.files.len() {
-        let mut file_nodes =
-            parser::parse(sources.content(index)).map_err(|e| sources.locate(e))?;
-        fn shift(nodes: &mut [Node], start: usize) {
-            for node in nodes {
-                node.offset += start;
-                if let Some(children) = &mut node.children {
-                    shift(children, start);
+    // A native source already compiled with this pipeline: only the output
+    // changes of later native releases apply, not the PostCSS-specific checks.
+    let native = native_checks(from);
+    let checked = |check: &str| native.as_ref().is_none_or(|checks| checks.contains(&check));
+    if native.is_none() {
+        bundle_placement(&nodes, false, &mut audit);
+        // Collect authored syntax fixes before expansion, so edits never target generated text.
+        for index in 0..sources.files.len() {
+            let mut file_nodes =
+                parser::parse(sources.content(index)).map_err(|e| sources.locate(e))?;
+            fn shift(nodes: &mut [Node], start: usize) {
+                for node in nodes {
+                    node.offset += start;
+                    if let Some(children) = &mut node.children {
+                        shift(children, start);
+                    }
                 }
             }
-        }
-        shift(&mut file_nodes, sources.files[index].start);
-        fixes::collect(&file_nodes, false, &mut audit)?;
-        if from == LEGACY_VERSION {
-            fixes::order_candidates(&file_nodes, &mut audit)?;
-        }
-    }
-    let origins = order::origins(&nodes, &config)?;
-    match transform::for_migration(nodes, &config).and_then(|raw| {
-        let ordered = crate::cascade::media_last(raw.clone(), config.value);
-        order::scope_changes(
-            &raw,
-            &ordered,
-            &config,
-            assume_packing,
-            &mut audit,
-            options.order_budget,
-        )?;
-        crate::nesting::apply(ordered, config.value)
-    }) {
-        Ok(expanded) => {
-            selectors::walk(&expanded, None, &mut audit)?;
-            order::walk(&expanded, &origins, assume_packing, &mut audit)?;
-            if assume_packing {
-                order::repeated_selectors(&expanded, &mut audit);
+            shift(&mut file_nodes, sources.files[index].start);
+            fixes::collect(&file_nodes, false, &mut audit)?;
+            if from == LEGACY_VERSION {
+                fixes::order_candidates(&file_nodes, &mut audit)?;
             }
         }
-        Err(error) => {
+    }
+    if native.is_some() {
+        if let Err(error) = transform::for_migration(nodes, &config) {
             audit.complete = false;
             audit.add("EU_MIGRATION_INCOMPLETE", format!("Expansion stopped: [{}] {}", error.code, error.message), error.offset,
+                "Resolve this compiler diagnostic and rerun migration; later rules have not been checked.", None);
+        }
+    } else {
+        let origins = order::origins(&nodes, &config)?;
+        match transform::for_migration(nodes, &config).and_then(|raw| {
+            let ordered = crate::cascade::media_last(raw.clone(), config.value);
+            order::scope_changes(
+                &raw,
+                &ordered,
+                &config,
+                assume_packing,
+                &mut audit,
+                options.order_budget,
+            )?;
+            crate::nesting::apply(ordered, config.value)
+        }) {
+            Ok(expanded) => {
+                selectors::walk(&expanded, None, &mut audit)?;
+                order::walk(&expanded, &origins, assume_packing, &mut audit)?;
+                if assume_packing {
+                    order::repeated_selectors(&expanded, &mut audit);
+                }
+            }
+            Err(error) => {
+                audit.complete = false;
+                audit.add("EU_MIGRATION_INCOMPLETE", format!("Expansion stopped: [{}] {}", error.code, error.message), error.offset,
                 "Resolve this compiler diagnostic and rerun migration; generated selectors have not been fully checked.", None);
+            }
         }
     }
     let warnings = config.migration_warnings.take().unwrap().into_inner();
-    fixes::fractional_columns(&warnings.fractions, &config, &mut audit)?;
+    if checked("fractional-columns") {
+        fixes::fractional_columns(&warnings.fractions, &config, &mut audit)?;
+    }
     for warning in warnings.diagnostics.items {
         if warning.code == "EU_MIGRATION_GRID" {
-            audit.add(&warning.code, warning.message, warning.offset,
-                "Review the configured column count. Use an explicit repeat(12, 1fr) template to retain the old tracks.", None);
+            if checked("grid-column-count") {
+                audit.add(&warning.code, warning.message, warning.offset,
+                    "Review the configured column count. Use an explicit repeat(12, 1fr) template to retain the old tracks.", None);
+            }
             continue;
         }
         if !warning.code.starts_with("EU_MIGRATION_") {
@@ -335,6 +389,20 @@ fn report(
                     "Some rules could not be expanded; independent rules were still analyzed",
                     0,
                     "Resolve all compiler diagnostics listed in this report and rerun migration.",
+                    None,
+                );
+            }
+            continue;
+        }
+        if native.is_some() {
+            // Other notices compare against the PostCSS releases.
+            if warning.code == "EU_MIGRATION_INCOMPLETE" {
+                audit.complete = false;
+                audit.add(
+                    &warning.code,
+                    warning.message,
+                    warning.offset,
+                    "Resolve this compiler diagnostic and rerun migration.",
                     None,
                 );
             }
@@ -382,38 +450,74 @@ fn report(
         report_version: REPORT_VERSION,
         snapshot: review::snapshot(&sources, request, from),
         from: from.into(),
-        to: if request.config.get("nesting").and_then(|v| v.as_str()) == Some("expanded") { "rust-expanded-nesting" } else { "rust-native-nesting" }.into(),
+        to: if request.config.get("nesting").and_then(|v| v.as_str()) == Some("expanded") {
+            "rust-expanded-nesting"
+        } else {
+            "rust-native-nesting"
+        }
+        .into(),
         files: sources.files.iter().map(|f| f.name.clone()).collect(),
-        checks: [
-            "suffix-syntax",
-            "grid-column-count",
-            "fractional-columns",
-            "bundle-placement",
-            "nesting-specificity",
-            "nested-pseudo-elements",
-            "repeated-nesting-combinators",
-            "local-declaration-order",
-            "repeated-selector-media-order",
-            "overlapping-width-media-order",
-            "cross-layer-block-responsive-order",
-            "potential-cross-selector-authored-order",
-            "resolved-sizing-corrections",
-            "contiguous-breakpoint-boundaries",
-            "signed-column-intent",
-            match from { LEGACY_BETA6 => "beta6-feature-and-sizing-changes", LEGACY_BETA11 => "beta11-feature-and-sizing-changes", _ => "beta16-profile" },
-        ].into_iter().filter(|check| assume_packing || !matches!(*check, "repeated-selector-media-order" | "overlapping-width-media-order")).chain((!assume_packing).then_some("authored-media-source-order")).map(str::to_owned).collect(),
+        checks: if let Some(checks) = &native {
+            checks.iter().map(|c| (*c).to_owned()).collect()
+        } else {
+            [
+                "suffix-syntax",
+                "grid-column-count",
+                "fractional-columns",
+                "bundle-placement",
+                "nesting-specificity",
+                "nested-pseudo-elements",
+                "repeated-nesting-combinators",
+                "local-declaration-order",
+                "repeated-selector-media-order",
+                "overlapping-width-media-order",
+                "cross-layer-block-responsive-order",
+                "potential-cross-selector-authored-order",
+                "resolved-sizing-corrections",
+                "contiguous-breakpoint-boundaries",
+                "signed-column-intent",
+                match from {
+                    LEGACY_BETA6 => "beta6-feature-and-sizing-changes",
+                    LEGACY_BETA11 => "beta11-feature-and-sizing-changes",
+                    _ => "beta16-profile",
+                },
+            ]
+            .into_iter()
+            .filter(|check| {
+                assume_packing
+                    || !matches!(
+                        *check,
+                        "repeated-selector-media-order" | "overlapping-width-media-order"
+                    )
+            })
+            .chain((!assume_packing).then_some("authored-media-source-order"))
+            .map(str::to_owned)
+            .collect()
+        },
         assumptions,
         analysis_complete: audit.complete,
-        limitations: vec![
+        limitations: if native.is_some() {
+            vec![
+            "No DOM, computed-style, or rendered-page comparison".into(),
+            format!("Native source: only output changes in native releases after {from} are checked. PostCSS-specific checks do not apply"),
+        ]
+        } else {
+            vec![
             "No DOM, computed-style, or rendered-page comparison".into(),
             "General selector matching equivalence inside functional pseudo-classes is not modeled".into(),
             "Cross-selector order findings identify potential conflicts at equal specificity; they do not prove that both selectors match an element. Arbitrary condition overlap, global duplicate-selector/media sorting, and logical/physical interactions outside padding, margin, and inset are not fully modeled".into(),
             "Other sizing differences (including calculation grouping) and backend/browser-target changes require separate review".into(),
             "Configuration must represent the resolved legacy values; beta.6 and beta.11 did not resolve {token.references}. Appearance edit proposals are available for beta.16 only".into(),
             if assume_packing { "Legacy media packing/sorting is assumed; source version alone does not identify the old build pipeline. Set migration.mediaPacking to 'none' only after verifying that pipeline's media order." } else { "Legacy media packing checks are disabled by migration.mediaPacking:'none'; this assumes the old build did not pack or sort media rules. Actual native reordering and non-media append checks remain enabled." }.into(),
-        ],
+        ]
+        },
         findings: audit.findings,
-        sources: sources.files.iter().enumerate().map(|(i, file)| (file.name.clone(), sources.content(i).to_owned())).collect(),
+        sources: sources
+            .files
+            .iter()
+            .enumerate()
+            .map(|(i, file)| (file.name.clone(), sources.content(i).to_owned()))
+            .collect(),
     })
 }
 
