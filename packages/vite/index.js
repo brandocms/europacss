@@ -1,10 +1,32 @@
 import { spawn } from 'node:child_process';
-import { watchFile, unwatchFile } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, watchFile, unwatchFile } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { getBinaryPath } from '@brandocms/europacss-cli';
 import { sharedTargets, sameTargets } from './targets.js';
 
 const normalize = (file) => path.resolve(file).replaceAll('\\', '/');
+const require = createRequire(import.meta.url);
+const loadedVersion = require('@brandocms/europacss-cli/package.json').version;
+// Executables a restart was already tried for. Restarts create a new plugin
+// instance in the same process, so this survives them and prevents a loop.
+const restarted = (globalThis[Symbol.for('@brandocms/vite-plugin-europacss/restarted')] ??= new Set());
+
+/** The CLI version now installed for `root`, read from disk rather than the module cache. */
+function installedVersion(root) {
+  for (let dir = root; ; dir = path.dirname(dir)) {
+    const plugin = path.join(dir, 'node_modules/@brandocms/vite-plugin-europacss/package.json');
+    if (existsSync(plugin)) {
+      try {
+        const manifest = createRequire(realpathSync(plugin)).resolve('@brandocms/europacss-cli/package.json');
+        return JSON.parse(readFileSync(manifest, 'utf8')).version;
+      } catch {
+        return undefined;
+      }
+    }
+    if (path.dirname(dir) === dir) return undefined;
+  }
+}
 
 // One subprocess per compilation. argv/stdin transport never invokes a shell.
 function compile(binary, request, cwd, targetsOnly = false) {
@@ -19,7 +41,7 @@ function compile(binary, request, cwd, targetsOnly = false) {
     }, 30_000);
     child.on('error', (error) => {
       clearTimeout(timer);
-      reject(new Error(`Cannot start EuropaCSS executable ${JSON.stringify(binary)}: ${error.message}`));
+      reject(Object.assign(new Error(`Cannot start EuropaCSS executable ${JSON.stringify(binary)}: ${error.message}`), { code: error.code }));
     });
     child.stdout.on('data', (chunk) => {
       size += chunk.length;
@@ -91,6 +113,23 @@ export default function europa(options = {}) {
       ignoredDependencies.set(file, listener);
       watchFile(file, { persistent: false, interval: 250 }, listener);
     }
+  };
+
+  // A package manager that keeps each version in its own directory (pnpm)
+  // removes the executable found at startup when EuropaCSS is updated. The
+  // running plugin and CLI modules are that old version too, so restart Vite
+  // once to load the new ones from node_modules.
+  const missingExecutable = (error) => {
+    if (error.code !== 'ENOENT') return undefined;
+    if (!server || restarted.has(binary)) {
+      return new Error(`${error.message}. Reinstall @brandocms/europacss-cli with optional dependencies enabled, then restart Vite.`);
+    }
+    restarted.add(binary);
+    const version = installedVersion(root);
+    const change = version && version !== loadedVersion ? ` (${loadedVersion} → ${version})` : '';
+    server.config.logger.info(`EuropaCSS was reinstalled${change}; restarting Vite.`, { timestamp: true });
+    server.restart().catch((cause) => server.config.logger.error(`Restarting Vite after a EuropaCSS reinstall failed: ${cause.message}`));
+    return new Error(`EuropaCSS was reinstalled${change}; Vite is restarting`);
   };
 
   const affectedModules = (file, graph) => {
@@ -191,7 +230,7 @@ export default function europa(options = {}) {
       pending.add(promise);
       let response;
       try { response = await promise; }
-      catch (error) { this.error(error); }
+      catch (error) { this.error(missingExecutable(error) ?? error); }
       finally { pending.delete(promise); }
       const watched = new Set(response.watchFiles.map(normalize));
       // Keep the last complete graph on failure, so edits to later imports can

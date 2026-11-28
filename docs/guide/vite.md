@@ -100,4 +100,6 @@ Use Vite's default CSS transformer with `css.devSourcemap: true`. A subsequent t
 
 Each CSS compilation launches one native process, with a 30-second timeout. It does not generate intermediate CSS files. If the packaged executable is missing, reinstall with optional dependencies enabled on the build platform. If using a `binary` override, check that path and its executable permissions.
 
+Updating EuropaCSS while the dev server runs can remove the executable it started with: pnpm keeps each version in its own directory. The next CSS request then restarts Vite once, which loads the new adapter and compiler, and logs `EuropaCSS was reinstalled (old → new); restarting Vite.` If the executable is still missing after that, CSS requests fail with the reinstall message. Builds never restart.
+
 For existing sites, [convert and review the legacy source](./lint-and-migration) before switching the pipeline.
